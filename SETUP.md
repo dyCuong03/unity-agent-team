@@ -10,6 +10,20 @@
 
 Phase 1 is executed by the **team lead** (the Claude instance that runs `/team`). It must complete in one pass.
 
+> **⚠️ Critical: Bash Commands Must Use Tool Calls**
+>
+> Claude Code **cannot** execute bash commands written as plain text in a command file.
+> Any shell command (like `tmux new-session`) MUST be wrapped in a **Bash tool call block**.
+> Writing `tmux new-session -s claude-work` as plain text in the prompt = **ignored**.
+> The command file MUST contain an actual ` ```sh ` fenced block so Claude invokes the Bash tool.
+>
+> **Correct pattern:**
+> ```sh
+> tmux kill-session -t claude-work 2>/dev/null
+> tmux new-session -d -s claude-work
+> echo "Tmux session 'claude-work' created ✓"
+> ```
+
 ### Phase 1 Steps (In Order)
 
 ```
@@ -27,12 +41,22 @@ STEP 5 → Done. Agents self-configure (Phase 2).
 2. **tmux unavailable** → Continue in degraded mode (no session).
 3. **Always operate as multi-agent** when possible.
 
-### Phase 1 — Tmux Session
+### Phase 1 — Tmux Session (Execute via Bash Tool)
+
+> **CRITICAL**: The team lead MUST run the tmux command as an actual Bash tool call.
+> Writing it as plain text in the prompt is NOT enough — it will be ignored by Claude Code.
+> Insert a Bash tool call block to execute it immediately.
+
+```sh
+# Execute via Bash tool (not plain text)
+tmux kill-session -t claude-work 2>/dev/null
+tmux new-session -d -s claude-work
+echo "Tmux session 'claude-work' created ✓"
+```
 
 - Session name: `claude-work`
-- Command: `tmux new-session -s claude-work`
-- If tmux is available → use it.
-- If tmux is unavailable → skip session, proceed without it.
+- If tmux is available → run the Bash block above.
+- If tmux is unavailable → log "tmux unavailable — continuing without session."
 
 ### Phase 1 — Enable Agent Team Mode
 
@@ -147,12 +171,13 @@ These files are shared across all roles after team creation:
 | # | Rule |
 |---|------|
 | 1 | **Phase 1 is team-lead only.** Agents do NOT exist yet. |
-| 2 | Spawn all 4 agents **in parallel** with `mode: "bypassPermissions"`. |
-| 3 | Each agent self-loads its skills — team lead does NOT pre-load them. |
-| 4 | Architect approval is **required** before implementation begins. |
-| 5 | No extra top-level agents. |
-| 6 | **Always prefer MCP over guessing.** |
-| 7 | Each role delegates complex work to internal subagents. |
+| 2 | **Bash commands MUST use Bash tool calls** — plain text in prompts is ignored. |
+| 3 | Spawn all 4 agents **in parallel** with `mode: "bypassPermissions"`. |
+| 4 | Each agent self-loads its skills — team lead does NOT pre-load them. |
+| 5 | Architect approval is **required** before implementation begins. |
+| 6 | No extra top-level agents. |
+| 7 | **Always prefer MCP over guessing.** |
+| 8 | Each role delegates complex work to internal subagents. |
 
 ---
 

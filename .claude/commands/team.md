@@ -10,45 +10,56 @@ Phase 2 (skill loading, subagent setup, work) runs autonomously inside each agen
 
 ---
 
-## Phase 1 — Team Lead Execution
+## Immediate Execution — Run Now (Before Any Agent Spawns)
 
-Execute all steps in order. Do not spawn agents until tmux + preflight are done.
+Execute these bash commands RIGHT NOW in this order. Do not skip or defer.
 
-### STEP 1: Preflight
+### STEP 1: Preflight — Check Environment
 
+```sh
+# Check if Agent Team mode is enabled
+if [ "$(claude mcp list 2>/dev/null | grep -c 'teams\|agent')" -eq 0 ] && \
+   ! grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS.*1" ~/.claude/settings.json 2>/dev/null; then
+  echo "AGENT TEAM MODE NOT ENABLED. Run the following command to enable it:"
+  echo 'mkdir -p ~/.claude && cat > ~/.claude/settings.json << '\''EOF'\'''
+  echo '{"env":{"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS":"1"},"preferences":{"tmuxSplitPanes":true,"autoBypassPermissions":true}}'
+  echo "'EOF'"
+  echo "Then restart Claude Code and run /team again."
+  exit 1
+fi
+echo "Preflight: Agent Team mode enabled ✓"
 ```
-IF Agent Team mode is NOT enabled:
-  → STOP. Output the exact ~/.claude/settings.json command from SETUP.md Section "Enable Agent Team Mode".
-  → Do not continue.
 
-IF tmux is unavailable:
-  → Log "tmux unavailable — continuing in degraded mode."
-  → Continue without tmux session.
-```
+### STEP 2: Tmux Session — Create claude-work
 
-### STEP 2: Tmux Session
-
-```
-IF tmux IS available:
-  → Run: tmux new-session -s claude-work
-  → Log "tmux session 'claude-work' created."
-ELSE:
-  → Log "tmux unavailable — no session created."
+```sh
+# Check if tmux is available
+if command -v tmux &>/dev/null; then
+  # Kill existing session if it exists (detached or stale)
+  tmux kill-session -t claude-work 2>/dev/null
+  # Create new detached tmux session named claude-work
+  tmux new-session -d -s claude-work
+  echo "Tmux session 'claude-work' created ✓"
+else
+  echo "Tmux not available — continuing without session (degraded mode)."
+fi
 ```
 
 ### STEP 3: Create Agent Team
 
-```json
-{
-  "team_name": "unity-dots-team",
-  "description": "Unity DOTS agent team — architect, unity-dev, data-tool, tester",
-  "agent_type": "orchestrator"
-}
+```sh
+echo "Team 'unity-dots-team' created (via TeamCreate API call below)."
+```
+
+Now use the **TeamCreate** tool with these exact parameters:
+
+```
+team_name:  unity-dots-team
+description: Unity DOTS agent team — architect, unity-dev, data-tool, tester
+agent_type: orchestrator
 ```
 
 ### STEP 4: Spawn 4 Agents in Parallel
-
-Spawn **all 4 agents simultaneously** (parallel, not sequential) with `mode: "bypassPermissions"`.
 
 #### Agent: architect
 
