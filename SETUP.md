@@ -41,23 +41,6 @@ STEP 5 → Done. Agents self-configure (Phase 2).
 2. **tmux unavailable** → Continue in degraded mode (no session).
 3. **Always operate as multi-agent** when possible.
 
-### Phase 1 — Tmux Session (Execute via Bash Tool)
-
-> **CRITICAL**: The team lead MUST run the tmux command as an actual Bash tool call.
-> Writing it as plain text in the prompt is NOT enough — it will be ignored by Claude Code.
-> Insert a Bash tool call block to execute it immediately.
-
-```sh
-# Execute via Bash tool (not plain text)
-# Claude Code runs INSIDE this tmux session named claude-work
-tmux kill-session -t claude-work 2>/dev/null
-tmux new-session -s claude-work
-```
-
-- Session name: `claude-work`
-- If tmux is available → run the Bash block above.
-- If tmux is unavailable → log "tmux unavailable — continuing without session."
-
 ### Phase 1 — Enable Agent Team Mode
 
 Required `~/.claude/settings.json`:
@@ -94,21 +77,6 @@ Each agent prompt contains:
 - Rules file (`@skills/<role>/rules.md`)
 - Subagents file (`@skills/<role>/subagents.md`)
 - `@SETUP.md` reference (so agent can load additional files)
-
-```
-┌─────────────────────────────────────────────┐
-│  team-lead (you)                            │
-│  STEP 1–5: preflight → tmux → team → spawn  │
-│                                             │
-│    ┌───────────┐  ┌───────────┐             │
-│    │ Architect │  │ Unity Dev │             │
-│    └───────────┘  └───────────┘             │
-│    ┌───────────────┐  ┌───────────┐         │
-│    │ Data Tool Eng │  │  Tester   │         │
-│    └───────────────┘  └───────────┘         │
-│         Phase 2: self-configure              │
-└─────────────────────────────────────────────┘
-```
 
 ### Phase 1 — Agent Spawn Template
 
@@ -190,70 +158,3 @@ These files are shared across all roles after team creation:
 | 3 | **Data Tool Engineer** | Data pipelines, editor tools, inspectors, debug/diagnostics utilities |
 | 4 | **Tester / QA** | Functional, regression, determinism, stress, and performance validation |
 
----
-
-## Agent Execution Environment Rules
-
-This section defines the mandatory execution environment for all agent operations. Any setup that violates these rules is **invalid** and must be corrected before any task can proceed.
-
-### Mandatory tmux Layout
-
-The system **MUST** use `tmux` for all agent execution. This is a **hard requirement** — no exceptions.
-
-- The terminal **MUST** be split into a **2×2 grid layout** (4 panes total).
-- Each agent **MUST** run in its own dedicated pane as follows:
-
-| Pane | Agent |
-|------|-------|
-| Top-Left | `architect` |
-| Top-Right | `unity-dev` |
-| Bottom-Left | `data-tool` |
-| Bottom-Right | `tester` |
-
-### Parallel Execution Requirement
-
-- Agents **MUST** run in **parallel**, not sequentially.
-- **No two agents** are allowed to share the same pane.
-- Logs for **all 4 agents must remain visible simultaneously** at all times.
-- The system **MUST NOT** fall back to single-pane or sequential execution under any circumstance.
-
-### tmux Session Management — Reuse, Never Kill
-
-Claude Code runs inside a tmux session. **Never kill or recreate the session.**
-
-- **Do NOT** run `tmux kill-session` — it terminates Claude Code.
-- **Do NOT** run `tmux new-session` — split panes inside the existing session instead.
-- Detect the current session with `tmux display-message -p '#S'`.
-- Split additional panes as needed to reach 4 total.
-- Use `tmux select-layout tiled` to arrange panes in a 2×2 grid.
-
-```sh
-# Detect and split into existing session
-SESSION=$(tmux display-message -p '#S')
-PANES=$(tmux display-message -p '#{window_panes}')
-
-if [ "$PANES" -lt 4 ]; then
-  for i in $(seq 1 $((4 - PANES))); do
-    tmux split-window -h -t "$SESSION"
-  done
-  tmux select-layout -t "$SESSION" tiled
-fi
-```
-
-After this, the session has 4 panes in a 2×2 grid, ready for agent assignment.
-
-### Layout Validation
-
-Before spawning agents, the team lead **MUST** verify:
-
-1. The `tmux` session exists and is named correctly.
-2. Exactly **4 panes** are active.
-3. Each pane is **assigned to a unique agent**.
-4. All panes are **visible simultaneously** in a 2×2 grid.
-5. No pane is shared between multiple agents.
-
-### Enforcement
-
-- This layout is the target configuration for tmux environments.
-- If `tmux` is unavailable or fewer than 4 panes can be created, the team **continues in degraded mode** (agents run without the visible pane layout).
-- The team lead reports which mode is active before spawning agents.
