@@ -6,20 +6,35 @@
 
 ---
 
-## 1. Top-Level Roles (Fixed — Do Not Change)
+## Phase 1 — Boot (Team Lead Only)
 
-| # | Role | Core Responsibility |
-|---|------|---------------------|
-| 1 | **Architect** | ECS design, boundaries, update order, acceptance criteria, risks |
-| 2 | **Unity Developer** | DOTS/ECS implementation, jobs, bakers, runtime logic |
-| 3 | **Data Tool Engineer** | Data pipelines, editor tools, inspectors, debug/diagnostics utilities |
-| 4 | **Tester / QA** | Functional, regression, determinism, stress, and performance validation |
+Phase 1 is executed by the **team lead** (the Claude instance that runs `/team`). It must complete in one pass.
 
----
+### Phase 1 Steps (In Order)
 
-## 2. Required Environment Setup
+```
+STEP 1 → Verify preflight
+STEP 2 → Create tmux session (claude-work)
+STEP 3 → Create Agent Team
+STEP 4 → Spawn 4 agents with mode: bypassPermissions
+         Each agent prompt contains its role + skill files.
+STEP 5 → Done. Agents self-configure (Phase 2).
+```
 
-### 2.1 Enable Agent Team Mode
+### Phase 1 — Preflight
+
+1. **Agent Team mode not enabled** → STOP. Instruct user with exact command.
+2. **tmux unavailable** → Continue in degraded mode (no session).
+3. **Always operate as multi-agent** when possible.
+
+### Phase 1 — Tmux Session
+
+- Session name: `claude-work`
+- Command: `tmux new-session -s claude-work`
+- If tmux is available → use it.
+- If tmux is unavailable → skip session, proceed without it.
+
+### Phase 1 — Enable Agent Team Mode
 
 Required `~/.claude/settings.json`:
 
@@ -29,308 +44,123 @@ Required `~/.claude/settings.json`:
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "preferences": {
-    "tmuxSplitPanes": true
-  }
-}
-```
-
-Apply via:
-
-```sh
-mkdir -p ~/.claude && cat > ~/.claude/settings.json << 'EOF'
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "preferences": {
     "tmuxSplitPanes": true,
     "autoBypassPermissions": true
   }
 }
-EOF
 ```
 
-### 2.2 Preflight Rules
+### Phase 1 — Create Team
 
-- **Agent Team mode not enabled** → STOP. Instruct user with exact command above.
-- **tmux unavailable** → Continue in degraded mode. Keep full team workflow.
-- **Always operate as multi-agent** when possible.
-
-### 2.3 Tmux Session
-
-- Default tmux session name: `claude-work`
-- Command: `tmux new-session -s claude-work`
-- If tmux is unavailable, fall back to no-session mode.
-
-### 2.4 Auto Bypass Permissions (Setup Phase)
-
-- `autoBypassPermissions: true` in settings activates automatically during team setup.
-- When `autoBypassPermissions` is active, Claude Code skips interactive permission prompts.
-- Use this only during team initialization; runtime code changes still require explicit approval unless overridden.
-
----
-
-## 3. Team Activation (On Load)
-
-### Activation Steps
-
-1. Verify Agent Team mode is enabled.
-2. Activate the Agent Team.
-3. Create exactly 4 active agents: Architect, Unity Dev, Data Tool Engineer, Tester.
-4. Assign each agent: role + skills + internal subagents.
-5. Load all package skill definitions.
-
-### Activation Rules
-
-- No extra top-level agents.
-- Each role delegates complex work to internal subagents.
-- Architect approval is **required** before implementation begins.
-
----
-
-## 4. Mandatory Skill Loading
-
-### Package Skill Files
-
-Load ALL of the following in order:
-
-| Category | Files |
-|----------|-------|
-| Architect | `./skills/architect/{role,skills,rules,subagents}.md` |
-| Unity Dev | `./skills/unity-dev/{role,skills,rules,subagents}.md` |
-| Data Tool | `./skills/data-tool/{role,skills,rules,subagents}.md` |
-| Tester | `./skills/tester/{role,skills,rules,subagents}.md` |
-
-### Runtime Skills (if present)
-
-Load ALL from `./.claude/skills/*`:
-
-- `start-unity-dots-team/SKILL.md`
-- `unity-dots-best-practices/SKILL.md`
-- `editor-data-tools/SKILL.md`
-- `qa-validation/SKILL.md`
-
-### Skill Rules
-
-- **Do not skip** any skill definition.
-- Skills influence decisions, generation, tooling, and validation.
-- **Conflict resolution**: Skill definition wins over role action unless user explicitly overrides.
-
----
-
-## 5. Role Definitions
-
-### 5.1 Architect
-
-**Authority**: Design approval, design changes, performance constraints, risks.
-
-**Must define before implementation**:
-- ECS component and buffer model
-- System boundaries and responsibilities
-- Update ordering
-- Authoring and baker strategy
-- Performance constraints
-- Acceptance criteria
-- Known risks
-
-### 5.2 Unity Developer
-
-**Authority**: Low-level implementation details that do not violate architecture.
-
-**Must**:
-- Implement from approved design only
-- Escalate design conflicts instead of silently redesigning
-- Surface blockers, risks, and performance tradeoffs early
-
-**Implements**: ECS runtime, jobs, bakers, integration.
-
-### 5.3 Data Tool Engineer
-
-**Authority**: Tooling structure and diagnostics workflow.
-
-**Must**:
-- Build data processors, editor tools, inspectors, debug overlays, validators
-- NOT change runtime architecture without Architect review
-
-### 5.4 Tester / QA
-
-**Authority**: Can block completion when evidence is insufficient.
-
-**Must**:
-- Design and execute functional, regression, determinism, stress, performance validation
-- Validate against acceptance criteria, observed runtime behavior, scaling limits
-
----
-
-## 6. Mandatory Workflow
-
-```
-1. Architect  → Analyze + publish design + acceptance criteria
-2. Unity Dev → Implement from approved design
-3. Data Tool → Build tooling + diagnostics + debug utilities
-4. Tester    → Validate correctness + stress + performance
-5. Loop      → Findings → responsible role → repeat until stable
+```json
+{
+  "team_name": "unity-dots-team",
+  "description": "Unity DOTS agent team — architect, unity-dev, data-tool, tester"
+}
 ```
 
-**Gate rule**: No later phase may bypass an unresolved earlier gate.
+### Phase 1 — Spawn 4 Agents
+
+Spawn **all 4 agents in parallel** with `mode: "bypassPermissions"`.
+
+Each agent prompt contains:
+- Phase 1 completion confirmation
+- Role definition file (`@skills/<role>/role.md`)
+- Skills file (`@skills/<role>/skills.md`)
+- Rules file (`@skills/<role>/rules.md`)
+- Subagents file (`@skills/<role>/subagents.md`)
+- `@SETUP.md` reference (so agent can load additional files)
+
+```
+┌─────────────────────────────────────────────┐
+│  team-lead (you)                            │
+│  STEP 1–5: preflight → tmux → team → spawn  │
+│                                             │
+│    ┌───────────┐  ┌───────────┐             │
+│    │ Architect │  │ Unity Dev │             │
+│    └───────────┘  └───────────┘             │
+│    ┌───────────────┐  ┌───────────┐         │
+│    │ Data Tool Eng │  │  Tester   │         │
+│    └───────────────┘  └───────────┘         │
+│         Phase 2: self-configure              │
+└─────────────────────────────────────────────┘
+```
+
+### Phase 1 — Agent Spawn Template
+
+```json
+{
+  "name": "<role-name>",
+  "team_name": "unity-dots-team",
+  "subagent_type": "general-purpose",
+  "mode": "bypassPermissions",
+  "prompt": [
+    "@SETUP.md",
+    "@skills/<role>/role.md",
+    "@skills/<role>/skills.md",
+    "@skills/<role>/rules.md",
+    "@skills/<role>/subagents.md",
+    "<task description>",
+    "Phase 1 complete. You are now in Phase 2: self-configure.",
+    "Load all referenced files in your prompt. Then begin your role."
+  ]
+}
+```
 
 ---
 
-## 7. Internal Subagent Policy
+## Phase 2 — Self-Configure (Each Agent, Parallel)
 
-### When to Delegate
+Once spawned, **each agent independently**:
 
-- Task is ambiguous → structured analysis subagent
-- Implementation spans multiple systems → generation subagent
-- Performance/correctness risk is material → validation subagent
-- Validation requires independent pass before handoff
+1. Reads all files in its prompt.
+2. Loads `@architecture.md` and `@mcp-integration.md` if not already loaded.
+3. Loads runtime skills from `@.claude/skills/*` applicable to its role.
+4. Sets up internal subagents from `@skills/<role>/subagents.md`.
+5. Confirms readiness to team lead via message.
+6. Awaits Architect design → begins work.
 
-### Minimum Internal Behavior (non-trivial tasks)
+### Phase 2 — Per-Role Skill Loading
 
-1. Analysis pass
-2. Generation / synthesis pass
-3. Validation pass
-
----
-
-## 8. MCP Operating Policy
-
-### Use MCP For
-
-- Inspect scenes, prefabs, assets, packages, scripts, serialized state
-- Inspect GameObjects, Components, authoring data, runtime-visible structure
-- Read console logs, editor state
-- Run tests, gather validation output
-- Inspect data for ECS debugging, tooling, verification
-
-### Fallback (No MCP)
-
-- Use direct code reading for implementation details.
-- State: *"Running without MCP evidence."*
-- Do NOT assume project state without verification.
-
-### Mismatch Protocol
-
-1. Inspect with MCP
-2. Identify mismatch
-3. Report explicitly
-4. Proceed only after mismatch is understood
+| Role | Additional Files to Load |
+|------|--------------------------|
+| **Architect** | `@.claude/skills/unity-dots-best-practices/SKILL.md` |
+| **Unity Dev** | `@.claude/skills/unity-dots-best-practices/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md` |
+| **Data Tool Engineer** | `@.claude/skills/editor-data-tools/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md` |
+| **Tester** | `@.claude/skills/qa-validation/SKILL.md`, `@.claude/skills/editor-data-tools/SKILL.md` |
 
 ---
 
-## 9. Communication Contract
+## Shared Architecture (Phase 2 Reference)
 
-Every handoff must include ALL of:
+These files are shared across all roles after team creation:
 
-- **Objective** — what this phase accomplishes
-- **Inputs examined** — data, files, MCP evidence used
-- **Outputs produced** — deliverables
-- **Constraints still active** — rules, limits still in effect
-- **Open risks** — unresolved concerns
-- **Explicit next owner** — who receives this work
+| File | Purpose |
+|------|---------|
+| `@architecture.md` | ECS architecture patterns and templates |
+| `@mcp-integration.md` | Unity MCP operating procedures |
 
 ---
 
-## 10. Role-to-Role Handoff Requirements
-
-### Architect → Unity Developer
-
-- Component and buffer model
-- System responsibilities
-- Update ordering
-- Authoring and baker strategy
-- Performance constraints
-- Acceptance criteria
-- Known risks
-
-### Unity Developer → Data Tool Engineer
-
-- Implemented runtime surfaces
-- Required debug hooks
-- Key state transitions to inspect
-- Data pain points
-- Profiler-sensitive areas
-
-### Data Tool Engineer → Tester
-
-- Available validators
-- Debug views and instrumentation
-- Reproducible fixtures
-- Logging channels
-- Known observability gaps
-
-### Tester → Team
-
-- Passed checks
-- Failed checks
-- Reproduction steps
-- Severity + impact on acceptance criteria
-- Recommendation: continue / fix / sign off
-
----
-
-## 11. Quality Gates
-
-| Gate | Rule |
-|------|------|
-| **Architect** | No implementation before design exists |
-| **Implementation** | No completion if runtime violates approved design |
-| **Tooling** | No sign-off if critical state cannot be inspected/reproduced |
-| **Validation** | No completion without correctness evidence |
-| **Validation** | No completion without stress evidence for scale-sensitive systems |
-| **Validation** | No completion while regressions remain open |
-
----
-
-## 12. DOTS Constraints
-
-- Prefer: `IComponentData`, `IBufferElementData`, `BlobAsset`, `Aspect`, `ISystem`, jobs, Burst
-- Optimize: cache locality, memory predictability, low sync overhead
-- Minimize: structural changes in hot paths, managed allocations in simulation loops
-- Favor: explicit ownership, deterministic data flow, high entity counts, stable frame cost
-
----
-
-## 13. Definition Of Done
-
-All must be true before work is complete:
-
-- [ ] Architect-approved design is implemented
-- [ ] Tooling and observability are sufficient for maintenance
-- [ ] Tests and stress validation pass
-- [ ] Performance constraints respected (or deviations documented + approved)
-- [ ] Open risks resolved or explicitly accepted
-
-**If any item is missing → loop continues.**
-
----
-
-## 14. When To Use This Team
-
-### Use For
-
-- New DOTS gameplay systems
-- ECS refactors
-- Performance-critical simulation features
-- Tooling-heavy iteration workflows
-- High entity-count scenarios
-- Debugging and stabilization of live Unity project state
-
-### Do NOT Use For
-
-- Generic brainstorming
-- Non-DOTS, non-Unity tasks
-
----
-
-## 15. Non-Negotiable Rules Summary
+## Non-Negotiable Rules Summary
 
 | # | Rule |
 |---|------|
-| 1 | Architect must design first |
-| 2 | Unity Dev follows approved design strictly |
-| 3 | Data Tool Engineer owns tooling + diagnostics |
-| 4 | Tester owns validation + can block completion |
-| 5 | Each role delegates complex work to subagents |
-| 6 | **Always prefer MCP over guessing** |
-| 7 | No extra top-level agents |
+| 1 | **Phase 1 is team-lead only.** Agents do NOT exist yet. |
+| 2 | Spawn all 4 agents **in parallel** with `mode: "bypassPermissions"`. |
+| 3 | Each agent self-loads its skills — team lead does NOT pre-load them. |
+| 4 | Architect approval is **required** before implementation begins. |
+| 5 | No extra top-level agents. |
+| 6 | **Always prefer MCP over guessing.** |
+| 7 | Each role delegates complex work to internal subagents. |
+
+---
+
+## Top-Level Roles (Fixed)
+
+| # | Role | Core Responsibility |
+|---|------|---------------------|
+| 1 | **Architect** | ECS design, boundaries, update order, acceptance criteria, risks |
+| 2 | **Unity Developer** | DOTS/ECS implementation, jobs, bakers, runtime logic |
+| 3 | **Data Tool Engineer** | Data pipelines, editor tools, inspectors, debug/diagnostics utilities |
+| 4 | **Tester / QA** | Functional, regression, determinism, stress, and performance validation |

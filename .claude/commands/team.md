@@ -1,115 +1,193 @@
 ---
-description: Run the full Unity DOTS agent team package from SETUP.md with all roles, skills, subagents, MCP rules, and activation gates.
+description: Boot the Unity DOTS agent team — Phase 1 creates tmux, team, and agents; Phase 2 agents self-configure.
 argument-hint: "<task>"
 ---
 
-Load and fully apply this package before doing any real work:
+# `/team` — Unity DOTS Agent Team Boot Sequence
 
-@SETUP.md
-@architecture.md
-@mcp-integration.md
-
-Role package files:
-
-@skills/architect/role.md
-@skills/architect/skills.md
-@skills/architect/rules.md
-@skills/architect/subagents.md
-
-@skills/unity-dev/role.md
-@skills/unity-dev/skills.md
-@skills/unity-dev/rules.md
-@skills/unity-dev/subagents.md
-
-@skills/data-tool/role.md
-@skills/data-tool/skills.md
-@skills/data-tool/rules.md
-@skills/data-tool/subagents.md
-
-@skills/tester/role.md
-@skills/tester/skills.md
-@skills/tester/rules.md
-@skills/tester/subagents.md
-
-Runtime skill package:
-
-@.claude/skills/start-unity-dots-team/SKILL.md
-@.claude/skills/unity-dots-best-practices/SKILL.md
-@.claude/skills/editor-data-tools/SKILL.md
-@.claude/skills/qa-validation/SKILL.md
-
-Task:
-
-$ARGUMENTS
+This command executes **Phase 1 only**: tmux session → preflight → team creation → parallel agent spawn.
+Phase 2 (skill loading, subagent setup, work) runs autonomously inside each agent.
 
 ---
 
-## Execution Requirements
+## Phase 1 — Team Lead Execution
 
-### Preflight
+Execute all steps in order. Do not spawn agents until tmux + preflight are done.
 
-1. **Agent Team mode not enabled** → STOP. Instruct user with the exact `~/.claude/settings.json` command from SETUP.md Section 2.
-2. **tmux unavailable** → Continue in degraded mode. Keep full team workflow.
-3. **Always operate as multi-agent** when possible.
+### STEP 1: Preflight
 
-### Tmux Session
+```
+IF Agent Team mode is NOT enabled:
+  → STOP. Output the exact ~/.claude/settings.json command from SETUP.md Section "Enable Agent Team Mode".
+  → Do not continue.
 
-- Session name: `clude-work` (set via `tmux new-session -s claude-work`)
-- If tmux is available, create/use this named session for the team run.
-- If tmux is unavailable, proceed without a session (degraded mode is acceptable).
+IF tmux is unavailable:
+  → Log "tmux unavailable — continuing in degraded mode."
+  → Continue without tmux session.
+```
 
-### Auto Bypass Permissions (Setup Phase)
+### STEP 2: Tmux Session
 
-- `autoBypassPermissions: true` is set in `~/.claude/settings.json` preferences.
-- When active, Claude Code automatically skips interactive permission prompts during team initialization.
-- **Scope**: Applies only to team setup operations (agent spawning, file writes during activation).
-- **Runtime safety**: Code implementation, file writes, and destructive operations still require explicit approval unless `mode: "bypassPermissions"` is explicitly passed to the agent spawn call.
-- **Rule**: Use `mode: "bypassPermissions"` on Agent spawn calls during team setup to enable the auto bypass behavior.
+```
+IF tmux IS available:
+  → Run: tmux new-session -s claude-work
+  → Log "tmux session 'claude-work' created."
+ELSE:
+  → Log "tmux unavailable — no session created."
+```
 
-### Team Agents
-
-Activate exactly 4 top-level agents:
-
-| Agent | Role |
-|-------|------|
-| `Architect` | Design, ECS boundaries, acceptance criteria |
-| `Unity Dev` | DOTS/ECS implementation, jobs, bakers |
-| `Data Tool Engineer` | Data pipelines, editor tools, diagnostics |
-| `Tester` | Validation, stress testing, regression coverage |
-
-### Agent Spawning Rule
-
-Spawn each agent with `mode: "bypassPermissions"` during team initialization:
+### STEP 3: Create Agent Team
 
 ```json
 {
-  "name": "<agent-name>",
-  "team_name": "<team-name>",
-  "mode": "bypassPermissions"
+  "team_name": "unity-dots-team",
+  "description": "Unity DOTS agent team — architect, unity-dev, data-tool, tester",
+  "agent_type": "orchestrator"
 }
 ```
 
-This ensures the `autoBypassPermissions` setting takes effect for all setup-phase agent spawns.
+### STEP 4: Spawn 4 Agents in Parallel
 
-### Skill Assignment
+Spawn **all 4 agents simultaneously** (parallel, not sequential) with `mode: "bypassPermissions"`.
 
-Assign each role its internal subagents and apply ALL loaded skill definitions from the skill files above.
+#### Agent: architect
 
-### Workflow Order
+```json
+{
+  "name": "architect",
+  "team_name": "unity-dots-team",
+  "subagent_type": "architect",
+  "mode": "bypassPermissions",
+  "prompt": [
+    "@SETUP.md",
+    "@skills/architect/role.md",
+    "@skills/architect/skills.md",
+    "@skills/architect/rules.md",
+    "@skills/architect/subagents.md",
+    "@architecture.md",
+    "@mcp-integration.md",
+    "@.claude/skills/unity-dots-best-practices/SKILL.md",
+    "\nTask: $ARGUMENTS\n\nPhase 1 complete (team lead). You are now in Phase 2.",
+    "Load all files above. Set up your internal subagents. Confirm readiness to team lead.",
+    "Then await task assignment and begin with ECS architecture design."
+  ]
+}
+```
 
-1. **Architect** → Analyze requirements + MCP evidence → Publish approved design (component model, system boundaries, update order, baker strategy, performance constraints, risks, acceptance criteria)
-2. **Unity Dev** → Implement from approved design only → Surface blockers early
-3. **Data Tool Engineer** → Build tooling, diagnostics, debug utilities, data pipelines
-4. **Tester** → Validate correctness, determinism, stress, performance → Block if evidence insufficient
-5. **Iterate** → Loop until production-ready
+#### Agent: unity-dev
 
-### MCP Rule
+```json
+{
+  "name": "unity-dev",
+  "team_name": "unity-dots-team",
+  "subagent_type": "unity-dev",
+  "mode": "bypassPermissions",
+  "prompt": [
+    "@SETUP.md",
+    "@skills/unity-dev/role.md",
+    "@skills/unity-dev/skills.md",
+    "@skills/unity-dev/rules.md",
+    "@skills/unity-dev/subagents.md",
+    "@architecture.md",
+    "@mcp-integration.md",
+    "@.claude/skills/unity-dots-best-practices/SKILL.md",
+    "@.claude/skills/qa-validation/SKILL.md",
+    "\nTask: $ARGUMENTS\n\nPhase 1 complete (team lead). You are now in Phase 2.",
+    "Load all files above. Set up your internal subagents. Confirm readiness to team lead.",
+    "Then await Architect's approved design before implementing anything."
+  ]
+}
+```
+
+#### Agent: data-tool
+
+```json
+{
+  "name": "data-tool",
+  "team_name": "unity-dots-team",
+  "subagent_type": "data-tool",
+  "mode": "bypassPermissions",
+  "prompt": [
+    "@SETUP.md",
+    "@skills/data-tool/role.md",
+    "@skills/data-tool/skills.md",
+    "@skills/data-tool/rules.md",
+    "@skills/data-tool/subagents.md",
+    "@architecture.md",
+    "@mcp-integration.md",
+    "@.claude/skills/editor-data-tools/SKILL.md",
+    "@.claude/skills/qa-validation/SKILL.md",
+    "\nTask: $ARGUMENTS\n\nPhase 1 complete (team lead). You are now in Phase 2.",
+    "Load all files above. Set up your internal subagents. Confirm readiness to team lead.",
+    "Then await Unity Dev's handoff to begin building tooling and diagnostics."
+  ]
+}
+```
+
+#### Agent: tester
+
+```json
+{
+  "name": "tester",
+  "team_name": "unity-dots-team",
+  "subagent_type": "tester",
+  "mode": "bypassPermissions",
+  "prompt": [
+    "@SETUP.md",
+    "@skills/tester/role.md",
+    "@skills/tester/skills.md",
+    "@skills/tester/rules.md",
+    "@skills/tester/subagents.md",
+    "@architecture.md",
+    "@mcp-integration.md",
+    "@.claude/skills/qa-validation/SKILL.md",
+    "@.claude/skills/editor-data-tools/SKILL.md",
+    "\nTask: $ARGUMENTS\n\nPhase 1 complete (team lead). You are now in Phase 2.",
+    "Load all files above. Set up your internal subagents. Confirm readiness to team lead.",
+    "Then await Data Tool Engineer's handoff to begin validation and stress testing."
+  ]
+}
+```
+
+### STEP 5: Confirm Boot
+
+After all 4 agents are spawned:
+
+```
+Log "Team boot complete. 4 agents active in Phase 2."
+Log "Architect → design. Unity Dev → implement after approval."
+Log "Data Tool → tooling after Unity Dev handoff."
+Log "Tester → validation after Data Tool handoff."
+```
+
+---
+
+## Phase 2 — Agent Behavior (Reference)
+
+Each agent, upon spawning, runs independently:
+
+1. Load all files in its prompt (already injected — no network/IO needed).
+2. Confirm readiness to team lead via SendMessage.
+3. Set up internal subagents from subagents.md.
+4. Enter role-specific workflow:
+
+```
+Architect   → Analyze task → Publish approved ECS design → await implementation
+Unity Dev   → Wait for Architect design → Implement → handoff to data-tool
+Data Tool   → Wait for Unity Dev handoff → Build tooling → handoff to tester
+Tester      → Wait for Data Tool handoff → Validate → loop or sign off
+```
+
+---
+
+## MCP Rule
 
 - **Always prefer Unity MCP** over guessing project state.
 - If MCP is unavailable: state *"Running without MCP evidence"* and fall back to code reasoning.
-- Use MCP to inspect: scenes, prefabs, assets, scripts, GameObjects, components, authoring data, runtime state, console logs, test output.
 
-### Quality Gates
+---
+
+## Quality Gates
 
 | Gate | Rule |
 |------|------|
@@ -124,6 +202,9 @@ Assign each role its internal subagents and apply ALL loaded skill definitions f
 ## Output Format
 
 ```
+[Team Lead]
+Phase 1: preflight ✓ | tmux ✓ | team created ✓ | 4 agents spawned ✓
+
 [Architect]
 <design and decisions>
 
