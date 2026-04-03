@@ -189,3 +189,74 @@ These files are shared across all roles after team creation:
 | 2 | **Unity Developer** | DOTS/ECS implementation, jobs, bakers, runtime logic |
 | 3 | **Data Tool Engineer** | Data pipelines, editor tools, inspectors, debug/diagnostics utilities |
 | 4 | **Tester / QA** | Functional, regression, determinism, stress, and performance validation |
+
+---
+
+## Agent Execution Environment Rules
+
+This section defines the mandatory execution environment for all agent operations. Any setup that violates these rules is **invalid** and must be corrected before any task can proceed.
+
+### Mandatory tmux Layout
+
+The system **MUST** use `tmux` for all agent execution. This is a **hard requirement** — no exceptions.
+
+- The terminal **MUST** be split into a **2×2 grid layout** (4 panes total).
+- Each agent **MUST** run in its own dedicated pane as follows:
+
+| Pane | Agent |
+|------|-------|
+| Top-Left | `architect` |
+| Top-Right | `unity-dev` |
+| Bottom-Left | `data-tool` |
+| Bottom-Right | `tester` |
+
+### Parallel Execution Requirement
+
+- Agents **MUST** run in **parallel**, not sequentially.
+- **No two agents** are allowed to share the same pane.
+- Logs for **all 4 agents must remain visible simultaneously** at all times.
+- The system **MUST NOT** fall back to single-pane or sequential execution under any circumstance.
+
+### tmux Session Management
+
+- If a `tmux` session does not already exist, it **MUST** be created automatically before any agent spawns.
+- The session **MUST** be named `claude-work` (or equivalent, consistent name).
+- The team lead is responsible for ensuring the session and layout exist prior to agent spawning.
+
+### Example tmux Commands
+
+The following commands create the required layout. These **MUST** be executed via Bash tool calls before spawning agents:
+
+```sh
+# Create a new tmux session (run in background)
+tmux new-session -d -s claude-work
+
+# Split the window into a 2x2 grid
+# Split the main pane horizontally
+tmux split-window -h -t claude-work
+
+# Split the left pane vertically
+tmux split-window -v -t claude-work:0.0
+
+# Split the right pane vertically
+tmux split-window -v -t claude-work:0.1
+```
+
+After these commands, the session `claude-work` will have 4 panes arranged in a 2×2 grid, ready for agent assignment.
+
+### Layout Validation
+
+Before spawning agents, the team lead **MUST** verify:
+
+1. The `tmux` session exists and is named correctly.
+2. Exactly **4 panes** are active.
+3. Each pane is **assigned to a unique agent**.
+4. All panes are **visible simultaneously** in a 2×2 grid.
+5. No pane is shared between multiple agents.
+
+### Enforcement
+
+- This layout is **mandatory** and **non-negotiable**.
+- Any execution environment that does not conform to these rules is considered **invalid**.
+- The team lead **MUST NOT** proceed to Phase 2 (agent spawning) until the layout requirements are satisfied.
+- If `tmux` is unavailable and the layout cannot be created, the team lead **MUST** halt execution and report the failure — do **not** fall back to an alternative setup.
