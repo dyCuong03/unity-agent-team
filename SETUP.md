@@ -217,32 +217,30 @@ The system **MUST** use `tmux` for all agent execution. This is a **hard require
 - Logs for **all 4 agents must remain visible simultaneously** at all times.
 - The system **MUST NOT** fall back to single-pane or sequential execution under any circumstance.
 
-### tmux Session Management
+### tmux Session Management — Reuse, Never Kill
 
-- If a `tmux` session does not already exist, it **MUST** be created automatically before any agent spawns.
-- The session **MUST** be named `claude-work` (or equivalent, consistent name).
-- The team lead is responsible for ensuring the session and layout exist prior to agent spawning.
+Claude Code runs inside a tmux session. **Never kill or recreate the session.**
 
-### Example tmux Commands
-
-The following commands create the required layout. These **MUST** be executed via Bash tool calls before spawning agents:
+- **Do NOT** run `tmux kill-session` — it terminates Claude Code.
+- **Do NOT** run `tmux new-session` — split panes inside the existing session instead.
+- Detect the current session with `tmux display-message -p '#S'`.
+- Split additional panes as needed to reach 4 total.
+- Use `tmux select-layout tiled` to arrange panes in a 2×2 grid.
 
 ```sh
-# Create a new tmux session (run in background)
-tmux new-session -d -s claude-work
+# Detect and split into existing session
+SESSION=$(tmux display-message -p '#S')
+PANES=$(tmux display-message -p '#{window_panes}')
 
-# Split the window into a 2x2 grid
-# Split the main pane horizontally
-tmux split-window -h -t claude-work
-
-# Split the left pane vertically
-tmux split-window -v -t claude-work:0.0
-
-# Split the right pane vertically
-tmux split-window -v -t claude-work:0.1
+if [ "$PANES" -lt 4 ]; then
+  for i in $(seq 1 $((4 - PANES))); do
+    tmux split-window -h -t "$SESSION"
+  done
+  tmux select-layout -t "$SESSION" tiled
+fi
 ```
 
-After these commands, the session `claude-work` will have 4 panes arranged in a 2×2 grid, ready for agent assignment.
+After this, the session has 4 panes in a 2×2 grid, ready for agent assignment.
 
 ### Layout Validation
 
@@ -256,7 +254,6 @@ Before spawning agents, the team lead **MUST** verify:
 
 ### Enforcement
 
-- This layout is **mandatory** and **non-negotiable**.
-- Any execution environment that does not conform to these rules is considered **invalid**.
-- The team lead **MUST NOT** proceed to Phase 2 (agent spawning) until the layout requirements are satisfied.
-- If `tmux` is unavailable and the layout cannot be created, the team lead **MUST** halt execution and report the failure — do **not** fall back to an alternative setup.
+- This layout is the target configuration for tmux environments.
+- If `tmux` is unavailable or fewer than 4 panes can be created, the team **continues in degraded mode** (agents run without the visible pane layout).
+- The team lead reports which mode is active before spawning agents.

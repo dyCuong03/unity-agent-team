@@ -29,7 +29,43 @@ echo "Preflight: Agent Team mode enabled ✓"
 
 ---
 
-## STEP 2: Create Team
+## STEP 2: Tmux — Reuse Existing Session (Do Not Kill)
+
+Claude Code is already running inside a tmux session. **Do NOT kill or recreate it.**
+
+```sh
+# Detect current tmux session state
+TMUX_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
+TMUX_PANES=$(tmux display-message -p '#{window_panes}' 2>/dev/null)
+
+if [ -n "$TMUX_SESSION" ]; then
+  echo "Tmux: reusing existing session '$TMUX_SESSION' with $TMUX_PANES pane(s)"
+
+  # Ensure we have exactly 4 panes for the 4 agents
+  if [ "$TMUX_PANES" -lt 4 ]; then
+    SPLITS_NEEDED=$((4 - TMUX_PANES))
+    echo "Tmux: splitting $SPLITS_NEEDED additional pane(s)..."
+    for i in $(seq 1 $SPLITS_NEEDED); do
+      tmux split-window -h -t "$TMUX_SESSION"
+    done
+    # Re-layout to 2x2 grid
+    tmux select-layout -t "$TMUX_SESSION" tiled 2>/dev/null || true
+  else
+    echo "Tmux: 4+ panes already available — using existing panes"
+  fi
+else
+  echo "Tmux: not detected — running without session (degraded mode)"
+fi
+```
+
+**Rules:**
+- Never `tmux kill-session` — it would kill Claude Code itself.
+- Never `tmux new-session` — create panes inside the existing session instead.
+- Each agent pane is mapped: pane 0 = architect, pane 1 = unity-dev, pane 2 = data-tool, pane 3 = tester.
+
+---
+
+## STEP 3: Create Team
 
 ```
 TeamCreate:
