@@ -10,19 +10,6 @@
 
 Phase 1 is executed by the **team lead** (the Claude instance that runs `/team`). It must complete in one pass.
 
-> **⚠️ Critical: Bash Commands Must Use Tool Calls**
->
-> Claude Code **cannot** execute bash commands written as plain text in a command file.
-> Any shell command (like `tmux new-session`) MUST be wrapped in a **Bash tool call block**.
-> Writing `tmux new-session -s claude-work` as plain text in the prompt = **ignored**.
-> The command file MUST contain an actual ` ```sh ` fenced block so Claude invokes the Bash tool.
->
-> **Correct pattern:**
-> ```sh
-> tmux kill-session -t claude-work 2>/dev/null
-> tmux new-session -d -s claude-work
-> echo "Tmux session 'claude-work' created ✓"
-> ```
 
 ### Phase 1 Steps (In Order)
 
