@@ -37,9 +37,8 @@ echo "Preflight: Agent Team mode enabled ✓"
 if command -v tmux &>/dev/null; then
   # Kill existing session if it exists (detached or stale)
   tmux kill-session -t claude-work 2>/dev/null
-  # Create new detached tmux session named claude-work
-  tmux new-session -d -s claude-work
-  echo "Tmux session 'claude-work' created ✓"
+  # Create tmux session named claude-work — Claude Code runs INSIDE this session
+  tmux new-session -s claude-work
 else
   echo "Tmux not available — continuing without session (degraded mode)."
 fi

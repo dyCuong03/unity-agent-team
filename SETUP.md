@@ -49,9 +49,9 @@ STEP 5 → Done. Agents self-configure (Phase 2).
 
 ```sh
 # Execute via Bash tool (not plain text)
+# Claude Code runs INSIDE this tmux session named claude-work
 tmux kill-session -t claude-work 2>/dev/null
-tmux new-session -d -s claude-work
-echo "Tmux session 'claude-work' created ✓"
+tmux new-session -s claude-work
 ```
 
 - Session name: `claude-work`
