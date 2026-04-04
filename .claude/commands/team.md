@@ -185,37 +185,16 @@ All agents load their role files and report ready. **No agent starts any work un
 
 ---
 
-## STEP 4: Create Tasks (Pending — No Auto-Assignment)
+## STEP 4: Report to User and Wait
 
-Tasks are created as pending. No task is assigned or started until the user approves.
-
-```json
-TaskCreate: { "subject": "ECS architecture design",        "description": "Architect: ECS boundaries, data model, update order, baker plan, acceptance criteria" }
-TaskCreate: { "subject": "ECS implementation",             "description": "Unity Dev: components, systems, jobs, bakers from approved design" }
-TaskCreate: { "subject": "Tooling and diagnostics",        "description": "Data Tool: authoring pipeline, editor tools, validators, debug helpers" }
-TaskCreate: { "subject": "Validation and QA",              "description": "Tester: functional tests, stress, regression, acceptance sign-off" }
-```
-
----
-
-## STEP 5: Report to User and Wait for Approval
-
-Once all 4 agents report ready and tasks are created, report to the user:
+Once all 4 agents report ready, report to the user:
 
 ```
 Team ready. 4 agents standing by — no work has started.
-
-Task queue:
-  [1] ECS architecture design      → architect
-  [2] ECS implementation           → unity-dev
-  [3] Tooling and diagnostics      → data-tool
-  [4] Validation and QA            → tester
-
-Tell me which task(s) to start, or say 'go' to start task 1 (architecture).
-No agent will do anything until you approve.
+Tell me what to do next. No task will be created or started until you assign it.
 ```
 
-**Do not assign any task or send any agent a start signal until the user responds.**
+**Do not create tasks, assign tasks, or send any agent a start signal until the user explicitly says so.**
 
 ---
 
