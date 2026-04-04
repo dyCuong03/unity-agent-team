@@ -96,10 +96,6 @@ The design must include:
 - acceptance criteria
 - known risks
 
-## Subagent Rule
-
-Each role must internally delegate complex work to its subagents instead of solving everything directly.
-
 ## Unity MCP Rule
 
 Always prefer MCP over guessing project state.

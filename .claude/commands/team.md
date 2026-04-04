@@ -93,7 +93,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "@skills/architect/role.md",
     "@skills/architect/skills.md",
     "@skills/architect/rules.md",
-    "@skills/architect/subagents.md",
     "@architecture.md",
     "@mcp-integration.md",
     "@.claude/skills/unity-dots-best-practices/SKILL.md",
@@ -119,7 +118,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "@skills/unity-dev/role.md",
     "@skills/unity-dev/skills.md",
     "@skills/unity-dev/rules.md",
-    "@skills/unity-dev/subagents.md",
     "@architecture.md",
     "@mcp-integration.md",
     "@.claude/skills/unity-dots-best-practices/SKILL.md",
@@ -127,7 +125,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'unity-dev ready'.",
     "Do NOT begin any work, analysis, planning, or implementation until the team lead explicitly assigns you a task via SendMessage.",
     "When assigned, confirm the task back to the team lead before starting.",
-    "Delegate complex code to your subagents (code-generator, job-optimizer, burst-validator, memory-checker).",
     "Surface blockers and performance risks via SendMessage to team lead.",
     "When work is complete, send results to the team lead and wait for the next assignment."
   ]
@@ -147,7 +144,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "@skills/data-tool/role.md",
     "@skills/data-tool/skills.md",
     "@skills/data-tool/rules.md",
-    "@skills/data-tool/subagents.md",
     "@architecture.md",
     "@mcp-integration.md",
     "@.claude/skills/editor-data-tools/SKILL.md",
@@ -155,7 +151,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'data-tool ready'.",
     "Do NOT begin any work, analysis, planning, or tooling until the team lead explicitly assigns you a task via SendMessage.",
     "When assigned, confirm the task back to the team lead before starting.",
-    "Delegate to your subagents (debug-tool-builder, data-inspector, logging-analyzer, pipeline-builder).",
     "Do NOT silently change runtime behavior. Any tooling that touches runtime logic must be reviewed.",
     "When work is complete, send results to the team lead and wait for the next assignment."
   ]
@@ -175,7 +170,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "@skills/tester/role.md",
     "@skills/tester/skills.md",
     "@skills/tester/rules.md",
-    "@skills/tester/subagents.md",
     "@architecture.md",
     "@mcp-integration.md",
     "@.claude/skills/qa-validation/SKILL.md",
@@ -183,7 +177,6 @@ All agents load their role files and report ready. **No agent starts any work un
     "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'tester ready'.",
     "Do NOT begin any work, analysis, planning, or testing until the team lead explicitly assigns you a task via SendMessage.",
     "When assigned, confirm the task back to the team lead before starting.",
-    "Delegate to your subagents (test-generator, stress-tester, race-condition-detector, performance-analyzer).",
     "Block completion if correctness or stability gates fail. Return issues to the responsible agent.",
     "When work is complete, send results to the team lead and wait for the next assignment."
   ]
