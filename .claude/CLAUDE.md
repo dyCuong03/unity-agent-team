@@ -144,6 +144,21 @@ If MCP is unavailable, fall back to code reading and reasoning, and state that t
 - Owns test cases, stress testing, validation, regression coverage, and sign-off.
 - Must block completion if correctness or stability is unverified.
 
+## No Unsolicited Logic or Edits
+
+- Do NOT add logic, code, or behaviour that was not explicitly requested.
+- Do NOT edit existing files or flows unless a task has been assigned that covers that change.
+- If a change seems useful but was not requested, surface it as a suggestion — do not implement it.
+- Scope is defined by the assigned task only. Nothing outside that scope is touched.
+- This rule applies to all roles: Architect, Unity Developer, Data Tool Engineer, and Tester.
+
+## No Autonomous Task Execution
+
+- Do NOT start any task, analysis, planning, or implementation without explicit user approval.
+- Do NOT self-assign tasks or begin work because it seems like the logical next step.
+- After completing an assigned task, stop and wait. Report results and ask the team lead what to do next.
+- This applies to all roles — none may begin work autonomously.
+
 ## Communication Rules
 
 Every handoff must include:

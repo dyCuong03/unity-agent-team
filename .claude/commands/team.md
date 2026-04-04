@@ -5,7 +5,7 @@ argument-hint: "<task> [--fast]"
 
 # `/team` — Parallel Unity DOTS Agent Team
 
-**Philosophy:** Spawn all agents immediately. Each agent works with initial assumptions and self-corrects when upstream data arrives. No agent waits on another.
+**Philosophy:** Spawn all agents immediately. Each agent loads its role and reports ready. No agent starts any work until the user explicitly approves.
 
 **Modes:**
 - `fast` (default): Architect + Unity Dev only.
@@ -78,7 +78,7 @@ TeamCreate:
 
 ## STEP 3: Spawn All Agents in Parallel (Single Wave)
 
-All agents receive the task simultaneously. Architect publishes design first; others proceed with assumptions and self-correct.
+All agents load their role files and report ready. **No agent starts any work until the user explicitly approves.**
 
 ### Architect
 
@@ -97,11 +97,11 @@ All agents receive the task simultaneously. Architect publishes design first; ot
     "@architecture.md",
     "@mcp-integration.md",
     "@.claude/skills/unity-dots-best-practices/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait for other agents.",
-    "Analyze the task, use MCP to inspect the Unity project, then design the ECS architecture.",
-    "Publish the approved design via SendMessage to ALL teammates (unity-dev, data-tool, tester) as soon as it is ready.",
-    "Design must include: scope, ECS data model, system layout, baker/authoring plan, performance constraints, acceptance criteria, open risks.",
-    "After publishing, remain active to answer follow-up questions and review any design deviations flagged by other agents."
+    "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'architect ready'.",
+    "Do NOT begin any work, analysis, planning, or design until the team lead explicitly assigns you a task via SendMessage.",
+    "When assigned, confirm the task back to the team lead before starting.",
+    "After publishing a design, remain active to answer follow-up questions and review deviations flagged by other agents.",
+    "When work is complete, send results to the team lead and wait for the next assignment."
   ]
 }
 ```
@@ -124,12 +124,12 @@ All agents receive the task simultaneously. Architect publishes design first; ot
     "@mcp-integration.md",
     "@.claude/skills/unity-dots-best-practices/SKILL.md",
     "@.claude/skills/qa-validation/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait on Architect.",
-    "Start implementation from your best understanding of the task requirements.",
-    "As soon as Architect's design arrives via SendMessage, reconcile it with your in-progress work and self-correct.",
+    "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'unity-dev ready'.",
+    "Do NOT begin any work, analysis, planning, or implementation until the team lead explicitly assigns you a task via SendMessage.",
+    "When assigned, confirm the task back to the team lead before starting.",
     "Delegate complex code to your subagents (code-generator, job-optimizer, burst-validator, memory-checker).",
-    "Surface blockers and performance risks immediately via SendMessage to team lead.",
-    "On completion, SendMessage to team lead with: implemented systems, known risks, deferred items."
+    "Surface blockers and performance risks via SendMessage to team lead.",
+    "When work is complete, send results to the team lead and wait for the next assignment."
   ]
 }
 ```
@@ -152,12 +152,12 @@ All agents receive the task simultaneously. Architect publishes design first; ot
     "@mcp-integration.md",
     "@.claude/skills/editor-data-tools/SKILL.md",
     "@.claude/skills/qa-validation/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait on Unity Dev.",
-    "Begin planning tooling based on your understanding of what instruments and diagnostics the task needs.",
-    "As Unity Dev's implementation or Architect's design arrives via SendMessage, self-correct tooling scope and approach.",
+    "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'data-tool ready'.",
+    "Do NOT begin any work, analysis, planning, or tooling until the team lead explicitly assigns you a task via SendMessage.",
+    "When assigned, confirm the task back to the team lead before starting.",
     "Delegate to your subagents (debug-tool-builder, data-inspector, logging-analyzer, pipeline-builder).",
     "Do NOT silently change runtime behavior. Any tooling that touches runtime logic must be reviewed.",
-    "On completion, SendMessage to team lead with: tools added, validators, diagnostics, open blind spots."
+    "When work is complete, send results to the team lead and wait for the next assignment."
   ]
 }
 ```
@@ -180,31 +180,49 @@ All agents receive the task simultaneously. Architect publishes design first; ot
     "@mcp-integration.md",
     "@.claude/skills/qa-validation/SKILL.md",
     "@.claude/skills/editor-data-tools/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait on Data Tool or Unity Dev.",
-    "Begin outlining the test matrix, stress scenarios, and acceptance criteria based on the task requirements.",
-    "As Architect's design, Unity Dev's implementation notes, or Data Tool's tooling arrive via SendMessage, self-correct your test plan.",
-    "Run tests as soon as code is available — do not wait for tooling. Use MCP for test execution and evidence capture.",
+    "\nTask context: $ARGUMENTS\n\nLoad all files listed above. Then send a ready message to the team lead: 'tester ready'.",
+    "Do NOT begin any work, analysis, planning, or testing until the team lead explicitly assigns you a task via SendMessage.",
+    "When assigned, confirm the task back to the team lead before starting.",
     "Delegate to your subagents (test-generator, stress-tester, race-condition-detector, performance-analyzer).",
     "Block completion if correctness or stability gates fail. Return issues to the responsible agent.",
-    "On sign-off, SendMessage to team lead with: test results, stress outcomes, open defects, sign-off status."
+    "When work is complete, send results to the team lead and wait for the next assignment."
   ]
 }
 ```
 
 ---
 
-## STEP 4: Create Tasks
+## STEP 4: Create Tasks (Pending — No Auto-Assignment)
+
+Tasks are created as pending. No task is assigned or started until the user approves.
 
 ```json
-TaskCreate: { "subject": "ECS architecture design",        "status": "in_progress" }
-TaskCreate: { "subject": "ECS implementation",             "status": "in_progress" }
-TaskCreate: { "subject": "Tooling and diagnostics",        "status": "in_progress" }  // full mode
-TaskCreate: { "subject": "Validation and QA",              "status": "in_progress" }  // full mode
-TaskUpdate: { "taskId": "1", "owner": "architect" }
-TaskUpdate: { "taskId": "2", "owner": "unity-dev" }
-TaskUpdate: { "taskId": "3", "owner": "data-tool" }         // full mode
-TaskUpdate: { "taskId": "4", "owner": "tester" }            // full mode
+TaskCreate: { "subject": "ECS architecture design",        "description": "Architect: ECS boundaries, data model, update order, baker plan, acceptance criteria" }
+TaskCreate: { "subject": "ECS implementation",             "description": "Unity Dev: components, systems, jobs, bakers from approved design" }
+TaskCreate: { "subject": "Tooling and diagnostics",        "description": "Data Tool: authoring pipeline, editor tools, validators, debug helpers" }
+TaskCreate: { "subject": "Validation and QA",              "description": "Tester: functional tests, stress, regression, acceptance sign-off" }
 ```
+
+---
+
+## STEP 5: Report to User and Wait for Approval
+
+Once all 4 agents report ready and tasks are created, report to the user:
+
+```
+Team ready. 4 agents standing by — no work has started.
+
+Task queue:
+  [1] ECS architecture design      → architect
+  [2] ECS implementation           → unity-dev
+  [3] Tooling and diagnostics      → data-tool
+  [4] Validation and QA            → tester
+
+Tell me which task(s) to start, or say 'go' to start task 1 (architecture).
+No agent will do anything until you approve.
+```
+
+**Do not assign any task or send any agent a start signal until the user responds.**
 
 ---
 
