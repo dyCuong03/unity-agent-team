@@ -1,264 +1,164 @@
 ---
-description: Boot the Unity DOTS agent team — parallel execution with self-correction. No blocking. All agents spawn immediately.
-argument-hint: "<task> [--fast]"
+description: Boot the Unity DOTS agent team — parallel execution, agents start immediately. No blocking preflight.
+argument-hint: "<task> [--fast | --full] [--teams]"
 ---
 
-# `/team` — Parallel Unity DOTS Agent Team
+# `/team` — Unity DOTS Agent Team (fast-spawn)
 
-**Philosophy:** Spawn all agents immediately. Each agent works with initial assumptions and self-corrects when upstream data arrives. No agent waits on another.
+**Philosophy:** Agents start work the moment they're spawned. No preflight checklists. No waiting on other agents. Pull MCP / memory when actually needed.
 
 **Modes:**
-- `fast` (default): Architect + Unity Dev only.
-- `full`: All 4 agents — parallel spawn.
+- `--fast` *(default)* — Architect + Unity Dev only. Two-agent parallel spawn.
+- `--full` — All four (architect, unity-dev, data-tool, tester) in parallel.
+
+**Execution backends:**
+- *Default:* standard `Agent` tool with `subagent_type`, in this session. Works everywhere.
+- `--teams` flag: experimental `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` flow with `TeamCreate` and tmux panes. Only if the flag is set in `~/.claude/settings.json`.
 
 ---
 
-## STEP 1: Preflight
+## STEP 1 — Non-blocking preflight (informational only)
+
+Run once. Agents proceed regardless of result.
 
 ```sh
-if ! grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS.*1" ~/.claude/settings.json 2>/dev/null; then
-  echo "Agent Team mode not enabled. Run:"
-  echo 'mkdir -p ~/.claude && cat > ~/.claude/settings.json << '\''EOF'\'''
-  echo '{"env":{"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS":"1"},"preferences":{"tmuxSplitPanes":true}}'
-  echo "'EOF'"
-  echo "Restart Claude Code, then run /team again."
-  exit 1
-fi
-echo "Preflight: Agent Team mode enabled ✓"
+python .claude/scripts/preflight.py
 ```
+
+The script reports `agent-team-mode`, `tmux`, `mcp:ai-game-developer`, `mcp:agentmemory`. Note any missing capability and continue. Agents will state their own fallback if a tool fails.
 
 ---
 
-## STEP 2: Tmux — Reuse Existing Session (Do Not Kill)
+## STEP 2 — Spawn agents in parallel (single wave)
 
-Claude Code is already running inside a tmux session. **Do NOT kill or recreate it.**
+### Default backend: `Agent` tool
 
-```sh
-# Detect current tmux session state
-TMUX_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
-TMUX_PANES=$(tmux display-message -p '#{window_panes}' 2>/dev/null)
+Spawn 2 (fast) or 4 (full) agents in **one message, multiple Agent calls in parallel**. Each agent receives the task immediately and begins work.
 
-if [ -n "$TMUX_SESSION" ]; then
-  echo "Tmux: reusing existing session '$TMUX_SESSION' with $TMUX_PANES pane(s)"
-
-  # Ensure we have exactly 4 panes for the 4 agents
-  if [ "$TMUX_PANES" -lt 4 ]; then
-    SPLITS_NEEDED=$((4 - TMUX_PANES))
-    echo "Tmux: splitting $SPLITS_NEEDED additional pane(s)..."
-    for i in $(seq 1 $SPLITS_NEEDED); do
-      tmux split-window -h -t "$TMUX_SESSION"
-    done
-    # Re-layout to 2x2 grid
-    tmux select-layout -t "$TMUX_SESSION" tiled 2>/dev/null || true
-  else
-    echo "Tmux: 4+ panes already available — using existing panes"
-  fi
-else
-  echo "Tmux: not detected — running without session (degraded mode)"
-fi
+**Architect** (always)
+```
+Agent({
+  subagent_type: "architect",
+  description: "ECS design for task",
+  prompt: "@.claude/docs/setup.md @.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nTask: $ARGUMENTS\n\nStart designing immediately. Publish design as soon as it's ready. Pull from ai-game-developer MCP only when a decision depends on it. Pull from agentmemory only if prior work in this area is likely. Save a memory_lesson at handoff for non-obvious risks."
+})
 ```
 
-**Rules:**
-- Never `tmux kill-session` — it would kill Claude Code itself.
-- Never `tmux new-session` — create panes inside the existing session instead.
-- Each agent pane is mapped: pane 0 = architect, pane 1 = unity-dev, pane 2 = data-tool, pane 3 = tester.
+**Unity Dev** (always)
+```
+Agent({
+  subagent_type: "unity-dev",
+  description: "ECS implementation for task",
+  prompt: "@.claude/docs/setup.md @.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nTask: $ARGUMENTS\n\nStart implementing immediately. When Architect's design arrives, reconcile and self-correct. All C# edits via mcp__ai-game-developer__script-update-or-create. Run tests-run before declaring complete."
+})
+```
+
+**Data Tool** (full mode only)
+```
+Agent({
+  subagent_type: "data-tool",
+  description: "Tooling and diagnostics for task",
+  prompt: "@.claude/docs/setup.md @.claude/skills/data-tool/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nTask: $ARGUMENTS\n\nStart building tooling immediately. Do NOT silently change runtime behavior. Anchor inspectors in real data via assets-get-data / object-get-data."
+})
+```
+
+**Tester** (full mode only)
+```
+Agent({
+  subagent_type: "tester",
+  description: "Validation for task",
+  prompt: "@.claude/docs/setup.md @.claude/skills/tester/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/editor-data-tools/SKILL.md\n\nTask: $ARGUMENTS\n\nStart outlining the test matrix immediately. Run tests as soon as code is available. Save a memory_lesson per defect at sign-off."
+})
+```
+
+All agent calls must go in **a single assistant turn with multiple Agent tool uses** so they run in parallel. Do not await one before starting the next.
 
 ---
 
-## STEP 3: Create Team
+## STEP 2 (alt) — Teams backend (`--teams` only)
+
+Only use when `--teams` is passed *and* `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set.
 
 ```
 TeamCreate:
-  team_name:    unity-dots-team
-  description:  Unity DOTS — architect, unity-dev, data-tool, tester (parallel)
-  agent_type:    orchestrator
+  team_name:   unity-dots-team
+  description: Unity DOTS — architect, unity-dev[, data-tool, tester] (parallel)
+```
+
+Reuse the existing tmux session — never `tmux kill-session` (it would kill Claude Code).
+
+```sh
+TMUX_SESSION=$(tmux display-message -p '#S' 2>/dev/null || true)
+TMUX_PANES=$(tmux display-message -p '#{window_panes}' 2>/dev/null || echo 0)
+NEED=4  # or 2 in --fast mode
+if [ -n "$TMUX_SESSION" ] && [ "$TMUX_PANES" -lt "$NEED" ]; then
+  for _ in $(seq 1 $((NEED - TMUX_PANES))); do
+    tmux split-window -h -t "$TMUX_SESSION"
+  done
+  tmux select-layout -t "$TMUX_SESSION" tiled 2>/dev/null || true
+fi
+```
+
+Spawn 2 or 4 agents in parallel via the Teams API with `mode: "bypassPermissions"` and the same prompts as the Agent-tool backend.
+
+---
+
+## STEP 3 — Tasks (optional, for visibility)
+
+Create one task per agent so progress is visible in the task list:
+
+```
+TaskCreate { subject: "ECS architecture design",   owner: "architect" }
+TaskCreate { subject: "ECS implementation",        owner: "unity-dev" }
+TaskCreate { subject: "Tooling and diagnostics",   owner: "data-tool" }   # --full
+TaskCreate { subject: "Validation and QA",         owner: "tester" }      # --full
 ```
 
 ---
 
-## STEP 3: Spawn All Agents in Parallel (Single Wave)
+## Self-correction protocol
 
-All agents receive the task simultaneously. Architect publishes design first; others proceed with assumptions and self-correct.
+When upstream data (design, implementation, tooling) lands in an agent's context, it must:
 
-### Architect
+1. Compare against current working assumptions.
+2. Identify conflicts / gaps.
+3. Self-correct its plan, code, or test matrix.
+4. State what changed and why.
+5. Flag unresolved conflicts to the upstream agent.
 
-```json
-{
-  "name": "architect",
-  "team_name": "unity-dots-team",
-  "subagent_type": "architect",
-  "mode": "bypassPermissions",
-  "prompt": [
-    "@SETUP.md",
-    "@skills/architect/role.md",
-    "@skills/architect/skills.md",
-    "@skills/architect/rules.md",
-    "@skills/architect/subagents.md",
-    "@architecture.md",
-    "@mcp-integration.md",
-    "@.claude/skills/unity-dots-best-practices/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait for other agents.",
-    "Analyze the task, use MCP to inspect the Unity project, then design the ECS architecture.",
-    "Publish the approved design via SendMessage to ALL teammates (unity-dev, data-tool, tester) as soon as it is ready.",
-    "Design must include: scope, ECS data model, system layout, baker/authoring plan, performance constraints, acceptance criteria, open risks.",
-    "After publishing, remain active to answer follow-up questions and review any design deviations flagged by other agents."
-  ]
-}
-```
-
-### Unity Dev
-
-```json
-{
-  "name": "unity-dev",
-  "team_name": "unity-dots-team",
-  "subagent_type": "unity-dev",
-  "mode": "bypassPermissions",
-  "prompt": [
-    "@SETUP.md",
-    "@skills/unity-dev/role.md",
-    "@skills/unity-dev/skills.md",
-    "@skills/unity-dev/rules.md",
-    "@skills/unity-dev/subagents.md",
-    "@architecture.md",
-    "@mcp-integration.md",
-    "@.claude/skills/unity-dots-best-practices/SKILL.md",
-    "@.claude/skills/qa-validation/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait on Architect.",
-    "Start implementation from your best understanding of the task requirements.",
-    "As soon as Architect's design arrives via SendMessage, reconcile it with your in-progress work and self-correct.",
-    "Delegate complex code to your subagents (code-generator, job-optimizer, burst-validator, memory-checker).",
-    "Surface blockers and performance risks immediately via SendMessage to team lead.",
-    "On completion, SendMessage to team lead with: implemented systems, known risks, deferred items."
-  ]
-}
-```
-
-### Data Tool (full mode only)
-
-```json
-{
-  "name": "data-tool",
-  "team_name": "unity-dots-team",
-  "subagent_type": "data-tool",
-  "mode": "bypassPermissions",
-  "prompt": [
-    "@SETUP.md",
-    "@skills/data-tool/role.md",
-    "@skills/data-tool/skills.md",
-    "@skills/data-tool/rules.md",
-    "@skills/data-tool/subagents.md",
-    "@architecture.md",
-    "@mcp-integration.md",
-    "@.claude/skills/editor-data-tools/SKILL.md",
-    "@.claude/skills/qa-validation/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait on Unity Dev.",
-    "Begin planning tooling based on your understanding of what instruments and diagnostics the task needs.",
-    "As Unity Dev's implementation or Architect's design arrives via SendMessage, self-correct tooling scope and approach.",
-    "Delegate to your subagents (debug-tool-builder, data-inspector, logging-analyzer, pipeline-builder).",
-    "Do NOT silently change runtime behavior. Any tooling that touches runtime logic must be reviewed.",
-    "On completion, SendMessage to team lead with: tools added, validators, diagnostics, open blind spots."
-  ]
-}
-```
-
-### Tester (full mode only)
-
-```json
-{
-  "name": "tester",
-  "team_name": "unity-dots-team",
-  "subagent_type": "tester",
-  "mode": "bypassPermissions",
-  "prompt": [
-    "@SETUP.md",
-    "@skills/tester/role.md",
-    "@skills/tester/skills.md",
-    "@skills/tester/rules.md",
-    "@skills/tester/subagents.md",
-    "@architecture.md",
-    "@mcp-integration.md",
-    "@.claude/skills/qa-validation/SKILL.md",
-    "@.claude/skills/editor-data-tools/SKILL.md",
-    "\nTask: $ARGUMENTS\n\nWORK IMMEDIATELY. Do not wait on Data Tool or Unity Dev.",
-    "Begin outlining the test matrix, stress scenarios, and acceptance criteria based on the task requirements.",
-    "As Architect's design, Unity Dev's implementation notes, or Data Tool's tooling arrive via SendMessage, self-correct your test plan.",
-    "Run tests as soon as code is available — do not wait for tooling. Use MCP for test execution and evidence capture.",
-    "Delegate to your subagents (test-generator, stress-tester, race-condition-detector, performance-analyzer).",
-    "Block completion if correctness or stability gates fail. Return issues to the responsible agent.",
-    "On sign-off, SendMessage to team lead with: test results, stress outcomes, open defects, sign-off status."
-  ]
-}
-```
+No agent waits on another. No agent runs a checklist before starting.
 
 ---
 
-## STEP 4: Create Tasks
+## Quality gates
 
-```json
-TaskCreate: { "subject": "ECS architecture design",        "status": "in_progress" }
-TaskCreate: { "subject": "ECS implementation",             "status": "in_progress" }
-TaskCreate: { "subject": "Tooling and diagnostics",        "status": "in_progress" }  // full mode
-TaskCreate: { "subject": "Validation and QA",              "status": "in_progress" }  // full mode
-TaskUpdate: { "taskId": "1", "owner": "architect" }
-TaskUpdate: { "taskId": "2", "owner": "unity-dev" }
-TaskUpdate: { "taskId": "3", "owner": "data-tool" }         // full mode
-TaskUpdate: { "taskId": "4", "owner": "tester" }            // full mode
-```
+| # | Rule | Enforcer |
+|---|---|---|
+| G1 | Implementation matches Architect's design; deviations escalate | unity-dev → architect |
+| G2 | Tooling does not silently change runtime behavior | data-tool |
+| G3 | Correctness + stress evidence required for sign-off | tester |
+| G4 | No completion while regressions remain open | tester |
 
 ---
 
-## Agent Self-Correction Protocol
-
-When an agent receives upstream data (design, implementation, tooling), it must:
-
-1. **Compare** incoming data against its current working assumptions.
-2. **Identify** conflicts, gaps, or scope changes.
-3. **Self-correct** — update its own plan, code, or test matrix.
-4. **Log** what changed and why via SendMessage to team lead.
-5. **Flag** any unresolved conflicts to the responsible upstream agent.
-
-No agent is blocked waiting. No agent waits for a perfect upstream signal before starting.
-
----
-
-## MCP Rule
-
-**Always prefer Unity MCP** over guessing project state.
-- Available: use for project inspection, ECS authoring checks, logs, and test execution.
-- Unavailable: state *"Running without MCP evidence"* and fall back to source code reasoning.
-
----
-
-## Quality Gates
-
-| Gate | Rule | Enforcer |
-|------|------|----------|
-| G1 | Implementation matches Architect's published design; deviations escalate | Unity Dev → Architect |
-| G2 | Tooling does not silently change runtime behavior | Data Tool |
-| G3 | Correctness + stress evidence required for sign-off | Tester |
-| G4 | No completion while regressions remain open | Tester |
-
----
-
-## Completion Output Format
+## Completion output
 
 ```
-[Team: unity-dots-team] — Done
+[Team] Done
 
 [Architect]
   <design decisions, acceptance criteria>
 
 [Unity Dev]
-  <implemented systems, self-corrections made, known risks>
+  <implemented systems, self-corrections, known risks>
 
-[Data Tool]  ← full mode
+[Data Tool]     ← --full only
   <tools added, validators, diagnostics>
 
-[Tester]     ← full mode
+[Tester]        ← --full only
   <test results, stress outcomes, open defects, sign-off>
 
-Self-corrections: <list of updates made when upstream data arrived>
+Lessons saved to memory: <count>
 Open risks: <list>
 Next steps: <list>
 ```
@@ -268,9 +168,12 @@ Next steps: <list>
 ## Usage
 
 ```sh
-# Fast mode — Architect + Unity Dev in parallel
-/team Add a health system with damage and death states --fast
+# Two-agent fast mode (default)
+/team Add a health system with damage and death states
 
-# Full mode — All 4 agents in parallel
-/team Add stamina regeneration with cooldowns
+# Four-agent full mode
+/team Add stamina regeneration with cooldowns --full
+
+# Force experimental Teams backend (requires the env flag)
+/team Refactor inventory --full --teams
 ```

@@ -1,72 +1,57 @@
 ---
 name: start-unity-dots-team
-description: Start a 4-role Unity DOTS agent team using architect, unity-dev, data-tool, and tester. Invoke manually for feature work that benefits from coordinated design, implementation, tooling, and QA.
-argument-hint: "[task]"
-disable-model-invocation: true
+description: Reference notes for the /team command. Documents how the 4-role Unity DOTS agent team (architect, unity-dev, data-tool, tester) boots with ai-game-developer MCP and agentmemory integration. The runnable entrypoint is the /team command — this skill is loaded by it.
 ---
 
-Before doing any real work, enforce this preflight:
+# Start Unity DOTS Team
 
-1. Confirm Agent Team mode is enabled through `~/.claude/settings.json`.
-2. Required user-level configuration:
+This skill is reference material for the `/team` command. The full execution logic lives in `@.claude/commands/team.md`.
 
-```sh
-cat > ~/.claude/settings.json << 'EOF'
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "preferences": {
-    "tmuxSplitPanes": true
-  }
-}
-EOF
+## Preflight Order
+
+1. Run `python .claude/scripts/preflight.py --verbose` (cross-platform check for Agent Team mode, MCP availability, tmux).
+2. If preflight reports `agent-team-mode: missing` → ask user to enable per `~/.claude/settings.json` block in `@.claude/docs/setup.md`. Continue in single-session fallback if not enabled.
+3. If preflight reports `mcp:ai-game-developer: missing` → state "Running without MCP evidence"; continue with code-only reasoning.
+4. If preflight reports `mcp:agentmemory: missing` → state "Running without memory recall"; continue without cross-session memory.
+
+## Execution
+
+Delegate the rest to `@.claude/commands/team.md` with `$ARGUMENTS` forwarded as the task description.
+
+```
+Task: $ARGUMENTS
 ```
 
-3. If Agent Team mode is not enabled, stop and instruct the user to run the exact command above.
-4. If tmux panes are unavailable, continue in degraded mode.
+## Required Skill Loading (forwarded to each role)
 
-Create a Unity DOTS agent team for this task:
+| Role | Skill Files |
+|---|---|
+| Architect | `@.claude/skills/architect/SKILL.md`, `@.claude/skills/unity-dots-best-practices/SKILL.md` |
+| Unity Dev | `@.claude/skills/unity-dev/SKILL.md`, `@.claude/skills/unity-dots-best-practices/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md` |
+| Data Tool | `@.claude/skills/data-tool/SKILL.md`, `@.claude/skills/editor-data-tools/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md` |
+| Tester | `@.claude/skills/tester/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md`, `@.claude/skills/editor-data-tools/SKILL.md` |
 
-$ARGUMENTS
+All roles additionally load:
+- `@.claude/docs/setup.md`
+- `@.claude/docs/architecture.md`
+- `@.claude/docs/mcp-integration.md`
 
-Team creation rules:
+## MCP & Memory Rules (forwarded)
 
-1. Activate Agent Team mode and create exactly 4 active agents:
-   - `architect`
-   - `unity-dev`
-   - `data-tool`
-   - `tester`
-2. Assign each agent:
-   - its role
-   - its full skill set
-   - its internal subagents
-3. Load all package skill definitions before task execution:
-   - `./skills/architect/*`
-   - `./skills/unity-dev/*`
-   - `./skills/data-tool/*`
-   - `./skills/tester/*`
-   - `./.claude/skills/*`
-4. Do not ignore any skill definition in the package.
-5. Each role must internally delegate complex work to subagents instead of solving everything directly.
+- **Always prefer `ai-game-developer` MCP over guessing project state.**
+- **Every agent calls `mcp__agentmemory__memory_recall` at start and `mcp__agentmemory__memory_lesson_save` at completion.**
+- Team lead calls `mcp__agentmemory__memory_reflect` once per `/team` run.
 
-Execution requirements:
+## Completion Output
 
-1. Architect goes first and publishes a design before any implementation starts.
-2. Unity Developer follows the approved design strictly.
-3. Data Tool Engineer provides data processing, editor tools, validators, and debugging helpers as needed.
-4. Tester validates behavior, race risk, stress limits, regressions, and acceptance criteria before sign-off.
-5. ALWAYS prefer MCP over guessing project state.
-6. If Unity MCP is available, use it for project inspection, ECS-related authoring inspection, buffers, logs, tests, and runtime-facing state.
-7. If Unity MCP is unavailable, fall back to code reading and reasoning and state that MCP evidence is unavailable.
-8. Loop on defects until stable.
+Each agent reports back to team lead via SendMessage (Teams mode) or final return (Agent-tool mode):
 
-Completion requirements:
+```
+[<role>]
+  Implemented / Designed / Tested:
+  Open risks:
+  Lessons saved to memory:
+  Next steps:
+```
 
-- Summarize architecture decisions, implementation status, tooling added, validation results, open risks, and next steps.
-- Keep the output structured by role.
-- Clean up the team only after all teammate work is complete.
-
-Fallback:
-
-- If agent teams are unavailable, emulate the same 4-role workflow in a single session while preserving the same gates, skill loading, and subagent behavior.
+Fallback: if Agent Teams mode is unavailable, `/team` runs the same 4-role flow sequentially in a single session — gates, skills, subagents, and MCP/memory calls are preserved.

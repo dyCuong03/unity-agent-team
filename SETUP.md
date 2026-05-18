@@ -1,165 +1,160 @@
-# Unity DOTS Agent Team — SETUP
+# Unity DOTS Agent Team — Installer
 
-> **Purpose**: Production-oriented AI Agent Team for Unity DOTS development.
-> **Architecture**: 1 top-level team + 4 fixed roles + internal subagents per role.
-> **Rule**: No additional top-level roles. No coding before Architect design approval.
+**You (Claude) were invoked with this file as input.** Treat the rest of this document as an executable install task for the user's Unity project. Do not just summarize it — perform the install.
 
----
+## Context
 
-## Hard Constraints — Non-Negotiable
-
-| Constraint | Rule |
-|---|---|
-| **1 role = 1 agent = 1 pane** | Each of the 4 roles spawns exactly ONE agent instance. |
-| **No duplicate agents** | No "-2", "-3", etc. under any condition. No retry-based duplication. |
-| **No dynamic agent spawning** | The 4-agent team is fixed at boot. No additional top-level agents. |
-| **Subagents are internal only** | Subagents run within the parent agent. They MUST NOT create panes, tabs, or top-level agents. |
-| **Team lead = coordination only** | The team lead (Claude instance running `/team`) does NOT execute tasks, does NOT appear in agent panes, creates NO panes. |
-| **Pane count = agent count** | Total panes MUST equal exactly 4 (one per role). No extra panes. |
-| **No UI creation from subagents** | Subagents must never open tmux panes, windows, or tabs. All UI belongs to the 4 main agents. |
-
-**Violation of any constraint = STOP and escalate.**
-
----
-
-## Phase 1 — Boot (Team Lead Only)
-
-Phase 1 is executed by the **team lead** (the Claude instance that runs `/team`). It must complete in one pass.
+The user cloned this repo into their Unity project root, so the layout is:
 
 ```
-STEP 1 → Verify preflight
-STEP 2 → Create tmux session (claude-work)  [optional; degrade gracefully if unavailable]
-STEP 3 → Create Agent Team
-STEP 4 → Spawn exactly 4 agents, one per role, with mode: bypassPermissions
-         Each agent prompt contains its role + skill files.
-STEP 5 → Done. Agents self-configure (Phase 2).
+<project-root>/                          ← user's Unity project; this is your CWD
+├── Assets/                              ← may or may not exist; do not touch
+├── ProjectSettings/                     ← may or may not exist; do not touch
+├── unity-agent-team-publish/            ← this repo (clone target)
+│   ├── .claude/                         ← source of truth for the install
+│   │   ├── agents/
+│   │   ├── commands/
+│   │   ├── docs/
+│   │   ├── scripts/
+│   │   ├── skills/
+│   │   └── CLAUDE.md
+│   ├── SETUP.md                         ← this file
+│   ├── README.md
+│   └── LICENSE
+└── .claude/                             ← target (may or may not exist yet)
 ```
 
-### Phase 1 — Preflight
+Your job: copy `unity-agent-team-publish/.claude/` into `<project-root>/.claude/`, merging cleanly with anything already there.
 
-1. **Agent Team mode not enabled** → STOP. Instruct user with exact command.
-2. **tmux unavailable** → Continue in degraded mode (no session).
-3. **Always operate as multi-agent** when possible.
+## Steps
 
-### Phase 1 — Enable Agent Team Mode
+### 1. Verify you are in the right place
 
-Required `~/.claude/settings.json`:
+Confirm both of these exist:
+- `unity-agent-team-publish/.claude/commands/team.md`
+- `unity-agent-team-publish/.claude/agents/architect.md`
 
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "preferences": {
-    "tmuxSplitPanes": true,
-    "autoBypassPermissions": true
-  }
-}
+If either is missing, stop and tell the user the clone is incomplete or they are running from the wrong directory.
+
+### 2. Audit the source pack
+
+Run the bundled validator if Python is available:
+```
+python unity-agent-team-publish/.claude/scripts/validate_skill_pack.py
+```
+Report any issues to the user before proceeding. If Python is not available, skip and note it.
+
+### 3. Detect existing `.claude/` in the target
+
+Check whether `<project-root>/.claude/` already exists.
+
+- **If no:** safe full copy in step 4.
+- **If yes:** list what's already inside (`agents/`, `commands/`, `skills/`, `CLAUDE.md`, etc.) and ask the user one question with `AskUserQuestion`:
+  - **Merge** — copy only files that don't exist; skip conflicts and list them for the user to resolve manually. *(Recommended; preserves user's work.)*
+  - **Overwrite** — overwrite conflicting files with this pack's versions.
+  - **Abort** — don't install; let the user resolve manually.
+
+### 4. Copy `.claude/` contents
+
+Choose the platform-appropriate command. The user's shell is reported in the session context — check `$env:OS` or the platform info.
+
+**Windows / PowerShell:**
+```powershell
+Copy-Item -Path "unity-agent-team-publish/.claude/*" -Destination ".claude/" -Recurse -Force
+```
+(use `-Force` only if user chose "Overwrite" in step 3; omit it for "Merge")
+
+**macOS / Linux / Git-Bash:**
+```sh
+mkdir -p .claude && cp -rn unity-agent-team-publish/.claude/. .claude/   # merge (no clobber)
+# or
+mkdir -p .claude && cp -rf unity-agent-team-publish/.claude/. .claude/   # overwrite
 ```
 
-### Phase 1 — Create Team
+Copy these subdirectories: `agents/`, `commands/`, `docs/`, `scripts/`, `skills/`, plus the top-level `CLAUDE.md`.
 
-```json
-{
-  "team_name": "unity-dots-team",
-  "description": "Unity DOTS agent team — architect, unity-dev, data-tool, tester"
-}
+If `<project-root>/.claude/CLAUDE.md` already exists and differs, **never silently overwrite it** — ask the user whether to merge content (append a "## Unity DOTS Agent Team" section) or skip. The CLAUDE.md is the user's project-wide instruction file; corrupting it can break their other workflows.
+
+### 5. Verify the install
+
+Check that the target now contains:
+- `<project-root>/.claude/agents/architect.md`
+- `<project-root>/.claude/agents/unity-dev.md`
+- `<project-root>/.claude/agents/data-tool.md`
+- `<project-root>/.claude/agents/tester.md`
+- `<project-root>/.claude/commands/team.md`
+- `<project-root>/.claude/skills/architect/SKILL.md`
+- `<project-root>/.claude/skills/unity-dev/SKILL.md`
+- `<project-root>/.claude/skills/data-tool/SKILL.md`
+- `<project-root>/.claude/skills/tester/SKILL.md`
+- `<project-root>/.claude/skills/unity-dots-best-practices/SKILL.md`
+- `<project-root>/.claude/skills/editor-data-tools/SKILL.md`
+- `<project-root>/.claude/skills/qa-validation/SKILL.md`
+- `<project-root>/.claude/skills/start-unity-dots-team/SKILL.md`
+- `<project-root>/.claude/docs/setup.md`
+- `<project-root>/.claude/docs/architecture.md`
+- `<project-root>/.claude/docs/mcp-integration.md`
+- `<project-root>/.claude/scripts/preflight.py`
+
+Run the validator again against the installed copy if Python is available:
+```
+python .claude/scripts/validate_skill_pack.py
 ```
 
-### Phase 1 — Spawn 4 Agents (Fixed Structure)
+### 6. Check MCP servers
 
-Spawn **exactly 4 agents in parallel**, one per role. Each role must appear **once and only once**. No duplicates.
+Look in `~/.claude/settings.json` (or `~/.claude/mcp.json`) for these two server registrations:
+- `ai-game-developer`
+- `agentmemory`
 
-Spawn all 4 using this template:
+If either is missing, **do not register it for the user** — instead tell them which is missing and link them to the relevant install docs. The agent team will still boot without them but in degraded mode (agents will say "Running without MCP evidence" / "Running without memory recall").
 
-```json
-{
-  "name": "<role-name>",
-  "team_name": "unity-dots-team",
-  "subagent_type": "general-purpose",
-  "mode": "bypassPermissions",
-  "prompt": [
-    "@SETUP.md",
-    "@skills/<role>/role.md",
-    "@skills/<role>/skills.md",
-    "@skills/<role>/rules.md",
-    "@skills/<role>/subagents.md",
-    "<task description>",
-    "Phase 1 complete. You are now in Phase 2: self-configure.",
-    "Load all referenced files in your prompt. Then begin your role."
-  ]
-}
+### 7. Decide whether to keep `unity-agent-team-publish/`
+
+Ask the user with `AskUserQuestion`:
+- **Keep the clone in the project** — future updates are a single `git pull` inside it. *(Recommended for teams that want to track upstream.)*
+- **Delete the clone** — the installed copy under `.claude/` is self-sufficient; the clone was only a delivery vehicle.
+
+If they pick delete, remove `unity-agent-team-publish/` (Windows: `Remove-Item -Recurse -Force unity-agent-team-publish`; POSIX: `rm -rf unity-agent-team-publish`). Confirm with the user before removing.
+
+### 8. Report
+
+Print a short report:
 ```
+Installed:
+  agents:   <count>      (architect, unity-dev, data-tool, tester)
+  commands: <count>      (/team)
+  skills:   <count>      (architect, unity-dev, data-tool, tester,
+                          unity-dots-best-practices, editor-data-tools,
+                          qa-validation, start-unity-dots-team)
+  docs:     <count>      (setup, architecture, mcp-integration)
+  scripts:  <count>      (preflight, dots_scan, validate_skill_pack)
 
-#### Roles and Names (exactly one each)
+MCP servers:
+  ai-game-developer: <present | MISSING>
+  agentmemory:       <present | MISSING>
 
-| Role | Agent Name |
-|------|-----------|
-| ECS Architect | `architect` |
-| Unity Developer | `unity-dev` |
-| Data Tool Engineer | `data-tool` |
-| Tester / QA | `tester` |
+Conflicts resolved: <count>  (list if any)
+Files skipped:      <count>  (list if any)
 
-**Do not spawn any additional agents.** The team is fixed.
+Next: from this project root, run
+  /team <your-task>          # fast mode (architect + unity-dev)
+  /team <your-task> --full   # all four agents
+```
 
 ---
 
-## Phase 2 — Self-Configure (Each Agent, Parallel)
+## What this installer does NOT do
 
-Once spawned, **each agent independently**:
+- It does not modify `~/.claude/settings.json` (user-level config — owned by the user).
+- It does not register MCP servers (the user manages those).
+- It does not enable the experimental `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` flag (opt-in only — see `README.md`).
+- It does not touch Unity project files (`Assets/`, `ProjectSettings/`, `Packages/`).
 
-1. Reads all files in its prompt.
-2. Loads `@architecture.md` and `@mcp-integration.md` if not already loaded.
-3. Loads runtime skills from `@.claude/skills/*` applicable to its role.
-4. Sets up internal subagents from `@skills/<role>/subagents.md`. Subagents run **inside the agent's context only** — no pane creation, no top-level promotion.
-5. Confirms readiness to team lead via message.
-6. Awaits Architect design → begins work.
+## If something goes wrong
 
-### Phase 2 — Per-Role Skill Loading
+- Source files missing → re-clone the repo.
+- Permission errors copying → user lacks write access to project root; have them fix permissions and re-run.
+- Validator reports frontmatter errors → check `.claude/scripts/validate_skill_pack.py` output; report verbatim to the user. Do not attempt auto-repair.
 
-| Role | Additional Files to Load |
-|------|--------------------------|
-| **Architect** | `@.claude/skills/unity-dots-best-practices/SKILL.md` |
-| **Unity Dev** | `@.claude/skills/unity-dots-best-practices/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md` |
-| **Data Tool Engineer** | `@.claude/skills/editor-data-tools/SKILL.md`, `@.claude/skills/qa-validation/SKILL.md` |
-| **Tester** | `@.claude/skills/qa-validation/SKILL.md`, `@.claude/skills/editor-data-tools/SKILL.md` |
-
----
-
-## Shared Architecture (Phase 2 Reference)
-
-| File | Purpose |
-|------|---------|
-| `@architecture.md` | ECS architecture patterns and templates |
-| `@mcp-integration.md` | Unity MCP operating procedures |
-
----
-
-## Non-Negotiable Rules Summary
-
-| # | Rule |
-|---|------|
-| 1 | **Phase 1 is team-lead only.** Agents do NOT exist yet. |
-| 2 | **1 role = 1 agent = 1 pane.** Exact match always. |
-| 3 | **No duplicate agents** under any condition. |
-| 4 | **Subagents are internal.** No panes, no top-level promotion. |
-| 5 | **Team lead = coordination only.** No task execution, no panes. |
-| 6 | Spawn all 4 agents **in parallel** with `mode: "bypassPermissions"`. |
-| 7 | Each agent self-loads its skills — team lead does NOT pre-load them. |
-| 8 | Architect approval is **required** before implementation begins. |
-| 9 | No extra top-level agents. |
-| 10 | **Always prefer MCP over guessing.** |
-| 11 | Each role delegates complex work to internal subagents. |
-
----
-
-## Top-Level Roles (Fixed — One Per Role)
-
-| # | Role | Agent Name | Core Responsibility |
-|---|------|-------------|---------------------|
-| 1 | **Architect** | `architect` | ECS design, boundaries, update order, acceptance criteria, risks |
-| 2 | **Unity Developer** | `unity-dev` | DOTS/ECS implementation, jobs, bakers, runtime logic |
-| 3 | **Data Tool Engineer** | `data-tool` | Data pipelines, editor tools, inspectors, debug/diagnostics utilities |
-| 4 | **Tester / QA** | `tester` | Functional, regression, determinism, stress, and performance validation |
-
-**No other top-level roles exist. No agents beyond these 4.**
+After install, the user should be able to run `/team <task>` from the project root.

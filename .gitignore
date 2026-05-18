@@ -1,0 +1,7 @@
+# Local Claude Code settings — never publish
+.claude/settings.local.json
+
+# Tool-local state
+.serena/
+__pycache__/
+*.pyc

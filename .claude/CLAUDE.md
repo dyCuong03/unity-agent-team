@@ -2,156 +2,104 @@
 
 This project packages a reusable Claude Code team for Unity DOTS development.
 
-## Required Runtime Setup
+## Philosophy
 
-Before executing any task, Agent Team mode must be enabled.
+**Agents start work the moment they're spawned.** No blocking preflight, no checklist before doing the task. MCP and memory tools are pulled when actually needed, not as ceremony.
 
-Required user-level configuration:
+## Required MCP Servers
 
-```sh
-cat > ~/.claude/settings.json << 'EOF'
+| Server | Purpose |
+|---|---|
+| `ai-game-developer` | Unity Editor introspection and mutation |
+| `agentmemory` | Cross-session memory (recall, save, consolidate, reflect) |
+
+If either is unavailable, agents state the fallback once and keep working. See `@.claude/docs/mcp-integration.md`.
+
+## Optional: Experimental Agent Teams Mode
+
+The default `/team` uses the standard `Agent` tool — no setup required. To opt in to the experimental teams mode with tmux panes, add to `~/.claude/settings.json`:
+
+```json
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "preferences": {
-    "tmuxSplitPanes": true
-  }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "preferences": { "tmuxSplitPanes": true }
 }
-EOF
 ```
 
-Runtime rules:
-
-- If Agent Team mode is not enabled, stop and instruct the user to enable it with the exact command above.
-- If tmux panes are unavailable, continue in degraded mode.
-- Always operate as a multi-agent system when possible.
+Then run `/team <task> --teams`.
 
 ## Team Activation
 
-When this package is used for task execution:
+When this package handles a task:
 
-1. Activate Agent Team mode.
-2. Create exactly these 4 active agents:
-   - `architect`
-   - `unity-dev`
-   - `data-tool`
-   - `tester`
-3. Assign each agent its role, skill set, and internal subagents.
-4. Load all package skills before real work starts.
+1. Run `python .claude/scripts/preflight.py` (informational, never blocks).
+2. Spawn the 4 fixed roles in parallel — `architect`, `unity-dev`, `data-tool`, `tester` (or just 2 in `--fast` mode).
+3. Each agent self-loads its skills via `@`-imports and starts work immediately.
 
-Preferred manual entrypoints:
+Entrypoints:
+- `/team <task>` (default — fast, 2 agents)
+- `/team <task> --full` (all 4 agents)
 
-- `/team <task>`
-- `/start-unity-dots-team <task>`
+## Skill Files
 
-## Mandatory Skill Loading
-
-Load and apply:
-
-- `./skills/architect/*`
-- `./skills/unity-dev/*`
-- `./skills/data-tool/*`
-- `./skills/tester/*`
-- `./.claude/skills/*`
-
-Do not ignore any skill definition in this package.
-
-## Runnable Package Entry
-
-Use `/team <task>` as the main runnable package entrypoint.
-
-`/team` must:
-
-- load `@SETUP.md`
-- load `@architecture.md`
-- load `@mcp-integration.md`
-- load all role skill files under `./skills/*`
-- apply the runtime skills under `./.claude/skills/*`
-- create and run the 4-role team with the required gates
-
-`SETUP.md` is the source prompt definition.
-`.claude/commands/team.md` is the Claude Code executable command wrapper for it.
+| Location | Purpose |
+|---|---|
+| `.claude/skills/<role>/SKILL.md` | Per-role brief (architect, unity-dev, data-tool, tester) |
+| `.claude/skills/unity-dots-best-practices/SKILL.md` | Shared DOTS guidance |
+| `.claude/skills/editor-data-tools/SKILL.md` | Shared editor tooling guidance |
+| `.claude/skills/qa-validation/SKILL.md` | Shared QA guidance |
+| `.claude/skills/start-unity-dots-team/SKILL.md` | Reference notes for `/team` |
 
 ## Execution Order
 
-1. Architect designs first.
-2. Unity Developer implements the approved ECS design.
-3. Data Tool Engineer adds data processing, editor tooling, validators, and debugging helpers.
-4. Tester validates correctness, stress behavior, and regression safety.
-5. Loop until stable.
+1. **Architect** publishes a design. Other agents may have already started in parallel and reconcile when it arrives.
+2. **Unity Dev** implements, escalating any design conflict.
+3. **Data Tool** adds tooling, validators, diagnostics.
+4. **Tester** validates and blocks completion until evidence supports sign-off.
+5. Loop on defects.
 
 ## Architect Gate
 
-No coding starts before the Architect publishes a usable design.
-
-The design must include:
-
-- feature scope
+The design must cover:
+- Feature scope
 - ECS data model
-- entity/component ownership
-- system responsibilities and update order
-- baker and authoring conversion plan
-- performance constraints
-- acceptance criteria
-- known risks
+- Entity / component ownership
+- System responsibilities and update order
+- Baker / authoring conversion plan
+- Performance constraints
+- Acceptance criteria
+- Known risks
+
+Once published, unity-dev / data-tool / tester self-correct against it.
 
 ## Subagent Rule
 
-Each role must internally delegate complex work to its subagents instead of solving everything directly.
+Each role delegates non-trivial work to its internal subagents (listed in `.claude/skills/<role>/SKILL.md`). Subagents stay inside the parent agent — no panes, no top-level promotion.
 
-## Unity MCP Rule
+## MCP & Memory Rule
 
-Always prefer MCP over guessing project state.
-
-Use Unity MCP whenever available for:
-
-- reading project structure
-- inspecting ECS-related authoring objects, components, and serialized data
-- analyzing buffers and runtime-facing state
-- debugging logs, tests, and Unity-side state
-
-If MCP is unavailable, fall back to code reading and reasoning, and state that the task is running without MCP evidence.
+- **Prefer `ai-game-developer` MCP over guessing Unity-side state** — but only when you actually need to verify or mutate Unity state. Don't pull tools as ceremony.
+- **Use `agentmemory` when prior work likely exists** — recall and search. Save a lesson at handoff only when it's non-obvious.
+- If a tool is unavailable, state "Running without MCP evidence" / "Running without memory recall" once and continue.
 
 ## Unity DOTS Rules
 
-- Prefer `IComponentData`, `IBufferElementData`, `BlobAsset`, `Aspect`, `ISystem`, jobs, and Burst where appropriate.
-- Optimize for data layout, cache locality, and predictable frame cost.
-- Avoid managed allocations and object-style architecture in hot runtime paths.
-- Minimize structural changes in tight loops.
-- Keep authoring and editor code separate from runtime logic.
-- Treat sync points, main-thread work, and archetype churn as explicit costs.
+- Prefer `IComponentData`, `IBufferElementData`, `BlobAssetReference<T>`, `IAspect`, `ISystem`, jobs, and Burst.
+- Optimize for data layout, cache locality, predictable frame cost.
+- No managed allocations in hot paths.
+- Minimize structural changes in tight loops (ECB or enableable components).
+- Keep authoring/editor code separate from runtime (asmdef boundaries).
+- Sync points, main-thread work, and archetype churn are explicit costs.
 
 ## Role Boundaries
 
-### Architect
+| Role | Owns | Must not |
+|---|---|---|
+| Architect | Design, ECS boundaries, update flow, acceptance criteria | Code |
+| Unity Dev | Runtime implementation | Change architecture without approval |
+| Data Tool | Editor tools, validators, diagnostics | Silently change runtime behavior |
+| Tester | Test cases, stress, regression, sign-off | Approve without evidence |
 
-- Owns system design, ECS boundaries, update flow, and acceptance criteria.
-- Must approve any design deviation.
+## Communication
 
-### Unity Developer
-
-- Implements from the approved design only.
-- Must surface blockers, risks, and performance tradeoffs early.
-
-### Data Tool Engineer
-
-- Owns data processing, editor tools, validation utilities, and debugging helpers.
-- Must not silently change runtime architecture.
-
-### Tester / QA
-
-- Owns test cases, stress testing, validation, regression coverage, and sign-off.
-- Must block completion if correctness or stability is unverified.
-
-## Communication Rules
-
-Every handoff must include:
-
-- objective
-- inputs
-- outputs
-- constraints
-- open risks
-
-Keep updates concise and technical. If implementation conflicts with design, stop and escalate to the Architect. If tests fail, return the issue to the responsible role and continue the loop.
+Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.

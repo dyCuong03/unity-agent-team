@@ -1,199 +1,208 @@
 # Unity DOTS Agent Team
 
-A reusable, multi-agent Claude Code workflow for Unity DOTS development — coordinating Architect, Unity Developer, Data Tool Engineer, and Tester roles with enforced quality gates.
+A reusable, multi-agent Claude Code workflow for Unity DOTS development — Architect, Unity Developer, Data Tool Engineer, and Tester roles spawned in parallel and wired to `ai-game-developer` (Unity MCP) and `agentmemory`.
 
-## What Is This?
+## Philosophy
 
-This package turns Claude Code into a structured DOTS development team. Four specialized agents work in sequence — each with a defined role, skill set, and subagents — to design, implement, instrument, and validate ECS systems.
-
-It is designed for **production DOTS projects**, not toy examples. The framework enforces role isolation, MCP-backed evidence, and explicit validation before any work is marked complete.
+**Agents start work the moment they're spawned.** No blocking preflight. Pull MCP and memory tools only when actually needed.
 
 ---
 
-## Quick Start
+## Install in another Unity project
 
-### 1. Enable Agent Team Mode
-
-Before running the team, add this to your Claude Code settings:
+Everything ships under `.claude/`. Recommended install (Claude does the work):
 
 ```sh
-mkdir -p ~/.claude && cat > ~/.claude/settings.json << 'EOF'
+# from your Unity project root:
+git clone git@github.com:dyCuong03/unity-agent-team.git unity-agent-team-publish
+claude unity-agent-team-publish/SETUP.md
+```
+
+Claude reads `SETUP.md` and runs the installer end-to-end: it audits the source pack, detects any existing `.claude/` in your project, asks before overwriting, copies the pack under `<project>/.claude/`, verifies the install, and reports MCP server status.
+
+### Manual install (if you prefer)
+
+1. Copy this package's `.claude/` directory into your project root.
+   - If your project already has a `.claude/` folder, **merge** rather than overwrite. The skill, agent, and command names here don't collide with Claude Code defaults.
+   - Result: `<your-project>/.claude/agents/`, `<your-project>/.claude/skills/`, `<your-project>/.claude/commands/team.md`, `<your-project>/.claude/docs/`, `<your-project>/.claude/scripts/`.
+2. Register the required MCP servers (see below).
+3. From your project root, run `/team <task>` in Claude Code.
+
+All `@-imports` inside this pack are written as `@.claude/...` so they resolve from the project root regardless of where you install Claude Code.
+
+---
+
+## Required MCP servers
+
+| Server | Purpose |
+|---|---|
+| `ai-game-developer` | Unity Editor introspection and mutation |
+| `agentmemory` | Cross-session memory |
+
+If either is unavailable, agents state the fallback ("Running without MCP evidence" / "Running without memory recall") and continue.
+
+---
+
+## Optional: experimental Agent Teams mode
+
+The default `/team` uses the standard `Agent` tool — works everywhere, zero config. For tmux panes per agent, opt in by adding this to your **user-level** `~/.claude/settings.json` (not project-level — do not commit this):
+
+```json
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "preferences": {
-    "tmuxSplitPanes": true
-  }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "preferences": { "tmuxSplitPanes": true }
 }
-EOF
 ```
 
-Restart Claude Code, then run:
+Then run `/team <task> --teams`. Without the flag and env var, `--teams` is ignored.
 
-```
-/team <your task description>
-```
+---
 
-Example:
+## Usage
 
-```
-/team Add a health system with damage, healing, and death states
+```sh
+# Fast mode — Architect + Unity Dev (default)
+/team Add a health system with damage and death states
+
+# Full mode — all 4 agents
+/team Add stamina regeneration with cooldowns --full
+
+# Force experimental Teams backend (requires the env flag above)
+/team Refactor inventory --full --teams
 ```
 
 ---
 
-## Team Roles
+## Team roles
 
 ### Architect
-Designs the ECS architecture before any code is written. Owns:
-- Component, buffer, and blob asset design
-- System boundaries and update order
-- Baker and authoring conversion strategy
-- Performance constraints and acceptance criteria
-
-**Gate:** No implementation starts until the Architect publishes a design.
+Designs the ECS architecture: components, buffers, blob assets, system boundaries, update order, baker strategy, acceptance criteria. **Gate:** unity-dev must reconcile to the design before completion.
 
 ### Unity Developer
-Implements the approved ECS design. Owns:
-- Systems, jobs, bakers, and data plumbing
-- Burst validation and memory-conscious code
-- Early surfacing of blockers and performance risks
-
-**Gate:** Must follow the Architect's design exactly; deviations require Architect review.
+Implements the ECS design: systems, jobs, bakers, runtime logic. All C# edits via `mcp__ai-game-developer__script-update-or-create` to keep Unity's AssetDatabase coherent.
 
 ### Data Tool Engineer
-Adds tooling and observability. Owns:
-- Editor utilities and inspection helpers
-- Validators and data pipelines
-- Debug visualizations and logging channels
-
-**Gate:** Must not silently change runtime architecture.
+Builds editor tooling, validators, inspectors, diagnostics. **Gate:** must not silently change runtime behavior.
 
 ### Tester / QA
-Validates correctness and stability. Owns:
-- Functional and stress test cases
-- Determinism and race-risk checks
-- Regression protection and benchmark evidence
-
-**Gate:** Must block completion if correctness or stability is unverified.
+Validates correctness, scale, determinism. **Gate:** sign-off requires `tests-run` + log evidence.
 
 ---
 
-## Execution Flow
+## Execution flow
 
 ```
-Architect  →  Unity Dev  →  Data Tool  →  Tester
-   Design        Implement      Tooling      Validate
-                 ↕ escalate if needed
-              Architect
+[architect]  [unity-dev]  [data-tool]  [tester]
+     ↘            ↓            ↓           ↙
+        all spawn simultaneously, self-correct as upstream data arrives
 ```
 
-1. **Architect** publishes an approved ECS design with acceptance criteria.
-2. **Unity Developer** implements from the design.
-3. **Data Tool Engineer** adds tooling, validators, and diagnostics.
-4. **Tester** runs validation and stress testing.
-5. **Loop** on defects until stable.
+1. All agents spawn in **one parallel wave**.
+2. Architect publishes design; others reconcile in-place.
+3. Tester blocks completion until evidence passes.
+4. Loop until stable.
 
 ---
 
-## Skill Files
-
-Each role has its own skill definitions:
-
-| Role | Skill Path |
-|------|-----------|
-| Architect | `skills/architect/` |
-| Unity Developer | `skills/unity-dev/` |
-| Data Tool Engineer | `skills/data-tool/` |
-| Tester | `skills/tester/` |
-
-Universal skills:
-- `.claude/skills/unity-dots-best-practices/SKILL.md`
-- `.claude/skills/editor-data-tools/SKILL.md`
-- `.claude/skills/qa-validation/SKILL.md`
-
----
-
-## Unity MCP Integration
-
-This framework is designed to use **Unity MCP** ([IvanMurzak/Unity-MCP](https://github.com/IvanMurzak/Unity-MCP)) as the primary evidence source for all Unity project state.
-
-**Core rule:** Always prefer MCP over guessing project state.
-
-Use MCP for:
-- Project structure and asset inspection
-- Scene, prefab, and GameObject inspection
-- Serialized data and authoring output
-- Console logs and editor state
-- Running tests and capturing evidence
-
-If Unity MCP is unavailable, the team falls back to source code reading and states that MCP evidence is unavailable.
-
----
-
-## Team Entry Points
-
-| Command | Description |
-|---------|-------------|
-| `/team <task>` | Full 4-agent team boot sequence |
-| `/start-unity-dots-team <task>` | Alias via skill system |
-
-Both commands trigger the same workflow: preflight → team creation → parallel agent spawn → Phase 2 autonomous execution.
-
----
-
-## Quality Gates Summary
-
-| # | Gate | Enforcer |
-|---|------|----------|
-| 1 | No implementation before Architect-approved design | Architect |
-| 2 | No runtime design changes without Architect review | Unity Dev |
-| 3 | No tooling that silently changes runtime behavior | Data Tool |
-| 4 | No sign-off without correctness + stress evidence | Tester |
-| 5 | No completion while regressions are open | Tester |
-
----
-
-## File Structure
+## File structure
 
 ```
 unity-agent-team-publish/
 ├── .claude/
-│   ├── agents/           # Role agent definitions
-│   ├── commands/         # /team command entrypoint
-│   ├── skills/           # Runtime skills (MCP, team boot)
-│   └── CLAUDE.md         # Project-level constraints
-├── skills/
-│   ├── architect/        # Architect role skills
-│   ├── unity-dev/        # Unity Dev role skills
-│   ├── data-tool/        # Data Tool role skills
-│   └── tester/           # Tester role skills
-├── architecture.md       # System architecture reference
-├── mcp-integration.md    # Unity MCP usage policy
-└── README.md             # This file
+│   ├── agents/                       # Role agent definitions (Claude Code agents)
+│   │   ├── architect.md
+│   │   ├── unity-dev.md
+│   │   ├── data-tool.md
+│   │   └── tester.md
+│   ├── commands/
+│   │   └── team.md                   # /team slash command
+│   ├── skills/                       # Claude Code skills (auto-discovered)
+│   │   ├── architect/SKILL.md            # Role brief, loaded by `architect` agent
+│   │   ├── unity-dev/SKILL.md
+│   │   ├── data-tool/SKILL.md
+│   │   ├── tester/SKILL.md
+│   │   ├── unity-dots-best-practices/SKILL.md
+│   │   ├── editor-data-tools/SKILL.md
+│   │   ├── qa-validation/SKILL.md
+│   │   └── start-unity-dots-team/SKILL.md
+│   ├── docs/                         # Reference docs imported via @-imports
+│   │   ├── setup.md
+│   │   ├── architecture.md
+│   │   └── mcp-integration.md
+│   ├── scripts/                      # Bundled helpers
+│   │   ├── preflight.py
+│   │   ├── dots_scan.py
+│   │   └── validate_skill_pack.py
+│   └── CLAUDE.md                     # Always-loaded project context
+├── SETUP.md                          # Installer Claude reads via `claude unity-agent-team-publish/SETUP.md`
+├── .gitignore
+├── README.md                         # This file
+└── LICENSE
 ```
+
+Everything Claude Code needs lives under `.claude/`. The package root only carries `README.md`, `LICENSE`, and `.gitignore`.
 
 ---
 
-## Customizing for Your Project
+## MCP integration
+
+`ai-game-developer` is the primary evidence source for Unity-side state. Agents pull from it **when a decision actually depends on it** — not as a checklist.
+
+Tool families used by the team (see `.claude/docs/mcp-integration.md` for the full map):
+
+- Assets / scene / prefab introspection
+- GameObject + Component get/modify
+- Scripts (read, update-or-create, execute, delete)
+- Console logs (get, clear)
+- Editor state, selection
+- Tests (run, capture)
+- Screenshots (game view, scene view, camera, isolated)
+- Reflection (method find, call)
+
+`agentmemory` provides cross-session continuity. Agents recall when prior work likely exists and save a `memory_lesson` at handoff for non-obvious findings.
+
+---
+
+## Quality gates
+
+| # | Gate | Enforcer |
+|---|---|---|
+| 1 | No silent architecture drift in implementation | unity-dev → architect |
+| 2 | No tooling that silently changes runtime behavior | data-tool |
+| 3 | No sign-off without `tests-run` + log evidence | tester |
+| 4 | No completion while regressions remain open | tester |
+
+---
+
+## Bundled scripts
+
+| Script | Purpose |
+|---|---|
+| `.claude/scripts/preflight.py` | Cross-platform check for Agent Team mode, tmux, MCP availability. Never blocks. |
+| `.claude/scripts/dots_scan.py` | Fast first-pass DOTS anti-pattern scan over C# files. |
+| `.claude/scripts/validate_skill_pack.py` | Validates frontmatter on every SKILL.md and agent file in this package. |
+
+Run any of them with `python .claude/scripts/<name>.py --help`.
+
+---
+
+## Customizing
 
 1. **Point the team at your Unity project** by describing its location in the task prompt:
    ```
    /team Add a stamina system to Assets/Games/Units
    ```
-
-2. **Extend a role** by adding skill files to its `skills/` directory.
-
-3. **Add subagents** to a role by editing its `skills/<role>/subagents.md`.
-
-4. **Integrate Unity MCP** by ensuring the Unity MCP server is running before starting the team. See [Unity-MCP](https://github.com/IvanMurzak/Unity-MCP) for setup.
+2. **Extend a role** by editing its `.claude/skills/<role>/SKILL.md`.
+3. **Add subagents** to a role by editing the "Internal Subagents" section of its SKILL.md.
+4. **Tighten or relax MCP enforcement** in each agent file under `.claude/agents/`.
 
 ---
 
 ## Requirements
 
-- Claude Code with Agent Team mode enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
+- Claude Code with the `Agent` tool (or `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for `--teams` mode)
 - Unity project with DOTS packages (Entities, Jobs, Burst)
-- Unity MCP server (optional but strongly recommended)
-- tmux (optional — team runs in degraded mode without it)
+- `ai-game-developer` MCP server (strongly recommended)
+- `agentmemory` MCP server (strongly recommended)
+- Python 3.8+ (only for the bundled `scripts/`)
+- tmux (optional — only for `--teams` mode panes)
