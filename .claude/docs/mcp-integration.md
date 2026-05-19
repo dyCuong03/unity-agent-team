@@ -1,17 +1,21 @@
-# MCP Integration — `ai-game-developer` and `agentmemory`
+# MCP Integration — `ai-game-developer`, `agentmemory`, `code-review-graph`
 
-This package is wired to two MCP servers that every role in the team must use:
+This package is wired to three MCP servers that the team relies on:
 
-| Server | Purpose | Required For |
-|---|---|---|
-| `ai-game-developer` | Live Unity Editor introspection and mutation (assets, scenes, GameObjects, components, scripts, console, tests, screenshots, reflection) | All roles — primary evidence source for Unity-side state |
-| `agentmemory` | Cross-session memory: recall prior decisions, save lessons, consolidate findings, reflect on sessions | All roles — primary continuity layer across tasks |
+| Server | Purpose | Required For | Scope |
+|---|---|---|---|
+| `ai-game-developer` | Live Unity Editor introspection and mutation (assets, scenes, GameObjects, components, scripts, console, tests, screenshots, reflection) | All roles — primary evidence source for Unity-side state | User or project (`.mcp.json`) |
+| `agentmemory` | Cross-session memory: recall prior decisions, save lessons, consolidate findings, reflect on sessions | All roles — primary continuity layer across tasks | User-level |
+| `code-review-graph` | Structural code graph: callers/callees, semantic search, impact radius, knowledge gaps. Replaces broad Grep/Glob passes when you need cross-file structure. | Architect, Unity Dev, Tester — primary code-navigation tool when present | Project (`.mcp.json`) |
+
+A copy-ready project-scoped config lives at `unity-agent-team-publish/.mcp.json.template`. See `SETUP.md` §6b for install steps.
 
 ## Core Rules
 
 1. **Always prefer `ai-game-developer` MCP over guessing project state.**
 2. **Always call `agentmemory` at the start and end of a task.** Recall first, save lessons last.
-3. **If a tool is unavailable, state it explicitly** ("Running without MCP evidence" / "Running without memory recall") and fall back to code reading.
+3. **When `code-review-graph` is available, use it before falling back to Grep/Glob** for structural questions ("who calls X", "what's the impact of changing Y", "find systems matching Z"). Use Read/Grep only for line-level inspection of files the graph points to.
+4. **If a tool is unavailable, state it explicitly** ("Running without MCP evidence" / "Running without memory recall" / "Running without code graph") and fall back to code reading.
 
 ---
 

@@ -109,6 +109,25 @@ Look in `~/.claude/settings.json` (or `~/.claude/mcp.json`) for these two server
 
 If either is missing, **do not register it for the user** — instead tell them which is missing and link them to the relevant install docs. The agent team will still boot without them but in degraded mode (agents will say "Running without MCP evidence" / "Running without memory recall").
 
+### 6b. Project-scoped MCP (`.mcp.json`) — `code-review-graph`
+
+In addition to the user-level servers above, this pack ships a **project-scoped** MCP template at `unity-agent-team-publish/.mcp.json.template`. It registers two servers Claude Code loads automatically when present at the project root:
+
+| Server | Purpose | Required? |
+|---|---|---|
+| `ai-game-developer` | Same Unity Editor MCP as above, but pinned per-project (port + token) | Optional — only if you want per-project overrides |
+| `code-review-graph` | Code graph for fast structural search (callers/callees, impact radius, semantic search). See `@.claude/rules/GRAPH_FIRST.md` if present. | Optional but **strongly recommended** |
+
+**To install for a new project:**
+
+1. Copy `unity-agent-team-publish/.mcp.json.template` to `<project-root>/.mcp.json`.
+2. Replace `<ABSOLUTE_PATH_TO_REPO_ROOT>` with the absolute path to the Git repo root (the folder containing `.git/`, **not** the Unity sub-folder if your repo has one).
+3. Replace `<YOUR_AI_GAME_DEVELOPER_TOKEN>` with the bearer token from your Unity MCP server config (or delete the `ai-game-developer` block to inherit from user-level settings).
+4. Install the `code-review-graph` CLI so the `command` resolves on PATH. If the user doesn't have it, **tell them which install step is missing** — do not silently invent an install command.
+5. Reload Claude Code (`/mcp`) and verify both servers report connected.
+
+Ask before overwriting an existing `<project-root>/.mcp.json` — merge entries instead of clobbering.
+
 ### 7. Decide whether to keep `unity-agent-team-publish/`
 
 Ask the user with `AskUserQuestion`:

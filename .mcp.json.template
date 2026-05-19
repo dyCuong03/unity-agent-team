@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "ai-game-developer": {
+      "type": "http",
+      "url": "http://localhost:54150",
+      "headers": {
+        "Authorization": "Bearer <YOUR_AI_GAME_DEVELOPER_TOKEN>"
+      }
+    },
+    "code-review-graph": {
+      "command": "code-review-graph",
+      "args": [
+        "serve",
+        "--repo",
+        "<ABSOLUTE_PATH_TO_REPO_ROOT>"
+      ],
+      "type": "stdio"
+    }
+  }
+}
