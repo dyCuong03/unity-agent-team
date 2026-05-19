@@ -72,6 +72,17 @@ The design must cover:
 
 Once published, unity-dev / data-tool / tester self-correct against it.
 
+## Codex Review Gate (MANDATORY for every team task)
+
+Every task executed by the team **must pass a `/codex:review` pass after the Architect publishes the design and again before final sign-off.**
+
+1. **Plan review** — As soon as the Architect publishes a design, the orchestrator (or the agent acting as team lead) invokes `/codex:review` with the design plus the relevant recon facts. Architect must address every blocker / high-severity comment before unity-dev starts irreversible work.
+2. **Implementation review** — Before Tester sign-off, run `/codex:review` again over the final diff. Any blocker found returns the task to the responsible role and the loop continues.
+3. **Evidence** — Capture the `/codex:review` verdict (pass / changes-requested / block) plus a one-line summary in the completion output under a `Codex review:` field. Never declare a task complete without it.
+4. **Fallback** — If `/codex:review` is unavailable, state `"Running without codex review"` once, escalate, and require an extra Architect + Tester review pass to compensate.
+
+This rule applies to bug fixes, features, refactors, and tooling work alike. It is non-optional.
+
 ## Subagent Rule
 
 Each role delegates non-trivial work to its internal subagents (listed in `.claude/skills/<role>/SKILL.md`). Subagents stay inside the parent agent — no panes, no top-level promotion.

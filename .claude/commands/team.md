@@ -85,21 +85,18 @@ TeamCreate:
   description: Unity DOTS — architect, unity-dev[, data-tool, tester] (parallel)
 ```
 
-Reuse the existing tmux session — never `tmux kill-session` (it would kill Claude Code).
+### Tmux pane rule — DO NOT pre-create panes
 
-```sh
-TMUX_SESSION=$(tmux display-message -p '#S' 2>/dev/null || true)
-TMUX_PANES=$(tmux display-message -p '#{window_panes}' 2>/dev/null || echo 0)
-NEED=4  # or 2 in --fast mode
-if [ -n "$TMUX_SESSION" ] && [ "$TMUX_PANES" -lt "$NEED" ]; then
-  for _ in $(seq 1 $((NEED - TMUX_PANES))); do
-    tmux split-window -h -t "$TMUX_SESSION"
-  done
-  tmux select-layout -t "$TMUX_SESSION" tiled 2>/dev/null || true
-fi
-```
+**Never run `tmux split-window` manually before spawning agents.** The harness creates exactly one pane per spawned agent automatically when `tmuxSplitPanes: true` is set in `~/.claude/settings.json`. Pre-splitting leaves empty bash panes lying around and can race with the harness's pane-renumbering, accidentally killing live agents.
 
-Spawn 2 or 4 agents in parallel via the Teams API with `mode: "bypassPermissions"` and the same prompts as the Agent-tool backend.
+Rules:
+- **Reuse** the existing tmux session — never `tmux kill-session` (it would kill Claude Code itself).
+- **Never** call `tmux split-window` / `tmux new-window` from this command.
+- **Do not** count panes or pre-allocate them. If the orchestrator session has 1 pane at start, leave it at 1 pane. The harness adds one pane per agent at spawn time and only as many as are actually needed (2 in `--fast`, 4 in `--full`).
+- **Never** call `tmux kill-pane` to "clean up" empty panes. If the harness reports a leftover pane, ask the user before killing — pane indices renumber after every kill and a wrong index will terminate an active agent.
+- If `tmuxSplitPanes` is disabled or tmux is unavailable, agents run inline in the orchestrator's pane. That is acceptable; do not try to compensate by manually splitting.
+
+Spawn 2 or 4 agents in parallel via the Teams API with `mode: "bypassPermissions"` and the same prompts as the Agent-tool backend. Send all spawn calls in a single assistant turn so the harness allocates panes in one batch.
 
 ---
 
@@ -138,6 +135,18 @@ No agent waits on another. No agent runs a checklist before starting.
 | G2 | Tooling does not silently change runtime behavior | data-tool |
 | G3 | Correctness + stress evidence required for sign-off | tester |
 | G4 | No completion while regressions remain open | tester |
+| G5 | `/codex:review` recorded for design AND final diff (see CLAUDE.md → "Codex Review Gate") | orchestrator |
+
+---
+
+## Codex review checkpoints (MANDATORY)
+
+Every `/team` run **must** invoke `/codex:review` twice — failure to do so is a process violation.
+
+1. **After Architect publishes the design** — the orchestrator runs `/codex:review` against the design (plus recon facts and the user request). Architect addresses every blocker / high-severity finding before unity-dev makes irreversible edits.
+2. **Before final sign-off** — orchestrator runs `/codex:review` over the final diff. Any blocker returns the task to its owner.
+
+Record both verdicts under `Codex review:` in the completion output. If `/codex:review` is unavailable, state `"Running without codex review"` once and require an extra Architect + Tester pass.
 
 ---
 
