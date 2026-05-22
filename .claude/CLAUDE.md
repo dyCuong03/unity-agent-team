@@ -115,49 +115,69 @@ Each role delegates non-trivial work to its internal subagents (listed in `.clau
 
 Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.
 
-## DOTS Conflict Resolution Policy
+## Domain-Aware Precedence Policy
 
-When any Unity-Skills advisory or functional module gives guidance that conflicts with ECS/DOTS patterns, the following precedence rules apply without exception.
+The system uses **three domains** — not a single DOTS-first policy. Domain is determined by code evidence (API fingerprinting), not task keywords. See `.claude/rules/dual-stack-domain-system.md`.
 
-### Precedence Table
+### Domain 1 — Runtime ECS (DOTS leads)
 
-| DOTS-first (always wins) | Unity-Skills default (overridden) |
-|--------------------------|----------------------------------|
+Applies when: `DOTS_score ≥ 0.70` and `DOTS_score > Unity_score + 0.20`
+
+| DOTS wins | Unity default overridden |
+|-----------|--------------------------|
 | `ISystem.OnUpdate()` | MonoBehaviour `Update()` |
-| `IComponentData` + entity ownership | MonoBehaviour state |
-| `Jobs` + `Dependency` chains | async/await, coroutines in hot paths |
-| `ECB` structural changes in jobs | Direct `EntityManager` in scheduled jobs |
-| ECS singleton component (`SystemAPI.GetSingleton<T>()`) | ScriptableObject as runtime state |
-| Physics for Entities | MonoBehaviour Rigidbody in ECS simulation |
-| Baker → IComponentData authoring pattern | MonoBehaviour-on-prefab as game state |
+| `IComponentData` + entity | MonoBehaviour state |
+| `Jobs` + `Dependency` chains | async/await in hot paths |
+| `ECB` structural changes in jobs | Direct `EntityManager` in jobs |
+| ECS singleton (`SystemAPI.GetSingleton<T>()`) | ScriptableObject for runtime state |
+| Physics for Entities | MonoBehaviour Rigidbody in simulation |
 
-### Allowed MonoBehaviour in DOTS Projects
+### Domain 2 — Unity View / Authoring (Unity leads)
 
-These are the ONLY cases where MonoBehaviour is acceptable in a DOTS-first project:
+Applies when: `Unity_score ≥ 0.70` and `Unity_score > DOTS_score + 0.20`
 
-1. **Baker inputs** — `MonoBehaviour` authoring components that exist solely to feed data into a `Baker<T>`. They do not update at runtime.
-2. **Bootstrap** — single entry-point MonoBehaviour that initializes the ECS World. `[DefaultExecutionOrder(-10000)]`. Does not tick.
-3. **Hybrid boundary** — MonoBehaviour components that read entity state for presentation (UI binding, audio trigger, VFX trigger). One-way: entity → MonoBehaviour only.
-4. **Engine integrations** — systems with no ECS equivalent (NavMesh, DOTween presentation, UI Canvas). Must be explicitly architected as hybrid boundaries by the `architect` agent.
+| Unity wins | Notes |
+|-----------|-------|
+| MonoBehaviour lifecycle | Correct execution model for view code |
+| Coroutines / async | Valid in presentation layer |
+| ScriptableObject for config | Correct authoring pattern |
+| Prefab workflow | Correct view authoring |
+| Animator state machine | Correct for character animation |
 
-### When Loading MonoBehaviour-First Modules
+DOTS patterns are secondary in this domain. Do not force ECS reasoning onto view code.
 
-When a module is rated `MonoBehaviour-first` (ui, animator, navmesh, dotween, event, gameobject, component):
+### Domain 3 — Hybrid Boundary (Both cooperate)
 
-1. Load it ONLY if the task is confirmed to be at the view/presentation/authoring boundary.
-2. The `architect` agent must explicitly state the hybrid boundary in `workspace/design.md`.
-3. `unity-dev` must not cross the boundary — ECS simulation code must not reference MonoBehaviour runtime state.
-4. `tester` must verify the boundary is respected (no MonoBehaviour in ECS system hot paths).
+Applies when: `Hybrid_score ≥ 0.60` and `abs(DOTS_score - Unity_score) < 0.30`
 
-### Exception Approval
+Rule: **DOTS owns runtime truth. Unity owns presentation. Bridge is explicit and one-way.**
 
-Any deviation from DOTS-first policy requires explicit architect approval written to `workspace/design.md` under `## Open Risks` with this format:
+Every hybrid feature requires a contract in `workspace/design.md`:
 ```
-[DOTS_EXCEPTION: <what DOTS rule is being relaxed>]
+Hybrid Contract: <name>
+Source of truth: DOTS — <component name>
+Presentation owner: Unity — <class name>
+Data flow: DOTS → read by Unity (never the reverse at runtime)
+Write path: Only via <system or ECB> — Unity never writes entity state directly
+```
+
+### Exception Approval (Domain 1 only)
+
+Any deviation from DOTS-first policy within Domain 1 requires architect approval:
+```
+[DOTS_EXCEPTION: <what rule is relaxed>]
 Reason: <technical constraint>
-Boundary: <where the MonoBehaviour/OOP code is isolated>
+Boundary: <where MonoBehaviour/OOP code is isolated>
 Risk: <what breaks if this spreads>
 ```
+
+### Domain Classification
+
+Determined by code evidence — not keywords. Investigation runs first.
+See `workspace/domain-analysis.md` for per-session classification evidence.
+If domain is ambiguous → `[ESCALATE_ARCHITECT: domain ambiguous]` before implementation starts.
+
+Full rules: `@.claude/rules/dual-stack-domain-system.md`
 
 ## Shared Workspace
 

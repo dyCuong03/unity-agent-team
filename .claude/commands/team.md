@@ -48,6 +48,7 @@ Read `@.claude/rules/escalation-policy.md` — know your mandatory escalation tr
 **Reset session workspace:**
 ```sh
 mkdir -p workspace/skill-cache
+cp .claude/workspace-templates/domain-analysis.md workspace/domain-analysis.md
 cp .claude/workspace-templates/escalation-log.md workspace/escalation-log.md
 find workspace/skill-cache/ -name "*.cache.md" -mtime +1 -delete 2>/dev/null
 ```
@@ -58,11 +59,15 @@ GET http://localhost:8090/health
 ```
 If reachable: note `currentMode`. If unreachable: agents degrade gracefully — no REST calls.
 
-**2. Score candidate modules** using the confidence algorithm in `skill-confidence-routing.md`:
-- Score = 0.35×keyword + 0.30×symptom + 0.20×history + 0.10×ECS_penalty + 0.05×issue_type
-- Load threshold: ≥ 0.70. Max 2 domain + 2 advisory per agent.
-- Check history from `workspace/repo-knowledge.md` Session History section.
-- Apply ECS penalty for MonoBehaviour-first modules when ECS context is detected.
+**2. Classify domain using code-aware routing** (`@.claude/rules/code-aware-routing-engine.md`):
+The investigation agent (system-mapper/code-tracer/bug-investigation) runs the full pipeline:
+CRG → API fingerprinting → pattern detection → domain scoring → write workspace/domain-analysis.md.
+Domain classification drives skill loading — not task keywords alone.
+Read `workspace/domain-analysis.md` after investigation completes before selecting skills.
+
+**Legacy keyword scoring** (fallback if investigation is skipped):
+Score = 0.35×keyword + 0.30×symptom + 0.20×history + 0.10×ECS_penalty + 0.05×issue_type
+Load threshold: ≥ 0.70. Max 2 domain + 2 advisory per agent.
 
 **3. Check skill cache** for each selected module:
 - If `workspace/skill-cache/<module>.cache.md` exists → use it (150 tokens) instead of full SKILL.md (400 tokens)
@@ -114,8 +119,8 @@ cp .claude/workspace-templates/test-plan.md workspace/test-plan.md
 ```
 Agent({
   subagent_type: "bug-investigation",
-  description: "Root cause investigation",
-  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nBug: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first for context.\nSearch agentmemory for prior investigations of this symptom area before running CRG.\n\nTrace root cause:\n1. Define symptom precisely.\n2. trace_execution_flow from symptom to entry point.\n3. Identify writers/readers of mutated state.\n4. get_impact_radius.\n5. Inspect only graph-identified systems.\n\nWrite ALL output to workspace/investigation.md (do not embed in chat).\nSet STATUS: COMPLETE when done, or STATUS: INCONCLUSIVE with [ESCALATE: reason].\nSave to agentmemory at the end."
+  description: "Root cause investigation + domain classification",
+  prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/investigation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md @.claude/rules/api-fingerprinting-system.md @.claude/rules/domain-scoring-engine.md @.claude/rules/domain-aware-mcp.md\n\nBug: $ARGUMENTS\n\nRead workspace/repo-knowledge.md, workspace/ecs-registry.md first.\nSearch agentmemory for prior investigations of this symptom area before CRG.\n\nStep 1 — CRG: trace_execution_flow → identify touched files and systems.\nStep 2 — Fingerprint: scan touched files for DOTS/Unity/Hybrid APIs (api-fingerprinting-system.md).\nStep 3 — Score: calculate DOTS_score, Unity_score, Hybrid_score (domain-scoring-engine.md).\nStep 4 — Write workspace/domain-analysis.md (fill all sections).\nIf Ambiguous: write [ESCALATE_ARCHITECT: domain ambiguous] and stop.\n\nStep 5 — MCP: run domain-appropriate queries (domain-aware-mcp.md).\nStep 6 — Root cause: trace writers/readers, get_impact_radius.\n\nWrite root cause to workspace/investigation.md.\nSet STATUS: COMPLETE or STATUS: INCONCLUSIVE with [ESCALATE: reason].\nSave to agentmemory at the end."
 })
 ```
 
@@ -166,8 +171,8 @@ cp .claude/workspace-templates/test-plan.md workspace/test-plan.md
 ```
 Agent({
   subagent_type: "system-mapper",
-  description: "Map existing ECS systems for feature area",
-  prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/investigation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first.\nIf repo-knowledge.md is empty or stale: call project_stack_detect (unity-skills perception) to detect tech stack, then run get_architecture_overview and update repo-knowledge.md.\n\nMap what already exists — do not suggest a design:\n1. get_architecture_overview (or read repo-knowledge.md if current)\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach?\n4. map_dependency_graph — what would this feature depend on?\n\nWrite output to workspace/repo-knowledge.md (update Extension Points and relevant sections).\nAlso write a concise feature-specific map section at the top of workspace/design.md under '## System Map'.\nIf CRG reveals a conflict with existing ecs-registry.md entries, write [ESCALATE: conflict description]."
+  description: "Map existing systems + domain classification for feature area",
+  prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/investigation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md @.claude/rules/api-fingerprinting-system.md @.claude/rules/domain-scoring-engine.md @.claude/rules/architecture-pattern-detection.md @.claude/rules/domain-aware-mcp.md\n\nFeature: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first.\nIf repo-knowledge.md is empty or stale: call project_stack_detect to detect tech stack, then run get_architecture_overview and update repo-knowledge.md.\n\nStep 1 — CRG: get_architecture_overview → trace_execution_flow → identify_extension_points.\nStep 2 — Fingerprint: scan touched files for DOTS/Unity/Hybrid APIs (api-fingerprinting-system.md).\nStep 3 — Patterns: detect architecture patterns in touched code (architecture-pattern-detection.md).\nStep 4 — Score: calculate domain scores (domain-scoring-engine.md).\nStep 5 — Write workspace/domain-analysis.md (all sections including Touched Files, API Scan, Patterns, Domain Classification).\nIf Ambiguous: write [ESCALATE_ARCHITECT: domain ambiguous] — architect must classify before architect designs.\n\nStep 6 — Update workspace/repo-knowledge.md (Extension Points, tech stack, session history).\nStep 7 — Write feature-specific System Map to workspace/design.md '## System Map' section.\nIf CRG reveals ecs-registry.md conflict: write [ESCALATE: conflict description]."
 })
 ```
 
