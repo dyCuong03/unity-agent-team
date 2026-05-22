@@ -10,8 +10,9 @@ No agent writes to a file it does not own.
 
 | File | Owner (writes) | Readers | Persistence |
 |------|---------------|---------|-------------|
-| `repo-knowledge.md` | `system-mapper` | all agents | **persistent** — commit to repo |
+| `repo-knowledge.md` | `architect` (primary) | all (section tags) | **persistent** — commit to repo |
 | `ecs-registry.md` | `architect` | all agents | **persistent** — commit to repo |
+| `recent-changes.md` | orchestrator | all (filtered) | **persistent** — rolling 14 days, commit to repo |
 | `design.md` | `architect` | unity-dev, data-tool, tester | session-scoped — cleared per run |
 | `investigation.md` | `bug-investigation` | unity-dev, tester | session-scoped — cleared per run |
 | `test-plan.md` | `tester` | unity-dev, architect | session-scoped — cleared per run |

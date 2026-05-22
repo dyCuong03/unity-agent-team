@@ -75,9 +75,36 @@ Read `@.claude/rules/escalation-policy.md` — know your mandatory escalation tr
 **Reset session workspace:**
 ```sh
 mkdir -p workspace/skill-cache
+
+# Session-scoped files — reset every run
 cp .claude/workspace-templates/domain-analysis.md workspace/domain-analysis.md
 cp .claude/workspace-templates/escalation-log.md workspace/escalation-log.md
-find workspace/skill-cache/ -name "*.cache.md" -mtime +1 -delete 2>/dev/null
+
+# Skill cache — hash-based freshness check (see skill-cache-freshness.md)
+for cache_file in workspace/skill-cache/*.cache.md 2>/dev/null; do
+  [ -f "$cache_file" ] || continue
+  module=$(basename "$cache_file" .cache.md)
+  skill_path=".claude/skills/unity-skills/skills/$module/SKILL.md"
+  if [ -f "$skill_path" ]; then
+    current_hash=$(sha256sum "$skill_path" 2>/dev/null | cut -d' ' -f1)
+    cached_hash=$(grep "hash:sha256:" "$cache_file" 2>/dev/null | sed 's/.*hash:sha256://;s/ -->//')
+    [ "$current_hash" != "$cached_hash" ] && rm "$cache_file" && echo "Cache invalidated: $module"
+  fi
+done
+
+# Persistent files — DO NOT reset (they accumulate knowledge across sessions)
+# workspace/repo-knowledge.md  ← never reset
+# workspace/ecs-registry.md    ← never reset
+# workspace/recent-changes.md  ← never reset (rolling 14-day window)
+```
+
+**Read recent-changes.md before spawning any agent:**
+```
+Read workspace/recent-changes.md — filter entries using relevance-filtering.md.
+Include filtered entries (max 5, ≤75 tokens) in each agent prompt under:
+## Relevant Recent Changes
+[entries here]
+Omit section entirely if no entries pass the relevance filter.
 ```
 
 **1. Check unity-skills server (if installed):**

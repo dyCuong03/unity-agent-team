@@ -233,6 +233,34 @@ These signals are hard stops. The orchestrator MUST check for them before spawni
 | `system-mapper` | no | no | yes | Escalates if CRG evidence conflicts with repo-knowledge |
 | `refactor-agent` | no | no | yes | Escalates if blast radius is too large for safe migration |
 
+## Knowledge System
+
+The agent knowledge system is multi-layer. Each layer has strict ownership. No duplication.
+
+| Layer | File | Agents read? | Persists? | Max tokens |
+|-------|------|-------------|-----------|-----------|
+| Human history | `CHANGELOG.md` | Never | Yes (permanent) | Unbounded |
+| Recent mutations | `workspace/recent-changes.md` | Filtered (≤5 entries) | Yes (14-day rolling) | 300 |
+| Stable architecture | `workspace/repo-knowledge.md` | Section tags only | Yes (with decay) | 150 (filtered) |
+| ECS ownership | `workspace/ecs-registry.md` | On demand | Yes (permanent) | 50 |
+| Session reasoning | `workspace/domain-analysis.md` | All agents | Session only | 100 |
+
+**Quick rules:**
+- Agents NEVER read `CHANGELOG.md` — read `recent-changes.md` instead
+- `repo-knowledge.md` entries must have `<!-- confidence:X verified:DATE source:Y -->`
+- Confidence < 0.40 = STALE — skip, trigger revalidation
+- Skill cache freshness: SHA-256 hash check at STEP 1.5 — stale entries auto-deleted
+- Total knowledge budget per agent: **800 tokens** (P1–P6, drop lowest priority first)
+
+Full rules:
+- `@.claude/rules/knowledge-ownership-model.md` — single source of truth per fact type
+- `@.claude/rules/recent-changes-system.md` — rolling change tracking
+- `@.claude/rules/knowledge-decay-system.md` — confidence decay + STALE markers
+- `@.claude/rules/knowledge-token-budget.md` — 800-token hard cap
+- `@.claude/rules/agent-knowledge-policy.md` — per-agent read/write obligations
+- `@.claude/rules/documentation-retrieval.md` — section-tag retrieval
+- `@.claude/rules/skill-cache-freshness.md` — hash-based cache invalidation
+
 ## Hardening Rules (Production Policy — All Agents Must Comply)
 
 Five mandatory policy files govern this system. Every agent reads the relevant sections before acting.
