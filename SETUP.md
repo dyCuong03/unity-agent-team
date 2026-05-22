@@ -94,6 +94,7 @@ Check that the target now contains:
 
 **Commands and skills:**
 - `<project-root>/.claude/commands/team.md`
+- `<project-root>/.claude/commands/bugfix.md`
 - `<project-root>/.claude/skills/architect/SKILL.md`
 - `<project-root>/.claude/skills/unity-dev/SKILL.md`
 - `<project-root>/.claude/skills/data-tool/SKILL.md`
@@ -159,7 +160,7 @@ Installed:
   agents:   <count>      (architect, unity-dev, data-tool, tester,
                           architecture-agent, codebase-reader,
                           bug-investigation, refactor-agent, feature-dev-agent)
-  commands: <count>      (/team)
+  commands: <count>      (/team, /bugfix)
   skills:   <count>      (architect, unity-dev, data-tool, tester,
                           unity-dots-best-practices, editor-data-tools,
                           qa-validation, start-unity-dots-team,
