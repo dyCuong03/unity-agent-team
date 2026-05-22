@@ -114,3 +114,25 @@ Each role delegates non-trivial work to its internal subagents (listed in `.clau
 ## Communication
 
 Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.
+
+## CRG-First Codebase Understanding
+
+Five specialized agents handle codebase investigation. All query `code-review-graph` MCP before reading any files.
+
+| Agent | Use Case |
+|-------|----------|
+| `architecture-agent` | System architecture mapping, domain boundaries, execution flow |
+| `codebase-reader` | Feature reading, entry point discovery, behavior summary |
+| `bug-investigation` | Root cause tracing, write conflict detection, fix validation |
+| `refactor-agent` | Blast radius analysis, safe migration planning |
+| `feature-dev-agent` | Pattern discovery, extension point identification, consistent implementation |
+
+### CRG Rules (apply to all 5 agents)
+
+- Query `code-review-graph` before opening any file
+- Never grep the repository blindly
+- Never infer architecture from filenames
+- Never open more than 8 files without graph justification
+- If CRG is unavailable: state "Running without CRG evidence" once, then use targeted Grep
+
+Full rules: `@.claude/rules/GRAPH_FIRST.md`

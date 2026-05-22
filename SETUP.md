@@ -78,10 +78,21 @@ If `<project-root>/.claude/CLAUDE.md` already exists and differs, **never silent
 ### 5. Verify the install
 
 Check that the target now contains:
+
+**Core team agents:**
 - `<project-root>/.claude/agents/architect.md`
 - `<project-root>/.claude/agents/unity-dev.md`
 - `<project-root>/.claude/agents/data-tool.md`
 - `<project-root>/.claude/agents/tester.md`
+
+**CRG-first investigation agents:**
+- `<project-root>/.claude/agents/architecture-agent.md`
+- `<project-root>/.claude/agents/codebase-reader.md`
+- `<project-root>/.claude/agents/bug-investigation.md`
+- `<project-root>/.claude/agents/refactor-agent.md`
+- `<project-root>/.claude/agents/feature-dev-agent.md`
+
+**Commands and skills:**
 - `<project-root>/.claude/commands/team.md`
 - `<project-root>/.claude/skills/architect/SKILL.md`
 - `<project-root>/.claude/skills/unity-dev/SKILL.md`
@@ -91,6 +102,10 @@ Check that the target now contains:
 - `<project-root>/.claude/skills/editor-data-tools/SKILL.md`
 - `<project-root>/.claude/skills/qa-validation/SKILL.md`
 - `<project-root>/.claude/skills/start-unity-dots-team/SKILL.md`
+- `<project-root>/.claude/skills/codebase-understanding/SKILL.md`
+
+**Rules and docs:**
+- `<project-root>/.claude/rules/GRAPH_FIRST.md`
 - `<project-root>/.claude/docs/setup.md`
 - `<project-root>/.claude/docs/architecture.md`
 - `<project-root>/.claude/docs/mcp-integration.md`
@@ -141,11 +156,15 @@ If they pick delete, remove `unity-agent-team-publish/` (Windows: `Remove-Item -
 Print a short report:
 ```
 Installed:
-  agents:   <count>      (architect, unity-dev, data-tool, tester)
+  agents:   <count>      (architect, unity-dev, data-tool, tester,
+                          architecture-agent, codebase-reader,
+                          bug-investigation, refactor-agent, feature-dev-agent)
   commands: <count>      (/team)
   skills:   <count>      (architect, unity-dev, data-tool, tester,
                           unity-dots-best-practices, editor-data-tools,
-                          qa-validation, start-unity-dots-team)
+                          qa-validation, start-unity-dots-team,
+                          codebase-understanding)
+  rules:    <count>      (GRAPH_FIRST)
   docs:     <count>      (setup, architecture, mcp-integration)
   scripts:  <count>      (preflight, dots_scan, validate_skill_pack)
 

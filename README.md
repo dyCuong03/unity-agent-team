@@ -75,17 +75,40 @@ Then run `/team <task> --teams`. Without the flag and env var, `--teams` is igno
 
 ## Team roles
 
-### Architect
+### Core DOTS team (4 roles)
+
+#### Architect
 Designs the ECS architecture: components, buffers, blob assets, system boundaries, update order, baker strategy, acceptance criteria. **Gate:** unity-dev must reconcile to the design before completion.
 
-### Unity Developer
+#### Unity Developer
 Implements the ECS design: systems, jobs, bakers, runtime logic. All C# edits via `mcp__ai-game-developer__script-update-or-create` to keep Unity's AssetDatabase coherent.
 
-### Data Tool Engineer
+#### Data Tool Engineer
 Builds editor tooling, validators, inspectors, diagnostics. **Gate:** must not silently change runtime behavior.
 
-### Tester / QA
+#### Tester / QA
 Validates correctness, scale, determinism. **Gate:** sign-off requires `tests-run` + log evidence.
+
+---
+
+### CRG-first investigation agents (5 roles)
+
+All five use `code-review-graph` MCP before reading any files. Never grep blindly; never open files without graph evidence.
+
+#### Architecture Agent (`architecture-agent`)
+Maps high-level system architecture: domain boundaries, feature ownership, execution flow, dependency chains. Uses `get_architecture_overview` → `trace_execution_flow` → `map_dependency_graph`. Max 8 files, each justified.
+
+#### Codebase Reader (`codebase-reader`)
+Reads unfamiliar features quickly: entry points, execution chains, hidden dependencies. Uses `get_minimal_context` → `find_entry_points` → `trace_callers_callees`. Max 8 files.
+
+#### Bug Investigation Agent (`bug-investigation`)
+Traces symptom to root cause: finds component writers, competing systems, unintended mutations. Uses `trace_execution_flow` → `get_impact_radius`. Never assumes first suspicious file is root cause.
+
+#### Refactor Agent (`refactor-agent`)
+Safe refactoring with documented blast radius: dependency tracing, coupling reduction, migration plan + rollback. Uses `get_impact_radius` → `trace_dependencies` → `identify_shared_symbols`. No refactor without blast radius.
+
+#### Feature Development Agent (`feature-dev-agent`)
+Consistent feature implementation: finds existing patterns before writing new code. Uses CRG to locate extension points and trace similar features. Never introduces parallel architecture when one already exists.
 
 ---
 
@@ -110,21 +133,29 @@ Validates correctness, scale, determinism. **Gate:** sign-off requires `tests-ru
 unity-agent-team-publish/
 ├── .claude/
 │   ├── agents/                       # Role agent definitions (Claude Code agents)
-│   │   ├── architect.md
+│   │   ├── architect.md              # Core DOTS team
 │   │   ├── unity-dev.md
 │   │   ├── data-tool.md
-│   │   └── tester.md
+│   │   ├── tester.md
+│   │   ├── architecture-agent.md     # CRG-first investigation agents
+│   │   ├── codebase-reader.md
+│   │   ├── bug-investigation.md
+│   │   ├── refactor-agent.md
+│   │   └── feature-dev-agent.md
 │   ├── commands/
 │   │   └── team.md                   # /team slash command
+│   ├── rules/
+│   │   └── GRAPH_FIRST.md            # CRG-first rules for all investigation agents
 │   ├── skills/                       # Claude Code skills (auto-discovered)
-│   │   ├── architect/SKILL.md            # Role brief, loaded by `architect` agent
+│   │   ├── architect/SKILL.md
 │   │   ├── unity-dev/SKILL.md
 │   │   ├── data-tool/SKILL.md
 │   │   ├── tester/SKILL.md
 │   │   ├── unity-dots-best-practices/SKILL.md
 │   │   ├── editor-data-tools/SKILL.md
 │   │   ├── qa-validation/SKILL.md
-│   │   └── start-unity-dots-team/SKILL.md
+│   │   ├── start-unity-dots-team/SKILL.md
+│   │   └── codebase-understanding/SKILL.md  # CRG-first navigation skill
 │   ├── docs/                         # Reference docs imported via @-imports
 │   │   ├── setup.md
 │   │   ├── architecture.md
