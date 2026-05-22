@@ -200,6 +200,61 @@ Look in `~/.claude/settings.json` (or `~/.claude/mcp.json`) for these two server
 
 If either is missing, **do not register it for the user** — instead tell them which is missing and link them to the relevant install docs. The agent team will still boot without them but in degraded mode (agents will say "Running without MCP evidence" / "Running without memory recall").
 
+### 6a. Enable full team UI (experimental agent teams)
+
+This setting activates the full multi-agent team experience with tmux panes — one pane per agent, visible side-by-side. Without it, agents run sequentially in the same pane (still works, but you lose the parallel view).
+
+**Add to your user-level `~/.claude/settings.json`** (not the project file — do not commit this):
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "preferences": {
+    "tmuxSplitPanes": true
+  }
+}
+```
+
+**Windows (PowerShell):**
+```powershell
+$settings = Get-Content "$env:USERPROFILE\.claude\settings.json" | ConvertFrom-Json
+$settings.env | Add-Member -NotePropertyName "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" -NotePropertyValue "1" -Force
+$settings.preferences | Add-Member -NotePropertyName "tmuxSplitPanes" -NotePropertyValue $true -Force
+$settings | ConvertTo-Json -Depth 5 | Set-Content "$env:USERPROFILE\.claude\settings.json"
+```
+
+**macOS / Linux:**
+```sh
+# Creates or merges the setting into ~/.claude/settings.json
+node -e "
+const fs = require('fs'), p = process.env.HOME + '/.claude/settings.json';
+const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p)) : {};
+s.env = s.env || {};
+s.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+s.preferences = s.preferences || {};
+s.preferences.tmuxSplitPanes = true;
+fs.writeFileSync(p, JSON.stringify(s, null, 2));
+console.log('Done. Restart Claude Code to apply.');
+"
+```
+
+**Verify:**
+```sh
+grep -l "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" ~/.claude/settings.json && echo "Enabled" || echo "Not set"
+```
+
+**Then restart Claude Code** — the env var is read at startup.
+
+After restart, run `/team <task> --teams` to use the full team UI.
+Without `--teams`, agents still run correctly using the standard `Agent` tool (no panes needed).
+
+> **Note:** This is a user-level setting. It must never be committed to a project repo.
+> If you are setting up for a team, each engineer adds this to their own `~/.claude/settings.json`.
+
+---
+
 ### 6b. Project-scoped MCP (`.mcp.json`) — `code-review-graph`
 
 In addition to the user-level servers above, this pack ships a **project-scoped** MCP template at `unity-agent-team-publish/.mcp.json.template`. It registers two servers Claude Code loads automatically when present at the project root:

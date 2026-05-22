@@ -15,18 +15,30 @@ This project packages a reusable Claude Code team for Unity DOTS development.
 
 If either is unavailable, agents state the fallback once and keep working. See `@.claude/docs/mcp-integration.md`.
 
-## Optional: Experimental Agent Teams Mode
+## Agent Teams Mode (Recommended for Full Team UI)
 
-The default `/team` uses the standard `Agent` tool — no setup required. To opt in to the experimental teams mode with tmux panes, add to `~/.claude/settings.json`:
+The default `/team` uses the standard `Agent` tool — works everywhere, zero config.
+
+For the full team UI with one tmux pane per agent (visible parallel execution),
+add to your **user-level** `~/.claude/settings.json`:
 
 ```json
 {
-  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
-  "preferences": { "tmuxSplitPanes": true }
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "preferences": {
+    "tmuxSplitPanes": true
+  }
 }
 ```
 
-Then run `/team <task> --teams`.
+**Restart Claude Code after adding this.** Then use `/team <task> --teams` for pane-per-agent view.
+
+Without `--teams`, the system works identically — agents run via the standard `Agent` tool.
+
+> This setting is user-level only. Never commit it to the project repo.
+> See SETUP.md Step 6a for the exact install command per platform.
 
 ## Team Activation
 

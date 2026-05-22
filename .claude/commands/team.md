@@ -27,15 +27,42 @@ argument-hint: "<task> [--bug | --feature | --refactor] [--fast | --full] [--tea
 
 ---
 
-## STEP 1 — Non-blocking preflight (informational only)
+## STEP 1 — Preflight
 
-Run once. Agents proceed regardless of result.
+Run once. Agents proceed regardless of result — preflight is informational, never blocking.
 
 ```sh
 python .claude/scripts/preflight.py
 ```
 
-Reports `agent-team-mode`, `tmux`, `mcp:ai-game-developer`, `mcp:agentmemory`. Note any missing capability and continue.
+Reports: `agent-team-mode`, `tmux`, `mcp:ai-game-developer`, `mcp:agentmemory`.
+
+**If `agent-team-mode` is NOT enabled** and `--teams` flag was passed:
+
+Print exactly this message and stop the `--teams` flow (fall back to standard Agent tool):
+
+```
+⚠ Full team UI not available.
+
+To enable one pane per agent (parallel visible execution), add to ~/.claude/settings.json:
+
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "preferences": {
+    "tmuxSplitPanes": true
+  }
+
+Then restart Claude Code and re-run with --teams.
+
+Continuing with standard Agent tool (no panes) — all agents still run correctly.
+```
+
+**If `agent-team-mode` IS enabled** (env var set + Claude Code restarted):
+- `--teams` flag: use Teams backend (TeamCreate + tmux panes)
+- No `--teams` flag: use standard Agent tool (default, works everywhere)
+
+Note any missing MCP and continue — agents state their own fallback if a tool fails.
 
 ---
 

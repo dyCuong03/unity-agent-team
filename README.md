@@ -43,18 +43,31 @@ If either is unavailable, agents state the fallback ("Running without MCP eviden
 
 ---
 
-## Optional: experimental Agent Teams mode
+## Enable full team UI (one pane per agent)
 
-The default `/team` uses the standard `Agent` tool — works everywhere, zero config. For tmux panes per agent, opt in by adding this to your **user-level** `~/.claude/settings.json` (not project-level — do not commit this):
+Add to your **user-level** `~/.claude/settings.json` — **not** the project file, never commit this:
 
 ```json
 {
-  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
-  "preferences": { "tmuxSplitPanes": true }
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "preferences": {
+    "tmuxSplitPanes": true
+  }
 }
 ```
 
-Then run `/team <task> --teams`. Without the flag and env var, `--teams` is ignored.
+**Restart Claude Code**, then use `--teams` flag for the pane-per-agent view:
+
+```sh
+/team Add stamina system --feature --teams
+```
+
+Without `--teams` (or without the env var), agents run via the standard `Agent` tool — same results, no parallel panes. The system works either way.
+
+> Each engineer on the team adds this to their own `~/.claude/settings.json`.
+> See SETUP.md Step 6a for the exact install command (Windows / macOS / Linux).
 
 ---
 
