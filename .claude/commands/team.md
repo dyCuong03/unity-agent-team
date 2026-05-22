@@ -39,42 +39,44 @@ Reports `agent-team-mode`, `tmux`, `mcp:ai-game-developer`, `mcp:agentmemory`. N
 
 ---
 
-## STEP 1.5 — Skill routing (resolve domain skills before spawning agents)
+## STEP 1.5 — Skill routing + hardening checks
 
-Read `.claude/skills/routing/SKILL.md` for the full routing table.
+Read `@.claude/rules/skill-confidence-routing.md` for the full scoring algorithm.
+Read `@.claude/rules/mcp-phase-gates.md` — know which operations are allowed in your phase.
+Read `@.claude/rules/escalation-policy.md` — know your mandatory escalation triggers.
 
-**Quick routing rules:**
-
-1. **Check unity-skills server** (if installed):
-   ```
-   GET http://localhost:8090/health
-   ```
-   If reachable: note `currentMode` (approval/auto/bypass). If unreachable: skip all REST skill calls — agents work without it.
-
-2. **Analyze the task text** for domain keywords. Match against the routing table in `@.claude/skills/routing/SKILL.md`.
-
-3. **Select domain modules** (max 2 per agent). Record selections below — use them in agent @-imports in STEP 2.
-
-4. **DOTS safety check**: if selected modules include any rated `MonoBehaviour-first` (ui, animator, navmesh, dotween, event, gameobject, component), confirm the task is at the view/presentation/authoring boundary. If not — drop the module, load nothing, let ECS layer handle it.
-
-**Domain module path pattern**: `@.claude/skills/unity-skills/skills/<module>/SKILL.md`
-**Advisory module path pattern**: `@.claude/skills/unity-skills/skills/<module>/SKILL.md`
-(Unity-Skills installs its skill docs to `.claude/skills/unity-skills/` during setup)
-
-**Routing decision output** (fill before spawning agents):
-```
-Task domain: [ui | ecs | networking | rendering | animation | assets | general]
-Unity-skills server: [reachable | unreachable]
-Permission mode: [approval | auto | bypass | unknown]
-Domain modules selected: [<module1>, <module2>] or [none]
-Advisory modules selected: [<module1>, <module2>] or [none]
-DOTS safety: [clear | MonoBehaviour-first boundary confirmed | modules dropped]
+**Reset session workspace:**
+```sh
+mkdir -p workspace/skill-cache
+cp .claude/workspace-templates/escalation-log.md workspace/escalation-log.md
+find workspace/skill-cache/ -name "*.cache.md" -mtime +1 -delete 2>/dev/null
 ```
 
-**Layer 1 (always in every agent prompt):** `@.claude/skills/unity-dots-best-practices/SKILL.md`
-**Layer 2 (always for architect/unity-dev/data-tool):** `@.claude/skills/unity-foundation/SKILL.md`
-**Layer 4 (always for investigation agents):** `@.claude/skills/investigation/SKILL.md`
-**Layer 3 (domain — from routing above):** add selected module @-imports to the relevant agent only
+**1. Check unity-skills server (if installed):**
+```
+GET http://localhost:8090/health
+```
+If reachable: note `currentMode`. If unreachable: agents degrade gracefully — no REST calls.
+
+**2. Score candidate modules** using the confidence algorithm in `skill-confidence-routing.md`:
+- Score = 0.35×keyword + 0.30×symptom + 0.20×history + 0.10×ECS_penalty + 0.05×issue_type
+- Load threshold: ≥ 0.70. Max 2 domain + 2 advisory per agent.
+- Check history from `workspace/repo-knowledge.md` Session History section.
+- Apply ECS penalty for MonoBehaviour-first modules when ECS context is detected.
+
+**3. Check skill cache** for each selected module:
+- If `workspace/skill-cache/<module>.cache.md` exists → use it (150 tokens) instead of full SKILL.md (400 tokens)
+- If not → first agent loads full SKILL.md; orchestrator writes cache summary after that agent completes
+
+**4. Write routing decision** (one line, before spawning any agent):
+```
+[SKILL_ROUTING] domain:[<m1>, <m2>] advisory:[<a1>, <a2>] threshold:0.70 dropped:[<module>(<score>)] cache_hits:[<modules>]
+```
+
+**Layer 1 (always, every agent):** `@.claude/skills/unity-dots-best-practices/SKILL.md`
+**Layer 2 (architect/unity-dev/data-tool):** `@.claude/skills/unity-foundation/SKILL.md`
+**Layer 4 (investigation agents):** `@.claude/skills/investigation/SKILL.md`
+**Layer 3 (domain):** add selected module @-imports or cache refs to the relevant agent only
 
 ---
 

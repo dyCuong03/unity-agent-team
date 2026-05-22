@@ -201,6 +201,40 @@ These signals are hard stops. The orchestrator MUST check for them before spawni
 | `system-mapper` | no | no | yes | Escalates if CRG evidence conflicts with repo-knowledge |
 | `refactor-agent` | no | no | yes | Escalates if blast radius is too large for safe migration |
 
+## Hardening Rules (Production Policy — All Agents Must Comply)
+
+Five mandatory policy files govern this system. Every agent reads the relevant sections before acting.
+
+| Rule file | Governs | When to read |
+|-----------|---------|-------------|
+| `@.claude/rules/skill-confidence-routing.md` | Skill module selection with confidence scores | STEP 1.5 — before any agent spawn |
+| `@.claude/rules/cross-agent-skill-cache.md` | Skill deduplication across agents in same session | STEP 1.5 — before Phase 3 spawns |
+| `@.claude/rules/mcp-phase-gates.md` | Which MCP/REST operations are allowed per phase | Every agent — before any MCP call |
+| `@.claude/rules/repo-learning-loop.md` | When and what to save to repo-knowledge.md | Every agent — after phase completion |
+| `@.claude/rules/escalation-policy.md` | Mandatory escalation triggers with routing rules | Every agent — throughout execution |
+
+### Quick Reference
+
+**Skill routing:** Score every candidate module 0.0–1.0. Load threshold: ≥ 0.70. Max 2 domain + 2 advisory per agent. See `skill-confidence-routing.md`.
+
+**Skill cache:** First loader writes a 150-token summary to `workspace/skill-cache/<module>.cache.md`. All subsequent agents read the summary. See `cross-agent-skill-cache.md`.
+
+**MCP phases:**
+- Phase 1 (investigation): READ ONLY — no writes of any kind
+- Phase 2 (implementation): LIMITED WRITE — scripts, scoped prefabs only
+- Phase 3 (validation): PLAYMODE + READ — run tests, no code changes
+- Phase 4 (refactor): STEP-GATED WRITE — each step needs tester OK before next
+See `mcp-phase-gates.md`.
+
+**Learning triggers:** Save to `workspace/repo-knowledge.md` after: bug fix (bug-investigation), architecture approval (architect), tester sign-off (tester), performance regression (data-tool/tester), refactor incident (refactor-agent). Quality gate: must name specific systems, include detection signal, ≤200 tokens. See `repo-learning-loop.md`.
+
+**Escalation:**
+- `[AUTO_ESCALATE]` — non-blocking, appends to open risks
+- `[BLOCK]` — hard stop, halts phase
+- `[ESCALATE_ARCHITECT]` — architect must respond before phase resumes
+- `[ESCALATE_HUMAN]` — human engineer required
+Mandatory triggers: >3 systems touched, Burst removed, sync point added, >500 LOC, 3+ failed fixes. See `escalation-policy.md`.
+
 ## Anti-Patterns — Banned Behaviors
 
 The following behaviors are forbidden for all agents in all modes:

@@ -16,6 +16,7 @@ No agent writes to a file it does not own.
 | `investigation.md` | `bug-investigation` | unity-dev, tester | session-scoped — cleared per run |
 | `test-plan.md` | `tester` | unity-dev, architect | session-scoped — cleared per run |
 | `migration-plan.md` | `refactor-agent` + `architect` | unity-dev, tester | session-scoped — cleared per run |
+| `escalation-log.md` | orchestrator | all | session-scoped — retain if unresolved BLOCK |
 
 ---
 
