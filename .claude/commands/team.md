@@ -10,9 +10,12 @@ argument-hint: "<task> [--bug | --feature | --refactor] [--fast | --full] [--tea
 | Flag | Task type | First agent | Agent composition |
 |------|-----------|-------------|-------------------|
 | `--bug` | Bug fix | `bug-investigation` (sequential) | investigation → unity-dev + tester |
-| `--feature` | New feature | `architecture-agent` (sequential) | CRG map → architect → unity-dev + data-tool + tester |
+| `--feature` | New feature | `system-mapper` (sequential) | CRG map → architect → unity-dev + tester (`--with-tooling` adds data-tool) |
 | `--refactor` | Refactor / restructure | `refactor-agent` (sequential) | blast-radius → architect → unity-dev + tester |
+| `--fast-fix` | 1-3 line fix | unity-dev directly | unity-dev + tester, scope-limited |
 | *(none)* | General / unknown | `architect` (parallel) | all 4 in parallel (same as `--full`) |
+
+**Agent naming:** `system-mapper` = reads existing ECS systems (CRG). `architect` = designs new ECS systems. Never swap these.
 
 **Size flags** (only apply to general mode — task modes set their own composition):
 - `--fast` — architect + unity-dev only.
@@ -74,13 +77,13 @@ Agent({
 Agent({
   subagent_type: "unity-dev",
   description: "Implement bug fix",
-  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nBug: $ARGUMENTS\n\nInvestigation findings:\n<INVESTIGATION_OUTPUT>\n\nImplement the safe fix strategy above. Fix only the identified root cause — no refactor. Minimal change, maximum precision. All C# edits via mcp__ai-game-developer__script-update-or-create. After fixing, SendMessage to tester: 'Fix applied. Systems changed: <list>. Ready for verification.'"
+  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nBug: $ARGUMENTS\n\nInvestigation findings:\n<INVESTIGATION_OUTPUT>\n\nFix only the identified root cause — no refactor. Minimal change, maximum precision. All C# edits via mcp__ai-game-developer__script-update-or-create.\n\nBefore signaling tester:\n1. Complete the ECS Safety Checklist in your SKILL.md.\n2. Run mcp__ai-game-developer__console-get-logs — confirm ZERO compile errors.\nIf compilation fails: fix it before signaling. Never signal tester with broken compilation.\n\nOnly after both: SendMessage to tester: 'Fix applied. Compilation: CLEAN. Systems changed: <list>.'"
 })
 
 Agent({
   subagent_type: "tester",
   description: "Regression test for bug fix",
-  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nBug: $ARGUMENTS\n\nInvestigation findings:\n<INVESTIGATION_OUTPUT>\n\nDesign a regression test that pins this root cause. The test must fail before the fix and pass after. Wait for unity-dev's 'Fix applied' message, then implement and run the test. Report: pass/fail + evidence. Block sign-off if adjacent regressions found."
+  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nBug: $ARGUMENTS\n\nInvestigation findings:\n<INVESTIGATION_OUTPUT>\n\nBASELINE FIRST: Run the regression test NOW in the pre-fix state. Record 'Baseline: FAIL'. If the test passes pre-fix — the assertion is wrong. Stop and report to orchestrator.\n\nThen wait for unity-dev's 'Fix applied. Compilation: CLEAN' message. Run same test. Report: Baseline result + post-fix result + adjacent regression check. No sign-off without both evidence entries."
 })
 ```
 
@@ -90,25 +93,27 @@ Agent({
 
 ```
 Architecture-first. Existing system mapped before design starts.
+data-tool is opt-in: add --with-tooling if the feature needs new editor tooling.
 
 Phase 1 (sequential — WAIT for result):
-  architecture-agent → maps existing ECS systems, boundaries, extension points
+  system-mapper → maps existing ECS systems, boundaries, extension points
+  NOTE: system-mapper ≠ architect. system-mapper READS. architect DESIGNS.
 
 Phase 2 (sequential — WAIT for result):
   architect → designs the feature extension from the map
 
 Phase 3 (parallel — single message):
-  unity-dev   → implements from design + CRG pattern discovery
-  data-tool   → builds tooling anchored in real components
+  unity-dev   → implements from design + code-tracer for extension points
   tester      → prepares test matrix from acceptance criteria
+  data-tool   → ONLY if --with-tooling flag present
 ```
 
-**Phase 1 — Map existing system:**
+**Phase 1 — Map existing system (system-mapper, not architect):**
 ```
 Agent({
-  subagent_type: "architecture-agent",
+  subagent_type: "system-mapper",
   description: "Map existing ECS systems for feature area",
-  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nMap the existing ECS systems for this feature area:\n1. get_architecture_overview — full system map.\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach?\n4. map_dependency_graph — what would this feature depend on?\n\nDeliver:\n- System map (components, systems, update order)\n- Existing extension points\n- Dependency summary\n- Gaps or missing infrastructure the Architect must design"
+  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nMap what already exists — do not suggest a design.\n1. get_architecture_overview — full system map.\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach without parallel architecture?\n4. map_dependency_graph — what would this feature depend on?\n\nDeliver: system map, execution path, extension points (file:line), dependencies, infrastructure gaps."
 })
 ```
 
@@ -126,19 +131,20 @@ Agent({
 Agent({
   subagent_type: "unity-dev",
   description: "Implement feature",
-  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nBefore implementing: spawn `feature-dev-agent` to confirm extension points and existing patterns. Implement strictly from the design. All C# edits via mcp__ai-game-developer__script-update-or-create. Surface any design deviation immediately to architect."
+  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nBefore implementing: spawn `code-tracer` once to confirm extension points and existing patterns (replaces both codebase-reader and feature-dev-agent — one call, not two). Implement strictly from the design. All C# edits via mcp__ai-game-developer__script-update-or-create. Complete ECS Safety Checklist before signaling tester. Surface any design deviation immediately to architect."
 })
 
+# --with-tooling only:
 Agent({
   subagent_type: "data-tool",
   description: "Feature tooling",
-  prompt: "@.claude/skills/data-tool/SKILL.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nBefore building tooling: spawn `codebase-reader` to map real component state. Build inspectors, validators, diagnostics anchored in the architect's data model. Do NOT silently change runtime behavior."
+  prompt: "@.claude/skills/data-tool/SKILL.md @.claude/skills/editor-data-tools/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nBefore building tooling: spawn `code-tracer` to map real component state. Build inspectors, validators, diagnostics anchored in the architect's data model. Do NOT silently change runtime behavior."
 })
 
 Agent({
   subagent_type: "tester",
   description: "Feature validation",
-  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nDerive test matrix from acceptance criteria above. Cover correctness, scale, determinism, regression. When a test fails: spawn `bug-investigation` to trace root cause — return fix strategy to unity-dev. Block sign-off until all criteria pass."
+  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nDerive test matrix from acceptance criteria above. Cover correctness, scale, determinism, regression. When a test fails: spawn `bug-investigation` to trace root cause — return fix strategy to unity-dev. Block sign-off until all acceptance criteria pass with evidence."
 })
 ```
 
@@ -189,7 +195,32 @@ Agent({
 Agent({
   subagent_type: "tester",
   description: "Behavior preservation validation",
-  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nRefactor: $ARGUMENTS\n\nApproved migration plan:\n<APPROVED_PLAN>\n\nBehavior preservation checklist from the plan above is your test target. After each 'Step N complete' message from unity-dev: run the relevant tests, verify behavior is identical. Reply 'Step N OK' or 'Step N FAIL: <what broke>' — unity-dev waits for your reply before continuing. If a step fails, block unity-dev and SendMessage to architect."
+  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nRefactor: $ARGUMENTS\n\nApproved migration plan:\n<APPROVED_PLAN>\n\nBehavior preservation checklist above is your test target. After each 'Step N complete' message from unity-dev: run the relevant tests, verify behavior is identical. Reply 'Step N OK' or 'Step N FAIL: <what broke>'.\n\nDEADLOCK PREVENTION: If you cannot verify a step (compilation failure, test infra broken), do NOT leave unity-dev waiting. Reply immediately: 'Step N BLOCKED: <reason>'. Unity-dev must roll back that step and escalate to architect — never leave migration half-done."
+})
+```
+
+---
+
+### Mode: `--fast-fix` (1-3 line fix, no investigation)
+
+```
+For small, obvious fixes only. Skip investigation.
+Scope limit: if change exceeds 20 lines or 2 files — STOP, escalate to --bug.
+```
+
+Spawn both in a single message:
+
+```
+Agent({
+  subagent_type: "unity-dev",
+  description: "Fast fix",
+  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFix: $ARGUMENTS\n\nSCOPE LIMIT: If this fix requires changing more than 20 lines or touching more than 2 files, STOP immediately and report: 'Scope exceeded --fast-fix limit. Re-run with --bug.' Do not proceed with a large change in fast-fix mode.\n\nOtherwise: apply the minimal fix. Complete ECS Safety Checklist. Verify compilation clean. Signal tester."
+})
+
+Agent({
+  subagent_type: "tester",
+  description: "Fast fix verification",
+  prompt: "@.claude/skills/tester/SKILL.md\n\nFix: $ARGUMENTS\n\nVerify the fix works and no regressions introduced. Run EditMode tests for touched assemblies. Report: pass/fail + list of tests run."
 })
 ```
 
@@ -198,8 +229,8 @@ Agent({
 ### Mode: general (no task mode flag)
 
 ```
-All agents start immediately in parallel. Use when task type is unclear
-or spans multiple concerns. Agents self-correct as upstream data arrives.
+All agents start immediately in parallel. Use when task type is unclear.
+Agents self-correct as upstream data arrives.
 ```
 
 Spawn 2 (`--fast`) or 4 (`--full`) agents in **one message**:
@@ -208,26 +239,26 @@ Spawn 2 (`--fast`) or 4 (`--full`) agents in **one message**:
 Agent({
   subagent_type: "architect",
   description: "ECS design for task",
-  prompt: "@.claude/docs/setup.md @.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore locking the design: spawn `architecture-agent` to map existing ECS systems, boundaries, and extension points. Feed its output into your design — do not design against guessed state. Then design and publish. Save a memory_lesson at handoff for non-obvious risks."
+  prompt: "@.claude/docs/setup.md @.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore locking the design: spawn `system-mapper` to map existing ECS systems, boundaries, and extension points. Feed its output into your design — do not design against guessed state. Then design and publish. Save a memory_lesson at handoff for non-obvious risks."
 })
 
 Agent({
   subagent_type: "unity-dev",
   description: "ECS implementation for task",
-  prompt: "@.claude/docs/setup.md @.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore implementing: (1) spawn `codebase-reader` to find the entry point and execution chain, (2) spawn `feature-dev-agent` to locate the existing pattern and extension points. Implement from those findings. When Architect's design arrives, reconcile and self-correct. All C# edits via mcp__ai-game-developer__script-update-or-create."
+  prompt: "@.claude/docs/setup.md @.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore implementing: spawn `code-tracer` to find entry point, execution chain, existing pattern, and extension point in one pass. Implement from those findings. When Architect's design arrives, reconcile and self-correct. All C# edits via mcp__ai-game-developer__script-update-or-create. Complete ECS Safety Checklist before signaling tester."
 })
 
 # --full only:
 Agent({
   subagent_type: "data-tool",
   description: "Tooling and diagnostics",
-  prompt: "@.claude/docs/setup.md @.claude/skills/data-tool/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore building tooling: spawn `codebase-reader` to understand what runtime state already exists. Anchor inspectors in real components. Do NOT silently change runtime behavior."
+  prompt: "@.claude/docs/setup.md @.claude/skills/data-tool/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/editor-data-tools/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore building tooling: spawn `code-tracer` to understand what runtime state already exists. Anchor inspectors in real components. Do NOT silently change runtime behavior."
 })
 
 Agent({
   subagent_type: "tester",
   description: "Validation",
-  prompt: "@.claude/docs/setup.md @.claude/skills/tester/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nStart outlining the test matrix immediately. When a test fails: spawn `bug-investigation` to trace root cause before proposing a fix — return fix strategy to unity-dev. Run tests as soon as code is available. Save a memory_lesson per defect at sign-off."
+  prompt: "@.claude/docs/setup.md @.claude/skills/tester/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/qa-validation/SKILL.md\n\nTask: $ARGUMENTS\n\nStart outlining the test matrix immediately. When a test fails: spawn `bug-investigation` to trace root cause before proposing a fix — return fix strategy to unity-dev. Run tests as soon as code is available. Save a memory_lesson per defect at sign-off."
 })
 ```
 
@@ -360,24 +391,30 @@ Next steps: <list>
 ## Usage
 
 ```sh
+# 1-3 line fix — no investigation
+/team Fix off-by-one in damage calculation --fast-fix
+
 # Bug fix — investigation-first
 /team Enemies stop chasing after teleport --bug
 /team Health bar shows wrong value when two damage sources apply same frame --bug
 
 # New feature — architecture-first
 /team Add a stamina system with regeneration and cooldown --feature
-/team Add an expedition reward screen with animated item reveal --feature
+/team Add expedition reward screen with new inspector tooling --feature --with-tooling
 
 # Refactor — blast-radius-first
 /team Extract zone spawner logic into a shared SpawnerSystem --refactor
 /team Replace MonoBehaviour health tracking with ECS component --refactor
 
-# General / unknown — all agents parallel
+# General / unknown
 /team Add stamina regeneration with cooldowns --full
-/team Add a health system with damage and death states
-
-# Force experimental Teams backend
-/team Add stamina regeneration --feature --teams
 ```
 
-**Quick rule:** If you know it's a bug, use `--bug`. If you know it's a new feature, use `--feature`. If you're restructuring existing code, use `--refactor`. If you're not sure, omit the task mode — agents will figure it out.
+**Quick rule:**
+- 1-3 lines, obvious → `--fast-fix`
+- Known bug → `--bug`
+- New feature → `--feature`
+- Restructuring existing code → `--refactor`
+- Not sure → omit flag (general mode)
+
+**Never use `--fast-fix` for anything touching system execution order, Burst jobs, or structural changes.**

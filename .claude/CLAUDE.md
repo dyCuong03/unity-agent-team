@@ -115,6 +115,45 @@ Each role delegates non-trivial work to its internal subagents (listed in `.clau
 
 Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.
 
+## Anti-Patterns — Banned Behaviors
+
+The following behaviors are forbidden for all agents in all modes:
+
+### Investigation
+- Reading files without prior CRG query evidence
+- Grepping the repository as a first step
+- Opening more than 8 files per investigation
+- Inferring architecture from filenames
+- Calling both `codebase-reader` AND `feature-dev-agent` — use `code-tracer` (one call)
+- Calling `architecture-agent` — use `system-mapper` (prevents naming collision with `architect`)
+
+### Implementation
+- Writing any code before `system-mapper` has mapped existing systems (in `--feature` mode)
+- Starting implementation before root cause is proven (in `--bug` mode)
+- Fixing a bug without a failing baseline test first
+- Opportunistic refactoring — fixing code beyond the exact root cause
+- Signaling tester before verifying compilation is clean
+- Moving or renaming a system's update group without architect approval
+- Removing `[BurstCompile]` from a hot-path `ISystem`
+- Performing structural changes (`AddComponent`/`RemoveComponent`) inside a scheduled job
+
+### Orchestration
+- Spawning `architect` in `--feature` Phase 1 — Phase 1 is always `system-mapper`
+- Confusing `system-mapper` (reads codebase) with `architect` (designs new systems)
+- Leaving a `--refactor` migration half-done — if a step fails, roll back that step immediately
+- Allowing unity-dev to wait indefinitely in step-by-step refactor — tester must reply or unblock
+- Declaring a bug fixed without both baseline-FAIL and post-fix-PASS evidence
+- Using `--fast-fix` for changes touching system execution order, Burst jobs, or structural changes
+
+### ECS-Specific
+- Designing components that duplicate existing components without explicit architect approval
+- Adding main-thread work to a system that was previously job-scheduled
+- Modifying system execution order (`[UpdateBefore/After]`) without a blast-radius analysis
+- Using `Time.time`, `Random.Range`, or `DateTime.Now` in any ECS system (breaks determinism)
+- Calling `EntityManager` directly on main thread inside a system that also schedules jobs
+
+---
+
 ## CRG-First Codebase Understanding
 
 Five specialized agents handle codebase investigation. All query `code-review-graph` MCP before reading any files.

@@ -69,8 +69,22 @@ If CRG agents are unavailable, use `code-review-graph` MCP with `get_minimal_con
 - `mcp__ai-game-developer__console-get-logs` — after a compile or play-mode session when behavior looks off
 - `mcp__ai-game-developer__reflection-method-find` / `reflection-method-call` — inspect internal types without writing throwaway code
 
+### ECS Safety Checklist — mandatory before signaling tester
+
+Complete every item before declaring "Fix applied" or "Implementation complete":
+
+- [ ] **No structural changes inside scheduled jobs** — `EntityManager.Add/RemoveComponent` inside `IJobEntity` or `IJobChunk` → must use ECB
+- [ ] **System update order preserved** — no `[UpdateBefore/After]` attributes removed or changed without architect approval
+- [ ] **`[BurstCompile]` not removed** from any hot-path `ISystem` that had it before
+- [ ] **No managed allocations added** to `ISystem.OnUpdate` or any job (no `new List<>`, no LINQ, no string formatting)
+- [ ] **ECB playback timing unchanged** — if ECB playback point moved, flag to architect
+- [ ] **No unintended archetype changes** — verify no components added/removed on entities that were previously stable archetypes in hot loops
+
+If any item fails: stop, fix it, recheck before signaling tester.
+
 ### Before completion
 
+- `mcp__ai-game-developer__console-get-logs` — check for compile errors BEFORE signaling tester. If compilation fails, fix it first — do not signal tester with broken compilation.
 - `mcp__ai-game-developer__tests-run` — at minimum EditMode for the touched assemblies
 - `mcp__agentmemory__memory_lesson_save` — only for performance/Burst pitfalls worth remembering. Skip clean runs.
 

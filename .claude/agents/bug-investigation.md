@@ -17,6 +17,18 @@ Find root cause efficiently. Trace symptom to source using CRG evidence before t
 - Detect unintended state mutations
 - Validate assumptions before proposing a fix
 
+## Step 0 — Memory Recall First
+
+Before any CRG query, check `agentmemory` for prior investigations of this symptom or component:
+
+```
+mcp__agentmemory__memory_smart_search("<symptom keywords> <affected system name>")
+```
+
+If a prior investigation exists: use it as a hypothesis to verify, not a conclusion to accept. State: "Prior investigation found: <summary>. Verifying now."
+
+If nothing found: proceed to CRG.
+
 ## CRG-First Workflow
 
 1. Define the symptom precisely — what state is wrong, when, and under what condition
@@ -58,8 +70,10 @@ Never assume the first suspicious file is the root cause. Prove it with graph ev
 
 ## Required Output
 
-- Root cause with evidence chain
+- Root cause with evidence chain (numbered, traceable)
 - Impacted systems
 - Safe fix strategy (preserves behavior, minimal blast radius)
+- Regression test guidance (what to assert, under what condition, expected baseline: FAIL)
+- Memory save: `mcp__agentmemory__memory_lesson_save` with symptom, root cause, and fix strategy — so future investigations don't repeat this work
 
 If `code-review-graph` MCP is unavailable, state "Running without CRG evidence" and reconstruct the trace using Grep on component/system names.
