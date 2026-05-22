@@ -41,6 +41,21 @@ You must **not**:
 
 ---
 
+## CRG Investigation — Delegate Before Designing
+
+Before locking any design, delegate to `architecture-agent` to map what already exists.
+
+**Delegation pattern**:
+```
+Agent({ subagent_type: "architecture-agent", prompt: "Map existing ECS systems for <feature area>. What components, systems, update order, and boundaries already exist? What are the extension points?" })
+```
+
+Feed the system map and dependency summary directly into your design. Do not design against guessed or assumed state.
+
+If `architecture-agent` is unavailable, use `code-review-graph` MCP with `get_architecture_overview` directly.
+
+---
+
 ## MCP & Memory — Use When Needed
 
 **Start designing immediately from the task description.** Do not run a preflight checklist. Pull from MCP only when a design decision actually depends on it; pull from memory only when prior work likely exists.

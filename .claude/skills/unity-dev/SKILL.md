@@ -37,6 +37,26 @@ You must **not**:
 
 ---
 
+## CRG Investigation — Delegate Before Implementing
+
+Before writing any code, delegate codebase investigation to the appropriate CRG-first agent.
+
+**Step 1 — Orient**: spawn `codebase-reader` to find the entry point and execution chain.
+```
+Agent({ subagent_type: "codebase-reader", prompt: "Find the entry point and execution chain for <feature>. What files and systems are involved? Max 8 files." })
+```
+
+**Step 2 — Find the pattern**: spawn `feature-dev-agent` to locate the existing pattern for this type of feature.
+```
+Agent({ subagent_type: "feature-dev-agent", prompt: "Find the existing pattern for <feature type> in this codebase. Where should new code attach? What extension points exist?" })
+```
+
+Implement following the discovered pattern and extension points. Do not introduce parallel architecture if one already exists.
+
+If CRG agents are unavailable, use `code-review-graph` MCP with `get_minimal_context` before starting.
+
+---
+
 ## MCP & Memory — Use When Needed
 
 **Start coding immediately** from the task description. Pull from MCP when you need Unity-side info you don't already have; pull from memory only when prior patterns likely exist.

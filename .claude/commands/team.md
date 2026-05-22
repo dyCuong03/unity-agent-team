@@ -40,7 +40,7 @@ Spawn 2 (fast) or 4 (full) agents in **one message, multiple Agent calls in para
 Agent({
   subagent_type: "architect",
   description: "ECS design for task",
-  prompt: "@.claude/docs/setup.md @.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nTask: $ARGUMENTS\n\nStart designing immediately. Publish design as soon as it's ready. Pull from ai-game-developer MCP only when a decision depends on it. Pull from agentmemory only if prior work in this area is likely. Save a memory_lesson at handoff for non-obvious risks."
+  prompt: "@.claude/docs/setup.md @.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore locking the design: spawn `architecture-agent` to map existing ECS systems, boundaries, and extension points for this feature area. Feed its system map and dependency summary into your design — do not design against guessed state.\n\nThen design and publish. Pull from ai-game-developer MCP only when a decision depends on it. Pull from agentmemory only if prior work in this area is likely. Save a memory_lesson at handoff for non-obvious risks."
 })
 ```
 
@@ -49,7 +49,7 @@ Agent({
 Agent({
   subagent_type: "unity-dev",
   description: "ECS implementation for task",
-  prompt: "@.claude/docs/setup.md @.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nTask: $ARGUMENTS\n\nStart implementing immediately. When Architect's design arrives, reconcile and self-correct. All C# edits via mcp__ai-game-developer__script-update-or-create. Run tests-run before declaring complete."
+  prompt: "@.claude/docs/setup.md @.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore implementing: (1) spawn `codebase-reader` to find the entry point and execution chain for this feature, (2) spawn `feature-dev-agent` to locate the existing pattern and extension points. Implement from those findings — do not introduce parallel architecture if one already exists.\n\nWhen Architect's design arrives, reconcile and self-correct. All C# edits via mcp__ai-game-developer__script-update-or-create. Run tests-run before declaring complete."
 })
 ```
 
@@ -58,7 +58,7 @@ Agent({
 Agent({
   subagent_type: "data-tool",
   description: "Tooling and diagnostics for task",
-  prompt: "@.claude/docs/setup.md @.claude/skills/data-tool/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nTask: $ARGUMENTS\n\nStart building tooling immediately. Do NOT silently change runtime behavior. Anchor inspectors in real data via assets-get-data / object-get-data."
+  prompt: "@.claude/docs/setup.md @.claude/skills/data-tool/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nBefore building tooling: spawn `codebase-reader` to understand what runtime state and ECS components already exist for this feature area and what needs exposing. Anchor inspectors in real components and buffers found by the reader — do not build tooling for state that doesn't exist.\n\nDo NOT silently change runtime behavior."
 })
 ```
 
@@ -67,7 +67,7 @@ Agent({
 Agent({
   subagent_type: "tester",
   description: "Validation for task",
-  prompt: "@.claude/docs/setup.md @.claude/skills/tester/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/editor-data-tools/SKILL.md\n\nTask: $ARGUMENTS\n\nStart outlining the test matrix immediately. Run tests as soon as code is available. Save a memory_lesson per defect at sign-off."
+  prompt: "@.claude/docs/setup.md @.claude/skills/tester/SKILL.md @.claude/docs/architecture.md @.claude/docs/mcp-integration.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/editor-data-tools/SKILL.md @.claude/skills/codebase-understanding/SKILL.md\n\nTask: $ARGUMENTS\n\nStart outlining the test matrix immediately. When a test fails: spawn `bug-investigation` to trace root cause with graph evidence before proposing a fix — return the safe fix strategy to unity-dev, do not patch it yourself. Run tests as soon as code is available. Save a memory_lesson per defect at sign-off."
 })
 ```
 

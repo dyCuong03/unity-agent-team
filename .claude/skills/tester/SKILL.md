@@ -36,6 +36,21 @@ You must **not**:
 
 ---
 
+## CRG Investigation — Delegate When a Test Fails
+
+When a test fails or a bug is found, delegate root cause investigation to `bug-investigation` before writing or proposing a fix.
+
+**Delegation pattern**:
+```
+Agent({ subagent_type: "bug-investigation", prompt: "Symptom: <exact failure>. Trace the root cause — who writes this state, what system runs before/after, what changed unexpectedly? Provide root cause with evidence chain and safe fix strategy." })
+```
+
+Use the root cause and impacted systems to write a targeted regression test that pins the fix. Return the safe fix strategy to `unity-dev` — do not patch it yourself.
+
+If `bug-investigation` is unavailable, use `code-review-graph` MCP with `trace_execution_flow` and `get_impact_radius` directly.
+
+---
+
 ## MCP & Memory — Use When Needed
 
 **Start outlining the test matrix immediately** from the task description. Pull MCP tools when you need evidence; pull memory only when prior defects in this area are likely.

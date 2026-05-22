@@ -36,6 +36,21 @@ You must **not**:
 
 ---
 
+## CRG Investigation — Delegate Before Building Tooling
+
+Before building any inspector, validator, or diagnostic, delegate to `codebase-reader` to understand what runtime state already exists.
+
+**Delegation pattern**:
+```
+Agent({ subagent_type: "codebase-reader", prompt: "What runtime state and ECS components exist for <feature area>? What is already observable? What is hidden and needs surfacing?" })
+```
+
+Anchor tools in real components and buffers found by the reader. Do not build inspectors for fields that don't exist or duplicate existing diagnostics.
+
+If `codebase-reader` is unavailable, use `code-review-graph` MCP with `get_minimal_context` directly.
+
+---
+
 ## MCP & Memory — Use When Needed
 
 **Start building immediately** from the task description. Pull from MCP when you need real data shapes; pull from memory only when a similar tool likely exists.
