@@ -62,28 +62,35 @@ Phase 3 (sequential — WAIT):
   Sign off or loop back to Phase 2
 ```
 
+**Before Phase 1 — orchestrator resets session workspace:**
+```sh
+# Clear session-scoped files (preserve persistent files)
+cp .claude/workspace-templates/investigation.md workspace/investigation.md
+cp .claude/workspace-templates/test-plan.md workspace/test-plan.md
+```
+
 **Phase 1 — Spawn and wait:**
 ```
 Agent({
   subagent_type: "bug-investigation",
   description: "Root cause investigation",
-  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nBug: $ARGUMENTS\n\nTrace root cause using code-review-graph:\n1. Define symptom precisely — what state is wrong, when, under what condition.\n2. trace_execution_flow from symptom to entry point.\n3. Identify writers and readers of the mutated state.\n4. get_impact_radius — what else could be affected by a fix?\n5. Inspect only systems identified by graph evidence.\n\nDeliver:\n- Root cause with evidence chain\n- Impacted systems\n- Safe fix strategy (minimal blast radius, behavior-preserving)\n- Regression test guidance (what to assert, under what condition)"
+  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nBug: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first for context.\nSearch agentmemory for prior investigations of this symptom area before running CRG.\n\nTrace root cause:\n1. Define symptom precisely.\n2. trace_execution_flow from symptom to entry point.\n3. Identify writers/readers of mutated state.\n4. get_impact_radius.\n5. Inspect only graph-identified systems.\n\nWrite ALL output to workspace/investigation.md (do not embed in chat).\nSet STATUS: COMPLETE when done, or STATUS: INCONCLUSIVE with [ESCALATE: reason].\nSave to agentmemory at the end."
 })
 ```
 
-**Read the output fully. Then Phase 2 — spawn both in a single message, embedding `<INVESTIGATION_OUTPUT>`:**
+**Orchestrator: read workspace/investigation.md. If STATUS is INCONCLUSIVE or starts with [ESCALATE], stop and report. Otherwise Phase 2:**
 
 ```
 Agent({
   subagent_type: "unity-dev",
   description: "Implement bug fix",
-  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nBug: $ARGUMENTS\n\nInvestigation findings:\n<INVESTIGATION_OUTPUT>\n\nFix only the identified root cause — no refactor. Minimal change, maximum precision. All C# edits via mcp__ai-game-developer__script-update-or-create.\n\nBefore signaling tester:\n1. Complete the ECS Safety Checklist in your SKILL.md.\n2. Run mcp__ai-game-developer__console-get-logs — confirm ZERO compile errors.\nIf compilation fails: fix it before signaling. Never signal tester with broken compilation.\n\nOnly after both: SendMessage to tester: 'Fix applied. Compilation: CLEAN. Systems changed: <list>.'"
+  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nBug: $ARGUMENTS\n\nRead workspace/investigation.md for root cause and fix strategy.\nRead workspace/ecs-registry.md before touching any component or system.\n\nFix only the identified root cause — no refactor. Minimal change, maximum precision.\nAll C# edits via mcp__ai-game-developer__script-update-or-create.\n\nBefore signaling tester:\n1. Complete ECS Safety Checklist from your SKILL.md.\n2. mcp__ai-game-developer__console-get-logs — confirm ZERO compile errors.\nIf compilation fails: fix it. Do NOT signal tester with broken compilation.\n\nSignal: write 'Fix applied. Compilation: CLEAN. Changed: <list>' to workspace/investigation.md under '## Fix Applied'."
 })
 
 Agent({
   subagent_type: "tester",
   description: "Regression test for bug fix",
-  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nBug: $ARGUMENTS\n\nInvestigation findings:\n<INVESTIGATION_OUTPUT>\n\nBASELINE FIRST: Run the regression test NOW in the pre-fix state. Record 'Baseline: FAIL'. If the test passes pre-fix — the assertion is wrong. Stop and report to orchestrator.\n\nThen wait for unity-dev's 'Fix applied. Compilation: CLEAN' message. Run same test. Report: Baseline result + post-fix result + adjacent regression check. No sign-off without both evidence entries."
+  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nBug: $ARGUMENTS\n\nRead workspace/investigation.md for root cause and regression test guidance.\nWrite your test plan to workspace/test-plan.md.\n\nBASELINE FIRST: Run regression test NOW (pre-fix state). Record 'Baseline: FAIL' in workspace/test-plan.md.\nIf test passes pre-fix — assertion is wrong. Write [BLOCKED: baseline test passes pre-fix] to test-plan.md STATUS and stop.\n\nPoll workspace/investigation.md for '## Fix Applied' section. When present: run same test.\nRecord both baseline and post-fix results in workspace/test-plan.md.\nSet STATUS: PASSED or STATUS: FAILED with [BLOCKED: reason]."
 })
 ```
 
@@ -108,43 +115,49 @@ Phase 3 (parallel — single message):
   data-tool   → ONLY if --with-tooling flag present
 ```
 
+**Before Phase 1 — orchestrator resets session workspace:**
+```sh
+cp .claude/workspace-templates/design.md workspace/design.md
+cp .claude/workspace-templates/test-plan.md workspace/test-plan.md
+```
+
 **Phase 1 — Map existing system (system-mapper, not architect):**
 ```
 Agent({
   subagent_type: "system-mapper",
   description: "Map existing ECS systems for feature area",
-  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nMap what already exists — do not suggest a design.\n1. get_architecture_overview — full system map.\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach without parallel architecture?\n4. map_dependency_graph — what would this feature depend on?\n\nDeliver: system map, execution path, extension points (file:line), dependencies, infrastructure gaps."
+  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first.\nIf repo-knowledge.md is empty or stale: run get_architecture_overview and update it.\n\nMap what already exists — do not suggest a design:\n1. get_architecture_overview (or read repo-knowledge.md if current)\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach?\n4. map_dependency_graph — what would this feature depend on?\n\nWrite output to workspace/repo-knowledge.md (update Extension Points and relevant sections).\nAlso write a concise feature-specific map section at the top of workspace/design.md under '## System Map'.\nIf CRG reveals a conflict with existing ecs-registry.md entries, write [ESCALATE: conflict description]."
 })
 ```
 
-**Read output. Phase 2 — Architect designs the extension:**
+**Orchestrator: check workspace/design.md for [ESCALATE]. Then Phase 2:**
 ```
 Agent({
   subagent_type: "architect",
   description: "Design feature extension",
-  prompt: "@.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFeature: $ARGUMENTS\n\nExisting system map:\n<ARCHITECTURE_AGENT_OUTPUT>\n\nDesign the feature extension. Work from the existing extension points — do not redesign existing systems. Deliver the full handoff: scope, ECS data model, system map, update order, baker plan, performance constraints, acceptance criteria, open risks, implementation task list for unity-dev / data-tool / tester."
+  prompt: "@.claude/skills/architect/SKILL.md @.claude/docs/architecture.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFeature: $ARGUMENTS\n\nRead workspace/design.md (system map section) and workspace/ecs-registry.md.\nDesign the feature extension from the mapped extension points — do not redesign existing systems.\nCheck ecs-registry.md before adding any component — avoid duplicates.\n\nWrite the complete design to workspace/design.md (fill all sections).\nUpdate workspace/ecs-registry.md with any new components and systems.\nSet design.md STATUS: APPROVED when done, or STATUS: REJECTED with [REJECTED: reason] if requirements are underspecified."
 })
 ```
 
-**Read output. Phase 3 — spawn all three in a single message, embedding `<ARCHITECT_OUTPUT>`:**
+**Orchestrator: check workspace/design.md STATUS. If REJECTED → stop. If APPROVED → Phase 3:**
 ```
 Agent({
   subagent_type: "unity-dev",
   description: "Implement feature",
-  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/docs/architecture.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nBefore implementing: spawn `code-tracer` once to confirm extension points and existing patterns (replaces both codebase-reader and feature-dev-agent — one call, not two). Implement strictly from the design. All C# edits via mcp__ai-game-developer__script-update-or-create. Complete ECS Safety Checklist before signaling tester. Surface any design deviation immediately to architect."
+  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFeature: $ARGUMENTS\n\nRead workspace/design.md for architecture. Read workspace/ecs-registry.md before touching any component.\nSpawn `code-tracer` to confirm extension points before writing any code.\n\nImplement strictly from workspace/design.md. All C# edits via mcp__ai-game-developer__script-update-or-create.\nIf design is ambiguous at any point: write [ESCALATE: question] to workspace/design.md open risks — do not guess.\nComplete ECS Safety Checklist from SKILL.md before signaling tester.\nUpdate workspace/ecs-registry.md if implementation differs from design (with reason)."
 })
 
 # --with-tooling only:
 Agent({
   subagent_type: "data-tool",
   description: "Feature tooling",
-  prompt: "@.claude/skills/data-tool/SKILL.md @.claude/skills/editor-data-tools/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nBefore building tooling: spawn `code-tracer` to map real component state. Build inspectors, validators, diagnostics anchored in the architect's data model. Do NOT silently change runtime behavior."
+  prompt: "@.claude/skills/data-tool/SKILL.md @.claude/skills/editor-data-tools/SKILL.md\n\nFeature: $ARGUMENTS\n\nRead workspace/design.md for component and system shapes before building any tooling.\nRead workspace/ecs-registry.md for real field names and types.\nSpawn `code-tracer` only if workspace files are insufficient for real component state.\nDo NOT silently change runtime behavior. Write [ESCALATE: reason] if tooling requires runtime architecture change."
 })
 
 Agent({
   subagent_type: "tester",
   description: "Feature validation",
-  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nFeature: $ARGUMENTS\n\nArchitect design:\n<ARCHITECT_OUTPUT>\n\nDerive test matrix from acceptance criteria above. Cover correctness, scale, determinism, regression. When a test fails: spawn `bug-investigation` to trace root cause — return fix strategy to unity-dev. Block sign-off until all acceptance criteria pass with evidence."
+  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nFeature: $ARGUMENTS\n\nRead workspace/design.md Acceptance Criteria section. Derive test matrix from it.\nWrite test plan to workspace/test-plan.md.\n\nWhen a test fails: spawn `bug-investigation` — it will read workspace/investigation.md. Return fix strategy to unity-dev.\nBlock sign-off until all P0 acceptance criteria pass with evidence.\nWrite final result to workspace/test-plan.md STATUS and sign-off section."
 })
 ```
 
@@ -166,36 +179,42 @@ Phase 3 (parallel — single message):
   tester      → validates behavior is preserved after each step
 ```
 
+**Before Phase 1 — orchestrator resets session workspace:**
+```sh
+cp .claude/workspace-templates/migration-plan.md workspace/migration-plan.md
+cp .claude/workspace-templates/test-plan.md workspace/test-plan.md
+```
+
 **Phase 1 — Map blast radius:**
 ```
 Agent({
   subagent_type: "refactor-agent",
   description: "Blast radius and migration plan",
-  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nRefactor: $ARGUMENTS\n\nBefore touching anything:\n1. get_impact_radius — full blast radius of the target symbol/system.\n2. trace_dependencies — what depends on what is changing?\n3. identify_shared_symbols — what is used by many callers?\n4. Map all affected systems.\n\nDeliver:\n- Risk assessment (blast radius, breaking changes)\n- Affected files and systems\n- Step-by-step migration plan (safe order)\n- Rollback strategy\n- Behavior preservation checklist (what must be identical after refactor)"
+  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nRefactor: $ARGUMENTS\n\nRead workspace/ecs-registry.md and workspace/repo-knowledge.md first.\n\nBefore touching anything:\n1. get_impact_radius — full blast radius.\n2. trace_dependencies — what depends on what is changing?\n3. identify_shared_symbols — what is used by many callers?\n4. Map all affected systems.\n\nWrite complete output to workspace/migration-plan.md (all sections).\nIf blast radius affects more than 10 files or 3 system groups: write [ESCALATE: high blast radius — consider phased approach]."
 })
 ```
 
-**Read output. Phase 2 — Architect approves:**
+**Orchestrator: check migration-plan.md for [ESCALATE]. Then Phase 2:**
 ```
 Agent({
   subagent_type: "architect",
   description: "Approve refactor migration plan",
-  prompt: "@.claude/skills/architect/SKILL.md @.claude/docs/architecture.md\n\nRefactor: $ARGUMENTS\n\nRefactor agent findings:\n<REFACTOR_AGENT_OUTPUT>\n\nReview the migration plan:\n- Does it preserve all existing behavior?\n- Does it reduce coupling without breaking ECS scheduling or system order?\n- Are the rollback strategy and step order safe?\n\nApprove with any modifications, or reject with clear reasoning. If approved, publish the final migration plan for unity-dev."
+  prompt: "@.claude/skills/architect/SKILL.md @.claude/docs/architecture.md\n\nRefactor: $ARGUMENTS\n\nRead workspace/migration-plan.md fully.\n\nReview:\n- Does plan preserve all existing ECS behavior?\n- Is system update order preserved?\n- Is rollback strategy safe and complete?\n- Is step order correct?\n\nWrite approval decision to workspace/migration-plan.md 'Architect Approval Notes' section.\nSet STATUS: APPROVED or STATUS: REJECTED with [REJECTED: reason].\nIf APPROVED with changes: modify the migration steps directly in the file."
 })
 ```
 
-**Read output. Phase 3 — spawn both in a single message, embedding `<APPROVED_PLAN>`:**
+**Orchestrator: check migration-plan.md STATUS. If REJECTED → stop, report. If APPROVED → Phase 3:**
 ```
 Agent({
   subagent_type: "unity-dev",
   description: "Execute refactor migration",
-  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nRefactor: $ARGUMENTS\n\nApproved migration plan:\n<APPROVED_PLAN>\n\nExecute the migration steps in order. Do not deviate from the plan. After each step, SendMessage to tester: 'Step <N> complete: <what changed>. Ready to verify.' Wait for tester's OK before next step. All C# edits via mcp__ai-game-developer__script-update-or-create."
+  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nRefactor: $ARGUMENTS\n\nRead workspace/migration-plan.md for approved steps and rollback strategy.\n\nExecute steps IN ORDER. After each step:\n1. Complete ECS Safety Checklist.\n2. Verify compilation clean.\n3. Update workspace/migration-plan.md Step Execution Log with your result.\n4. WAIT — poll migration-plan.md for tester's 'Step N OK' before continuing.\n\nIf tester writes 'Step N BLOCKED' or 'Step N FAIL': roll back that step using the rollback strategy, write [ESCALATE: step N failed] to migration-plan.md, and stop."
 })
 
 Agent({
   subagent_type: "tester",
   description: "Behavior preservation validation",
-  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nRefactor: $ARGUMENTS\n\nApproved migration plan:\n<APPROVED_PLAN>\n\nBehavior preservation checklist above is your test target. After each 'Step N complete' message from unity-dev: run the relevant tests, verify behavior is identical. Reply 'Step N OK' or 'Step N FAIL: <what broke>'.\n\nDEADLOCK PREVENTION: If you cannot verify a step (compilation failure, test infra broken), do NOT leave unity-dev waiting. Reply immediately: 'Step N BLOCKED: <reason>'. Unity-dev must roll back that step and escalate to architect — never leave migration half-done."
+  prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nRefactor: $ARGUMENTS\n\nRead workspace/migration-plan.md for behavior preservation checklist and steps.\nWrite your test plan to workspace/test-plan.md.\n\nAfter each unity-dev step (poll migration-plan.md Step Execution Log):\n- Run behavior preservation tests for changed systems.\n- Write 'Step N OK' or 'Step N FAIL: <what broke>' to migration-plan.md.\n- DEADLOCK PREVENTION: If you cannot verify (compilation broken, test infra broken), write 'Step N BLOCKED: <reason>' immediately — never leave unity-dev waiting."
 })
 ```
 

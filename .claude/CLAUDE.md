@@ -115,6 +115,48 @@ Each role delegates non-trivial work to its internal subagents (listed in `.clau
 
 Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.
 
+## Shared Workspace
+
+All agents communicate through files in `workspace/` at the project root, not through prompt embedding.
+
+| File | Owner | Readers | Scope |
+|------|-------|---------|-------|
+| `workspace/repo-knowledge.md` | `system-mapper` | all | persistent |
+| `workspace/ecs-registry.md` | `architect` | all | persistent |
+| `workspace/design.md` | `architect` | unity-dev, data-tool, tester | session |
+| `workspace/investigation.md` | `bug-investigation` | unity-dev, tester | session |
+| `workspace/test-plan.md` | `tester` | unity-dev, architect | session |
+| `workspace/migration-plan.md` | `refactor-agent` → `architect` | unity-dev, tester | session |
+
+**Rules:**
+- Read your input files before starting work
+- Write to workspace files — do not embed full outputs in SendMessage or chat
+- Session-scoped files are overwritten at the start of each new run
+- Persistent files are appended/updated with datestamp — never deleted
+
+## Authority Model
+
+These signals are hard stops. The orchestrator MUST check for them before spawning the next phase.
+
+| Signal | Who can issue | Meaning | Orchestrator action |
+|--------|-------------|---------|---------------------|
+| `[BLOCKED: reason]` | tester, architect | Cannot proceed — hard stop | Halt phase → route to responsible agent |
+| `[REJECTED: reason]` | architect | Design or plan rejected | Halt → return to previous phase owner |
+| `[ESCALATE: reason]` | any agent | Non-blocking flag | Continue + append to open risks |
+| `[SCOPE_EXCEEDED]` | unity-dev | --fast-fix exceeded 20 lines | Halt → re-run as --bug |
+
+**Authority by role:**
+
+| Role | Can BLOCK | Can REJECT | Can ESCALATE | Notes |
+|------|-----------|-----------|-------------|-------|
+| `architect` | yes | yes | yes | Rejects design deviations and bad migration plans |
+| `tester` | yes | no | yes | Blocks sign-off; escalates unresolvable failures to architect |
+| `unity-dev` | no | no | yes | Escalates ambiguous design; escalates scope exceeded |
+| `data-tool` | no | no | yes | Escalates if tooling requires runtime architecture change |
+| `bug-investigation` | no | no | yes | Escalates if root cause is inconclusive |
+| `system-mapper` | no | no | yes | Escalates if CRG evidence conflicts with repo-knowledge |
+| `refactor-agent` | no | no | yes | Escalates if blast radius is too large for safe migration |
+
 ## Anti-Patterns — Banned Behaviors
 
 The following behaviors are forbidden for all agents in all modes:

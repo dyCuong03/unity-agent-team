@@ -75,6 +75,38 @@ Copy these subdirectories: `agents/`, `commands/`, `docs/`, `scripts/`, `skills/
 
 If `<project-root>/.claude/CLAUDE.md` already exists and differs, **never silently overwrite it** — ask the user whether to merge content (append a "## Unity DOTS Agent Team" section) or skip. The CLAUDE.md is the user's project-wide instruction file; corrupting it can break their other workflows.
 
+### 4b. Create workspace
+
+Create the `workspace/` directory at the project root and copy persistent templates:
+
+**Windows / PowerShell:**
+```powershell
+New-Item -ItemType Directory -Force -Path "workspace"
+Copy-Item "unity-agent-team-publish/.claude/workspace-templates/repo-knowledge.md" -Destination "workspace/repo-knowledge.md" -NoClobber
+Copy-Item "unity-agent-team-publish/.claude/workspace-templates/ecs-registry.md" -Destination "workspace/ecs-registry.md" -NoClobber
+# Session-scoped files are created fresh by /team at run time — do not pre-create them
+```
+
+**macOS / Linux:**
+```sh
+mkdir -p workspace
+cp -n unity-agent-team-publish/.claude/workspace-templates/repo-knowledge.md workspace/
+cp -n unity-agent-team-publish/.claude/workspace-templates/ecs-registry.md workspace/
+```
+
+**If `workspace/repo-knowledge.md` or `ecs-registry.md` already exist: do NOT overwrite them** — they contain accumulated project knowledge. Merge if needed.
+
+Add these to `.gitignore` if you don't want to commit them, or commit them to share knowledge across the team (recommended):
+```
+# workspace/ — commit for shared knowledge, or ignore for local-only
+# workspace/design.md       ← session-scoped, ignore
+# workspace/investigation.md ← session-scoped, ignore
+# workspace/test-plan.md     ← session-scoped, ignore
+# workspace/migration-plan.md ← session-scoped, ignore
+# workspace/repo-knowledge.md ← COMMIT (persistent team knowledge)
+# workspace/ecs-registry.md   ← COMMIT (persistent team knowledge)
+```
+
 ### 5. Verify the install
 
 Check that the target now contains:
