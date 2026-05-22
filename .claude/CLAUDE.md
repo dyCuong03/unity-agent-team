@@ -115,6 +115,50 @@ Each role delegates non-trivial work to its internal subagents (listed in `.clau
 
 Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.
 
+## DOTS Conflict Resolution Policy
+
+When any Unity-Skills advisory or functional module gives guidance that conflicts with ECS/DOTS patterns, the following precedence rules apply without exception.
+
+### Precedence Table
+
+| DOTS-first (always wins) | Unity-Skills default (overridden) |
+|--------------------------|----------------------------------|
+| `ISystem.OnUpdate()` | MonoBehaviour `Update()` |
+| `IComponentData` + entity ownership | MonoBehaviour state |
+| `Jobs` + `Dependency` chains | async/await, coroutines in hot paths |
+| `ECB` structural changes in jobs | Direct `EntityManager` in scheduled jobs |
+| ECS singleton component (`SystemAPI.GetSingleton<T>()`) | ScriptableObject as runtime state |
+| Physics for Entities | MonoBehaviour Rigidbody in ECS simulation |
+| Baker → IComponentData authoring pattern | MonoBehaviour-on-prefab as game state |
+
+### Allowed MonoBehaviour in DOTS Projects
+
+These are the ONLY cases where MonoBehaviour is acceptable in a DOTS-first project:
+
+1. **Baker inputs** — `MonoBehaviour` authoring components that exist solely to feed data into a `Baker<T>`. They do not update at runtime.
+2. **Bootstrap** — single entry-point MonoBehaviour that initializes the ECS World. `[DefaultExecutionOrder(-10000)]`. Does not tick.
+3. **Hybrid boundary** — MonoBehaviour components that read entity state for presentation (UI binding, audio trigger, VFX trigger). One-way: entity → MonoBehaviour only.
+4. **Engine integrations** — systems with no ECS equivalent (NavMesh, DOTween presentation, UI Canvas). Must be explicitly architected as hybrid boundaries by the `architect` agent.
+
+### When Loading MonoBehaviour-First Modules
+
+When a module is rated `MonoBehaviour-first` (ui, animator, navmesh, dotween, event, gameobject, component):
+
+1. Load it ONLY if the task is confirmed to be at the view/presentation/authoring boundary.
+2. The `architect` agent must explicitly state the hybrid boundary in `workspace/design.md`.
+3. `unity-dev` must not cross the boundary — ECS simulation code must not reference MonoBehaviour runtime state.
+4. `tester` must verify the boundary is respected (no MonoBehaviour in ECS system hot paths).
+
+### Exception Approval
+
+Any deviation from DOTS-first policy requires explicit architect approval written to `workspace/design.md` under `## Open Risks` with this format:
+```
+[DOTS_EXCEPTION: <what DOTS rule is being relaxed>]
+Reason: <technical constraint>
+Boundary: <where the MonoBehaviour/OOP code is isolated>
+Risk: <what breaks if this spreads>
+```
+
 ## Shared Workspace
 
 All agents communicate through files in `workspace/` at the project root, not through prompt embedding.

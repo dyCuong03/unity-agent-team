@@ -39,6 +39,45 @@ Reports `agent-team-mode`, `tmux`, `mcp:ai-game-developer`, `mcp:agentmemory`. N
 
 ---
 
+## STEP 1.5 — Skill routing (resolve domain skills before spawning agents)
+
+Read `.claude/skills/routing/SKILL.md` for the full routing table.
+
+**Quick routing rules:**
+
+1. **Check unity-skills server** (if installed):
+   ```
+   GET http://localhost:8090/health
+   ```
+   If reachable: note `currentMode` (approval/auto/bypass). If unreachable: skip all REST skill calls — agents work without it.
+
+2. **Analyze the task text** for domain keywords. Match against the routing table in `@.claude/skills/routing/SKILL.md`.
+
+3. **Select domain modules** (max 2 per agent). Record selections below — use them in agent @-imports in STEP 2.
+
+4. **DOTS safety check**: if selected modules include any rated `MonoBehaviour-first` (ui, animator, navmesh, dotween, event, gameobject, component), confirm the task is at the view/presentation/authoring boundary. If not — drop the module, load nothing, let ECS layer handle it.
+
+**Domain module path pattern**: `@.claude/skills/unity-skills/skills/<module>/SKILL.md`
+**Advisory module path pattern**: `@.claude/skills/unity-skills/skills/<module>/SKILL.md`
+(Unity-Skills installs its skill docs to `.claude/skills/unity-skills/` during setup)
+
+**Routing decision output** (fill before spawning agents):
+```
+Task domain: [ui | ecs | networking | rendering | animation | assets | general]
+Unity-skills server: [reachable | unreachable]
+Permission mode: [approval | auto | bypass | unknown]
+Domain modules selected: [<module1>, <module2>] or [none]
+Advisory modules selected: [<module1>, <module2>] or [none]
+DOTS safety: [clear | MonoBehaviour-first boundary confirmed | modules dropped]
+```
+
+**Layer 1 (always in every agent prompt):** `@.claude/skills/unity-dots-best-practices/SKILL.md`
+**Layer 2 (always for architect/unity-dev/data-tool):** `@.claude/skills/unity-foundation/SKILL.md`
+**Layer 4 (always for investigation agents):** `@.claude/skills/investigation/SKILL.md`
+**Layer 3 (domain — from routing above):** add selected module @-imports to the relevant agent only
+
+---
+
 ## STEP 2 — Route by task mode
 
 Read the flags, then jump to the matching section below.
@@ -126,7 +165,7 @@ cp .claude/workspace-templates/test-plan.md workspace/test-plan.md
 Agent({
   subagent_type: "system-mapper",
   description: "Map existing ECS systems for feature area",
-  prompt: "@.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first.\nIf repo-knowledge.md is empty or stale: run get_architecture_overview and update it.\n\nMap what already exists — do not suggest a design:\n1. get_architecture_overview (or read repo-knowledge.md if current)\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach?\n4. map_dependency_graph — what would this feature depend on?\n\nWrite output to workspace/repo-knowledge.md (update Extension Points and relevant sections).\nAlso write a concise feature-specific map section at the top of workspace/design.md under '## System Map'.\nIf CRG reveals a conflict with existing ecs-registry.md entries, write [ESCALATE: conflict description]."
+  prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/investigation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/rules/GRAPH_FIRST.md\n\nFeature: $ARGUMENTS\n\nRead workspace/repo-knowledge.md and workspace/ecs-registry.md first.\nIf repo-knowledge.md is empty or stale: call project_stack_detect (unity-skills perception) to detect tech stack, then run get_architecture_overview and update repo-knowledge.md.\n\nMap what already exists — do not suggest a design:\n1. get_architecture_overview (or read repo-knowledge.md if current)\n2. trace_execution_flow — how does the closest existing feature flow?\n3. identify_extension_points — where does new code attach?\n4. map_dependency_graph — what would this feature depend on?\n\nWrite output to workspace/repo-knowledge.md (update Extension Points and relevant sections).\nAlso write a concise feature-specific map section at the top of workspace/design.md under '## System Map'.\nIf CRG reveals a conflict with existing ecs-registry.md entries, write [ESCALATE: conflict description]."
 })
 ```
 
@@ -140,11 +179,12 @@ Agent({
 ```
 
 **Orchestrator: check workspace/design.md STATUS. If REJECTED → stop. If APPROVED → Phase 3:**
+**Add domain @-imports from STEP 1.5 routing to unity-dev prompt only if relevant to this agent's work.**
 ```
 Agent({
   subagent_type: "unity-dev",
   description: "Implement feature",
-  prompt: "@.claude/skills/unity-dev/SKILL.md @.claude/skills/unity-dots-best-practices/SKILL.md\n\nFeature: $ARGUMENTS\n\nRead workspace/design.md for architecture. Read workspace/ecs-registry.md before touching any component.\nSpawn `code-tracer` to confirm extension points before writing any code.\n\nImplement strictly from workspace/design.md. All C# edits via mcp__ai-game-developer__script-update-or-create.\nIf design is ambiguous at any point: write [ESCALATE: question] to workspace/design.md open risks — do not guess.\nComplete ECS Safety Checklist from SKILL.md before signaling tester.\nUpdate workspace/ecs-registry.md if implementation differs from design (with reason)."
+  prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/unity-dev/SKILL.md [+ domain module @-imports from STEP 1.5 for unity-dev]\n\nFeature: $ARGUMENTS\n\nRead workspace/design.md for architecture. Read workspace/ecs-registry.md before touching any component.\nCheck DOTS Conflict Resolution Policy (CLAUDE.md) for any MonoBehaviour-first modules loaded — confirm boundary.\nSpawn `code-tracer` to confirm extension points before writing any code.\n\nImplement strictly from workspace/design.md. All C# edits via mcp__ai-game-developer__script-update-or-create.\nIf unity-skills server is reachable and module is FullAuto or SemiAuto-cleared: use REST skills for scene/prefab inspection only — never for mutation without ECS Safety Checklist completed.\nIf design is ambiguous: write [ESCALATE: question] to workspace/design.md open risks — do not guess.\nComplete ECS Safety Checklist from SKILL.md before signaling tester.\nUpdate workspace/ecs-registry.md if implementation differs from design (with reason)."
 })
 
 # --with-tooling only:

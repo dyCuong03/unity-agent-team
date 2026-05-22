@@ -107,6 +107,50 @@ Add these to `.gitignore` if you don't want to commit them, or commit them to sh
 # workspace/ecs-registry.md   ← COMMIT (persistent team knowledge)
 ```
 
+### 4c. Install Unity-Skills (optional but strongly recommended)
+
+Unity-Skills (`com.besty.unity-skills` v1.9.1) is a REST API server running inside Unity Editor that gives agents 714 live scene inspection and manipulation skills. It is optional — the agent team works without it — but dramatically improves debugging, scene reading, and domain-specific tasks.
+
+**Step 1 — Install the Unity package:**
+
+In Unity Package Manager → Add package from git URL:
+```
+https://github.com/Besty0728/Unity-Skills.git?path=/SkillsForUnity
+```
+
+**Step 2 — Start the server inside Unity:**
+
+Unity menu → `UnitySkills → Start Server`. Server starts at `http://localhost:8090/`.
+
+**Step 3 — Install the AI skill docs into your Claude project:**
+
+One-click (recommended): Unity menu → `UnitySkills → Install AI Skills`
+
+Manual: copy `SkillsForUnity/unity-skills~/` from the package into your project:
+```sh
+# From your project root:
+cp -rn "Library/PackageCache/com.besty.unity-skills*/unity-skills~/" .claude/skills/unity-skills/
+```
+
+This creates `.claude/skills/unity-skills/skills/<module>/SKILL.md` for all 70 modules — the routing layer uses these.
+
+**Step 4 — Set permission mode:**
+
+Unity menu → `UnitySkills → Settings`. Recommended for production: **Auto** mode.
+- Auto: safe skills run automatically; destructive skills pause for confirmation
+- Approval: every skill requires confirmation (safest but slowest)
+- Bypass: all skills run without confirmation (fastest, use with care)
+
+**Verify:**
+```sh
+curl http://localhost:8090/health
+# Expected: {"currentMode":"auto","panelApprovalRequired":false,...}
+```
+
+If unity-skills is unavailable, agents continue in degraded mode — they state "Running without unity-skills REST evidence" and fall back to CRG + file reading only.
+
+---
+
 ### 5. Verify the install
 
 Check that the target now contains:
@@ -118,23 +162,18 @@ Check that the target now contains:
 - `<project-root>/.claude/agents/tester.md`
 
 **CRG-first investigation agents:**
-- `<project-root>/.claude/agents/architecture-agent.md`
-- `<project-root>/.claude/agents/codebase-reader.md`
+- `<project-root>/.claude/agents/system-mapper.md`
+- `<project-root>/.claude/agents/code-tracer.md`
 - `<project-root>/.claude/agents/bug-investigation.md`
 - `<project-root>/.claude/agents/refactor-agent.md`
-- `<project-root>/.claude/agents/feature-dev-agent.md`
 
 **Commands and skills:**
 - `<project-root>/.claude/commands/team.md`
 - `<project-root>/.claude/commands/bugfix.md`
-- `<project-root>/.claude/skills/architect/SKILL.md`
-- `<project-root>/.claude/skills/unity-dev/SKILL.md`
-- `<project-root>/.claude/skills/data-tool/SKILL.md`
-- `<project-root>/.claude/skills/tester/SKILL.md`
 - `<project-root>/.claude/skills/unity-dots-best-practices/SKILL.md`
-- `<project-root>/.claude/skills/editor-data-tools/SKILL.md`
-- `<project-root>/.claude/skills/qa-validation/SKILL.md`
-- `<project-root>/.claude/skills/start-unity-dots-team/SKILL.md`
+- `<project-root>/.claude/skills/unity-foundation/SKILL.md`
+- `<project-root>/.claude/skills/investigation/SKILL.md`
+- `<project-root>/.claude/skills/routing/SKILL.md`
 - `<project-root>/.claude/skills/codebase-understanding/SKILL.md`
 
 **Rules and docs:**
@@ -143,6 +182,10 @@ Check that the target now contains:
 - `<project-root>/.claude/docs/architecture.md`
 - `<project-root>/.claude/docs/mcp-integration.md`
 - `<project-root>/.claude/scripts/preflight.py`
+
+**Unity-Skills (optional):**
+- `<project-root>/.claude/skills/unity-skills/SKILL.md` (if installed)
+- `<project-root>/.claude/skills/unity-skills/skills/<module>/SKILL.md` (70 modules)
 
 Run the validator again against the installed copy if Python is available:
 ```
