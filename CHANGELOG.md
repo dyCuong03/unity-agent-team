@@ -6,6 +6,86 @@ For agent-facing recent changes, see `workspace/recent-changes.md`.
 
 ---
 
+## 2026-05-25 — v2: Adaptive Pipeline (breaking)
+
+Full redesign. The fixed 4-agent template is removed in favor of an adaptive
+pipeline driven by a triage agent and enforced by a Python orchestrator.
+
+### Breaking
+- `/team` flag set replaced. `--bug | --feature | --refactor | --fast | --full
+  | --fast-fix | --teams` are gone. New form: `/team <intent> [depth] <task>`
+  where `intent ∈ {bug, feature, refactor, explore}` and
+  `depth ∈ {quick, normal, deep}`. See `MIGRATION.md` for the 1:1 mapping.
+- Fixed 4-agent spawn is removed. Pipeline composition is now derived per
+  task from `workspace/triage.json` by `orchestrate.py plan`.
+- Markdown-only gates removed. Every phase boundary is now
+  `python .claude/scripts/orchestrate.py gate <phase-id>` and exits non-zero
+  to halt.
+- `tester` is no longer always-on. New lightweight `verifier` agent runs the
+  deterministic verification bundle from `impl_result.json` for tiny/small/
+  medium. `tester` is spawned only for `large`/`critical` complexity, when
+  confidence < 0.7, or when depth=deep.
+- `/team bugfix` subcommand removed (subsumed by `/team bug`).
+- `.claude/skills/start-unity-dots-team/` removed (no fixed team to start).
+- Nested subagents removed: `code-generator`, `job-optimizer`,
+  `burst-validator`, `memory-checker`, `design-analyzer`,
+  `dependency-mapper`. Their guidance is now loaded as skill packs.
+
+### Added
+- `.claude/scripts/orchestrate.py` — runtime enforcer with subcommands
+  `preflight | reset | validate | plan | gate | ownership-check | finalize`.
+  Stdlib only. Exit codes are the contract.
+- `.claude/scripts/triage.py` — helper that emits a schema-valid
+  `workspace/triage.json`.
+- `.claude/schemas/` — JSON-schemas for every artifact
+  (`triage`, `root_cause`, `approved_plan`, `impl_result`,
+  `verification_result`, `ownership`).
+- `.claude/workspace-templates/*.json` — canonical empty artifacts.
+- `.claude/agents/triage.md`, `.claude/agents/verifier.md` — new subagent_types.
+- `.claude/skills/triage/SKILL.md`, `.claude/skills/verifier/SKILL.md` — new.
+- `.claude/skills/burst-safety/SKILL.md`,
+  `.claude/skills/ecs-job-patterns/SKILL.md`,
+  `.claude/skills/memory-safety/SKILL.md`,
+  `.claude/skills/ownership-partitioning/SKILL.md` — skill packs replacing
+  the v1 nested subagents.
+- `MIGRATION.md` — v1 → v2 migration guide.
+- `workspace/ownership.lock.json` — partition lock enforced by
+  `orchestrate.py ownership-check`.
+
+### Changed
+- `.claude/commands/team.md` — full rewrite as an adaptive, gated command.
+- `SETUP.md` — rewritten around install + verify; no more boot ceremony.
+- `README.md` — rewritten around the adaptive pipeline.
+- `.claude/CLAUDE.md` — replaces "spawn 4 agents in parallel" rules with
+  pipeline-derived agent composition; documents new gates and skill packs.
+
+### Retained (unchanged)
+- `.claude/rules/GRAPH_FIRST.md`, `mcp-phase-gates.md`,
+  `ownership-boundaries.md`, `escalation-policy.md`,
+  `dual-stack-domain-system.md`, `domain-scoring-engine.md`,
+  `api-fingerprinting-system.md`, `architecture-pattern-detection.md`,
+  `domain-aware-mcp.md`, `escalation-rules-domain.md`,
+  `knowledge-*.md`, `recent-changes-system.md`, `relevance-filtering.md`,
+  `skill-confidence-routing.md`, `cross-agent-skill-cache.md`,
+  `skill-cache-freshness.md`, `change-trigger-policy.md`,
+  `change-impact-system.md`, `documentation-retrieval.md`,
+  `repo-learning-loop.md`, `agent-knowledge-policy.md`,
+  `code-aware-routing-engine.md`, `dynamic-skill-reload.md`,
+  `workspace-knowledge-layout.md`.
+- `workspace/repo-knowledge.md`, `ecs-registry.md`, `recent-changes.md`
+  (persistent knowledge files — schema unchanged).
+- `.claude/skills/unity-dots-best-practices/SKILL.md`,
+  `unity-foundation/SKILL.md`, `codebase-understanding/SKILL.md`,
+  `editor-data-tools/SKILL.md`, `investigation/SKILL.md`,
+  `qa-validation/SKILL.md`, `routing/SKILL.md`,
+  per-role `architect/`, `unity-dev/`, `data-tool/`, `tester/`.
+
+### Removed
+- `.claude/commands/bugfix.md`
+- `.claude/skills/start-unity-dots-team/`
+
+---
+
 ## 2026-05-22
 
 ### Added

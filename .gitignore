@@ -5,3 +5,21 @@
 .serena/
 __pycache__/
 *.pyc
+
+# Adaptive pipeline — session-scoped workspace artifacts
+# Persistent files (repo-knowledge.md, ecs-registry.md, recent-changes.md)
+# are tracked; everything else in workspace/ is per-run state.
+workspace/triage.json
+workspace/pipeline.json
+workspace/root_cause.json
+workspace/approved_plan.json
+workspace/impl_result.json
+workspace/verification_result.json
+workspace/ownership.lock.json
+workspace/escalation-log.md
+workspace/domain-analysis.md
+workspace/design.md
+workspace/investigation.md
+workspace/test-plan.md
+workspace/migration-plan.md
+workspace/skill-cache/

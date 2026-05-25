@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "triage.schema.json",
+  "title": "Triage Report",
+  "type": "object",
+  "required": [
+    "intent",
+    "task",
+    "complexity",
+    "blast_radius",
+    "systems_affected",
+    "files_touched_estimate",
+    "confidence_score",
+    "domain",
+    "recommended_pipeline",
+    "parallel_allowed",
+    "verification_strategy",
+    "rationale"
+  ],
+  "properties": {
+    "intent": { "type": "string", "enum": ["bug", "feature", "refactor", "explore"] },
+    "task": { "type": "string", "minLength": 1 },
+    "depth": { "type": "string", "enum": ["quick", "normal", "deep"] },
+    "complexity": { "type": "string", "enum": ["tiny", "small", "medium", "large", "critical"] },
+    "blast_radius": { "type": "string", "enum": ["isolated", "local", "multi-system", "cross-cutting"] },
+    "systems_affected": { "type": "array", "items": { "type": "string" } },
+    "files_touched_estimate": { "type": "integer", "minimum": 0 },
+    "confidence_score": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "domain": { "type": "string", "enum": ["DOTS", "Unity", "Hybrid", "Ambiguous"] },
+    "recommended_pipeline": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "bug-investigation",
+          "refactor-agent",
+          "system-mapper",
+          "architect",
+          "unity-dev",
+          "data-tool",
+          "verifier",
+          "tester"
+        ]
+      },
+      "minItems": 1
+    },
+    "parallel_allowed": { "type": "boolean" },
+    "verification_strategy": { "type": "string", "enum": ["bundle", "verifier", "tester", "stepgated"] },
+    "ownership_partition": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
+    "skill_packs": { "type": "array", "items": { "type": "string" } },
+    "rationale": { "type": "string", "minLength": 1 },
+    "escalations": { "type": "array", "items": { "type": "string" } }
+  }
+}

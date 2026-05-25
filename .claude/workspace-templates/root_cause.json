@@ -1,0 +1,13 @@
+{
+  "status": "INCONCLUSIVE",
+  "root_cause": "REPLACE — one sentence naming system + component + condition",
+  "confidence": 0.0,
+  "affected_files": [],
+  "affected_systems": [],
+  "evidence": [
+    { "type": "CRG", "ref": "REPLACE", "note": "what this proves" }
+  ],
+  "proposed_fix": "REPLACE — minimal, root-cause-only",
+  "regression_test": "",
+  "escalation": ""
+}

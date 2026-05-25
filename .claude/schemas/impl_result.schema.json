@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "impl_result.schema.json",
+  "title": "Implementation Result",
+  "type": "object",
+  "required": ["status", "changed_files", "compilation", "verification_bundle"],
+  "properties": {
+    "status": { "type": "string", "enum": ["COMPLETE", "BLOCKED", "ESCALATE"] },
+    "changed_files": { "type": "array", "items": { "type": "string" } },
+    "lines_added": { "type": "integer", "minimum": 0 },
+    "lines_removed": { "type": "integer", "minimum": 0 },
+    "compilation": { "type": "string", "enum": ["CLEAN", "BROKEN", "UNKNOWN"] },
+    "verification_bundle": {
+      "type": "object",
+      "required": ["repro_steps", "expected_state", "invariants"],
+      "properties": {
+        "repro_steps": { "type": "array", "items": { "type": "string" } },
+        "expected_state": { "type": "array", "items": { "type": "string" } },
+        "invariants": { "type": "array", "items": { "type": "string" } },
+        "edge_cases": { "type": "array", "items": { "type": "string" } },
+        "stress_cases": { "type": "array", "items": { "type": "string" } },
+        "logs_to_inspect": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "deviations_from_plan": { "type": "array", "items": { "type": "string" } },
+    "block_reason": { "type": "string" }
+  }
+}

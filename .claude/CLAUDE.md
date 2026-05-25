@@ -1,357 +1,231 @@
 # Unity DOTS Agent Team
 
-This project packages a reusable Claude Code team for Unity DOTS development.
+This package runs an **adaptive Unity DOTS agent pipeline** in Claude Code.
+There is no fixed team. Triage classifies the task; the orchestrator
+(`.claude/scripts/orchestrate.py`) derives the minimum viable agent
+composition; every phase boundary is a Python gate that exits non-zero on
+violation. Markdown promises are not enforcement.
 
 ## Philosophy
 
-**Agents start work the moment they're spawned.** No blocking preflight, no checklist before doing the task. MCP and memory tools are pulled when actually needed, not as ceremony.
+- **Adaptive over fixed.** Most tasks need 1–2 agents. Spawn the agents
+  the work actually requires; never the full team by default.
+- **Artifacts over chat.** Every phase emits a schema-validated JSON
+  (`triage.json`, `root_cause.json`, `approved_plan.json`,
+  `impl_result.json`, `verification_result.json`,
+  `ownership.lock.json`). The orchestrator verifies these before the
+  next phase starts.
+- **Certainty before parallelism.** Parallel execution is allowed only when
+  triage reports `confidence_score ≥ 0.8`, complexity ≥ medium, and the
+  architect partitioned ownership across ≥ 2 agents. Otherwise: sequential.
+- **Skill packs over nested subagents.** Burst safety, ECS job patterns,
+  memory safety, ownership partitioning — all loaded as text into the
+  relevant agent. No `code-generator`, `burst-validator`, `memory-checker`
+  spawning.
+- **MCP and memory are pulled when needed.** Not as boot ceremony.
 
 ## Required MCP Servers
 
 | Server | Purpose |
 |---|---|
-| `ai-game-developer` | Unity Editor introspection and mutation |
-| `agentmemory` | Cross-session memory (recall, save, consolidate, reflect) |
+| `code-review-graph` | Mandatory for triage + investigators. Without it, agents fall back to targeted Grep and reduce confidence by 0.2. |
+| `ai-game-developer` | Unity Editor introspection and mutation (script edits, scene/prefab inspection, tests). |
+| `agentmemory` | Optional. Used by investigators to recall prior sessions. |
 
-If either is unavailable, agents state the fallback once and keep working. See `@.claude/docs/mcp-integration.md`.
+If a server is unavailable, agents state the fallback once and keep working.
+See `@.claude/docs/mcp-integration.md`.
 
-## Agent Teams Mode (Recommended for Full Team UI)
+## Optional: tmux pane-per-agent UI
 
-The default `/team` uses the standard `Agent` tool — works everywhere, zero config.
+The default uses the standard `Agent` tool — works everywhere, zero config.
 
-For the full team UI with one tmux pane per agent (visible parallel execution),
-add to your **user-level** `~/.claude/settings.json`:
+For one tmux pane per spawned agent, add to user-level `~/.claude/settings.json`:
 
 ```json
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "preferences": {
-    "tmuxSplitPanes": true
-  }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "preferences": { "tmuxSplitPanes": true }
 }
 ```
 
-**Restart Claude Code after adding this.** Then use `/team <task> --teams` for pane-per-agent view.
+**Restart Claude Code after adding.** `/team` autodetects the env flag.
+Without it, every feature still works.
 
-Without `--teams`, the system works identically — agents run via the standard `Agent` tool.
+> Never commit this user setting to the project repo.
 
-> This setting is user-level only. Never commit it to the project repo.
-> See SETUP.md Step 6a for the exact install command per platform.
+## Entry Points
 
-## Team Activation
+- `/team <intent> [depth] <task>` — adaptive pipeline (the only entry point)
+- `intent ∈ {bug, feature, refactor, explore}`
+- `depth  ∈ {quick, normal, deep}` (default `normal`)
 
-When this package handles a task:
+There is no `--bug` / `--feature` / `--refactor` / `--fast` / `--full` /
+`--fast-fix` / `--teams` flag set. They were collapsed into `intent + depth`.
+See `MIGRATION.md` for the mapping.
 
-1. Run `python .claude/scripts/preflight.py` (informational, never blocks).
-2. Spawn the 4 fixed roles in parallel — `architect`, `unity-dev`, `data-tool`, `tester` (or just 2 in `--fast` mode).
-3. Each agent self-loads its skills via `@`-imports and starts work immediately.
+## Pipeline Composition (built into orchestrate.py)
 
-Entrypoints:
-- `/team <task>` (default — fast, 2 agents)
-- `/team <task> --full` (all 4 agents)
+| Complexity | Pipeline | Verification |
+|------------|----------|--------------|
+| tiny | `[unity-dev]` | bundle (no verification agent) |
+| small | `[unity-dev, verifier]` | verifier |
+| medium | `[architect, unity-dev, verifier]` | verifier |
+| large | `[architect, unity-dev, tester]` | tester |
+| critical | `[architect, unity-dev, data-tool, tester]` | tester |
 
-## Skill Files
+Intent overrides:
 
-| Location | Purpose |
-|---|---|
-| `.claude/skills/<role>/SKILL.md` | Per-role brief (architect, unity-dev, data-tool, tester) |
-| `.claude/skills/unity-dots-best-practices/SKILL.md` | Shared DOTS guidance |
-| `.claude/skills/editor-data-tools/SKILL.md` | Shared editor tooling guidance |
-| `.claude/skills/qa-validation/SKILL.md` | Shared QA guidance |
-| `.claude/skills/start-unity-dots-team/SKILL.md` | Reference notes for `/team` |
+- `bug` prepends `bug-investigation`
+- `refactor` prepends `refactor-agent` and forces `architect` + `stepgated`
+- `explore` produces an empty pipeline (triage-only run)
 
-## Execution Order
+Depth modifier:
 
-1. **Architect** publishes a design. Other agents may have already started in parallel and reconcile when it arrives.
-2. **Unity Dev** implements, escalating any design conflict.
-3. **Data Tool** adds tooling, validators, diagnostics.
-4. **Tester** validates and blocks completion until evidence supports sign-off.
-5. Loop on defects.
+- `quick` downgrades complexity one tier (refused if blast_radius ≥ multi-system)
+- `normal` leaves it
+- `deep` upgrades one tier AND always uses `tester` AND requires `/codex:review`
 
-## Architect Gate
+## Artifact Gating (Mandatory)
 
-The design must cover:
-- Feature scope
-- ECS data model
-- Entity / component ownership
-- System responsibilities and update order
-- Baker / authoring conversion plan
-- Performance constraints
-- Acceptance criteria
-- Known risks
+Every artifact has a JSON schema in `.claude/schemas/`:
 
-Once published, unity-dev / data-tool / tester self-correct against it.
+| Artifact | Owner | Schema |
+|----------|-------|--------|
+| `triage.json` | `triage` (always) | `triage.schema.json` |
+| `pipeline.json` | `orchestrate.py plan` | (derived from triage) |
+| `root_cause.json` | `bug-investigation` / `refactor-agent` | `root_cause.schema.json` |
+| `approved_plan.json` | `architect` (medium+) | `approved_plan.schema.json` |
+| `impl_result.json` | `unity-dev`, `data-tool` | `impl_result.schema.json` |
+| `verification_result.json` | `verifier`, `tester` | `verification_result.schema.json` |
+| `ownership.lock.json` | `architect` (when parallel) or `triage` (when 2 writers) | `ownership.schema.json` |
 
-## Codex Review Gate (MANDATORY for every team task)
+Validate any artifact:
 
-Every task executed by the team **must pass a `/codex:review` pass after the Architect publishes the design and again before final sign-off.**
+```sh
+python .claude/scripts/orchestrate.py validate workspace/<artifact>.json <schema-name>
+```
 
-1. **Plan review** — As soon as the Architect publishes a design, the orchestrator (or the agent acting as team lead) invokes `/codex:review` with the design plus the relevant recon facts. Architect must address every blocker / high-severity comment before unity-dev starts irreversible work.
-2. **Implementation review** — Before Tester sign-off, run `/codex:review` again over the final diff. Any blocker found returns the task to the responsible role and the loop continues.
-3. **Evidence** — Capture the `/codex:review` verdict (pass / changes-requested / block) plus a one-line summary in the completion output under a `Codex review:` field. Never declare a task complete without it.
-4. **Fallback** — If `/codex:review` is unavailable, state `"Running without codex review"` once, escalate, and require an extra Architect + Tester review pass to compensate.
+The phase gate before the next phase:
 
-This rule applies to bug fixes, features, refactors, and tooling work alike. It is non-optional.
+```sh
+python .claude/scripts/orchestrate.py gate <phase-id>
+```
 
-## Subagent Rule
+Exit code 2 → halt; some prior artifact is missing or invalid. Do not
+patch around it.
 
-Each role delegates non-trivial work to its internal subagents (listed in `.claude/skills/<role>/SKILL.md`). Subagents stay inside the parent agent — no panes, no top-level promotion.
+## Ownership Partitioning
 
-## MCP & Memory Rule
+When pipeline has ≥ 2 writers (any combination of `unity-dev` + `data-tool`,
+or stepgated refactor), the architect writes `workspace/ownership.lock.json`
+partitioning files by glob. Writers check before signaling next phase:
 
-- **Prefer `ai-game-developer` MCP over guessing Unity-side state** — but only when you actually need to verify or mutate Unity state. Don't pull tools as ceremony.
-- **Use `agentmemory` when prior work likely exists** — recall and search. Save a lesson at handoff only when it's non-obvious.
-- If a tool is unavailable, state "Running without MCP evidence" / "Running without memory recall" once and continue.
+```sh
+python .claude/scripts/orchestrate.py ownership-check <agent-name> <files...>
+```
+
+Exit code 3 → ownership violation. Revert and re-scope.
 
 ## Unity DOTS Rules
 
-- Prefer `IComponentData`, `IBufferElementData`, `BlobAssetReference<T>`, `IAspect`, `ISystem`, jobs, and Burst.
+- Prefer `IComponentData`, `IBufferElementData`, `BlobAssetReference<T>`,
+  `IAspect`, `ISystem`, jobs, and Burst.
 - Optimize for data layout, cache locality, predictable frame cost.
 - No managed allocations in hot paths.
 - Minimize structural changes in tight loops (ECB or enableable components).
 - Keep authoring/editor code separate from runtime (asmdef boundaries).
 - Sync points, main-thread work, and archetype churn are explicit costs.
 
+Domain-specific reasoning is loaded via skill packs based on triage's
+`domain` classification (see `.claude/rules/dual-stack-domain-system.md`).
+
 ## Role Boundaries
 
 | Role | Owns | Must not |
 |---|---|---|
-| Architect | Design, ECS boundaries, update flow, acceptance criteria | Code |
-| Unity Dev | Runtime implementation | Change architecture without approval |
-| Data Tool | Editor tools, validators, diagnostics | Silently change runtime behavior |
-| Tester | Test cases, stress, regression, sign-off | Approve without evidence |
+| `triage` | task classification, pipeline recommendation | spawn other agents, edit files |
+| `architect` | design, ECS boundaries, update flow, ownership partition | code |
+| `unity-dev` | runtime implementation | change architecture without `approved_plan.json` |
+| `data-tool` | editor tools, validators, diagnostics | silently change runtime behavior |
+| `verifier` | run verification bundle from `impl_result.json` | design tests, edit code |
+| `tester` | test matrix, stress, regression, sign-off | approve without evidence |
+| `bug-investigation` | root cause, evidence chain, fix strategy | implement the fix |
+| `refactor-agent` | blast radius, migration plan, rollback | execute migration |
+| `system-mapper` | read existing systems, update `repo-knowledge.md` | design new systems |
 
-## Communication
+## Anti-Patterns (Banned)
 
-Every handoff: objective, inputs, outputs, constraints, open risks. Concise and technical. Conflicts escalate; tests-fail returns to the responsible role; loop continues.
-
-## Domain-Aware Precedence Policy
-
-The system uses **three domains** — not a single DOTS-first policy. Domain is determined by code evidence (API fingerprinting), not task keywords. See `.claude/rules/dual-stack-domain-system.md`.
-
-### Domain 1 — Runtime ECS (DOTS leads)
-
-Applies when: `DOTS_score ≥ 0.70` and `DOTS_score > Unity_score + 0.20`
-
-| DOTS wins | Unity default overridden |
-|-----------|--------------------------|
-| `ISystem.OnUpdate()` | MonoBehaviour `Update()` |
-| `IComponentData` + entity | MonoBehaviour state |
-| `Jobs` + `Dependency` chains | async/await in hot paths |
-| `ECB` structural changes in jobs | Direct `EntityManager` in jobs |
-| ECS singleton (`SystemAPI.GetSingleton<T>()`) | ScriptableObject for runtime state |
-| Physics for Entities | MonoBehaviour Rigidbody in simulation |
-
-### Domain 2 — Unity View / Authoring (Unity leads)
-
-Applies when: `Unity_score ≥ 0.70` and `Unity_score > DOTS_score + 0.20`
-
-| Unity wins | Notes |
-|-----------|-------|
-| MonoBehaviour lifecycle | Correct execution model for view code |
-| Coroutines / async | Valid in presentation layer |
-| ScriptableObject for config | Correct authoring pattern |
-| Prefab workflow | Correct view authoring |
-| Animator state machine | Correct for character animation |
-
-DOTS patterns are secondary in this domain. Do not force ECS reasoning onto view code.
-
-### Domain 3 — Hybrid Boundary (Both cooperate)
-
-Applies when: `Hybrid_score ≥ 0.60` and `abs(DOTS_score - Unity_score) < 0.30`
-
-Rule: **DOTS owns runtime truth. Unity owns presentation. Bridge is explicit and one-way.**
-
-Every hybrid feature requires a contract in `workspace/design.md`:
-```
-Hybrid Contract: <name>
-Source of truth: DOTS — <component name>
-Presentation owner: Unity — <class name>
-Data flow: DOTS → read by Unity (never the reverse at runtime)
-Write path: Only via <system or ECB> — Unity never writes entity state directly
-```
-
-### Exception Approval (Domain 1 only)
-
-Any deviation from DOTS-first policy within Domain 1 requires architect approval:
-```
-[DOTS_EXCEPTION: <what rule is relaxed>]
-Reason: <technical constraint>
-Boundary: <where MonoBehaviour/OOP code is isolated>
-Risk: <what breaks if this spreads>
-```
-
-### Domain Classification
-
-Determined by code evidence — not keywords. Investigation runs first.
-See `workspace/domain-analysis.md` for per-session classification evidence.
-If domain is ambiguous → `[ESCALATE_ARCHITECT: domain ambiguous]` before implementation starts.
-
-Full rules: `@.claude/rules/dual-stack-domain-system.md`
-
-## Shared Workspace
-
-All agents communicate through files in `workspace/` at the project root, not through prompt embedding.
-
-| File | Owner | Readers | Scope |
-|------|-------|---------|-------|
-| `workspace/repo-knowledge.md` | `system-mapper` | all | persistent |
-| `workspace/ecs-registry.md` | `architect` | all | persistent |
-| `workspace/design.md` | `architect` | unity-dev, data-tool, tester | session |
-| `workspace/investigation.md` | `bug-investigation` | unity-dev, tester | session |
-| `workspace/test-plan.md` | `tester` | unity-dev, architect | session |
-| `workspace/migration-plan.md` | `refactor-agent` → `architect` | unity-dev, tester | session |
-
-**Rules:**
-- Read your input files before starting work
-- Write to workspace files — do not embed full outputs in SendMessage or chat
-- Session-scoped files are overwritten at the start of each new run
-- Persistent files are appended/updated with datestamp — never deleted
-
-## Authority Model
-
-These signals are hard stops. The orchestrator MUST check for them before spawning the next phase.
-
-| Signal | Who can issue | Meaning | Orchestrator action |
-|--------|-------------|---------|---------------------|
-| `[BLOCKED: reason]` | tester, architect | Cannot proceed — hard stop | Halt phase → route to responsible agent |
-| `[REJECTED: reason]` | architect | Design or plan rejected | Halt → return to previous phase owner |
-| `[ESCALATE: reason]` | any agent | Non-blocking flag | Continue + append to open risks |
-| `[SCOPE_EXCEEDED]` | unity-dev | --fast-fix exceeded 20 lines | Halt → re-run as --bug |
-
-**Authority by role:**
-
-| Role | Can BLOCK | Can REJECT | Can ESCALATE | Notes |
-|------|-----------|-----------|-------------|-------|
-| `architect` | yes | yes | yes | Rejects design deviations and bad migration plans |
-| `tester` | yes | no | yes | Blocks sign-off; escalates unresolvable failures to architect |
-| `unity-dev` | no | no | yes | Escalates ambiguous design; escalates scope exceeded |
-| `data-tool` | no | no | yes | Escalates if tooling requires runtime architecture change |
-| `bug-investigation` | no | no | yes | Escalates if root cause is inconclusive |
-| `system-mapper` | no | no | yes | Escalates if CRG evidence conflicts with repo-knowledge |
-| `refactor-agent` | no | no | yes | Escalates if blast radius is too large for safe migration |
-
-## Knowledge System
-
-The agent knowledge system is multi-layer. Each layer has strict ownership. No duplication.
-
-| Layer | File | Agents read? | Persists? | Max tokens |
-|-------|------|-------------|-----------|-----------|
-| Human history | `CHANGELOG.md` | Never | Yes (permanent) | Unbounded |
-| Recent mutations | `workspace/recent-changes.md` | Filtered (≤5 entries) | Yes (14-day rolling) | 300 |
-| Stable architecture | `workspace/repo-knowledge.md` | Section tags only | Yes (with decay) | 150 (filtered) |
-| ECS ownership | `workspace/ecs-registry.md` | On demand | Yes (permanent) | 50 |
-| Session reasoning | `workspace/domain-analysis.md` | All agents | Session only | 100 |
-
-**Quick rules:**
-- Agents NEVER read `CHANGELOG.md` — read `recent-changes.md` instead
-- `repo-knowledge.md` entries must have `<!-- confidence:X verified:DATE source:Y -->`
-- Confidence < 0.40 = STALE — skip, trigger revalidation
-- Skill cache freshness: SHA-256 hash check at STEP 1.5 — stale entries auto-deleted
-- Total knowledge budget per agent: **800 tokens** (P1–P6, drop lowest priority first)
-
-Full rules:
-- `@.claude/rules/knowledge-ownership-model.md` — single source of truth per fact type
-- `@.claude/rules/recent-changes-system.md` — rolling change tracking
-- `@.claude/rules/knowledge-decay-system.md` — confidence decay + STALE markers
-- `@.claude/rules/knowledge-token-budget.md` — 800-token hard cap
-- `@.claude/rules/agent-knowledge-policy.md` — per-agent read/write obligations
-- `@.claude/rules/documentation-retrieval.md` — section-tag retrieval
-- `@.claude/rules/skill-cache-freshness.md` — hash-based cache invalidation
-
-## Hardening Rules (Production Policy — All Agents Must Comply)
-
-Five mandatory policy files govern this system. Every agent reads the relevant sections before acting.
-
-| Rule file | Governs | When to read |
-|-----------|---------|-------------|
-| `@.claude/rules/skill-confidence-routing.md` | Skill module selection with confidence scores | STEP 1.5 — before any agent spawn |
-| `@.claude/rules/cross-agent-skill-cache.md` | Skill deduplication across agents in same session | STEP 1.5 — before Phase 3 spawns |
-| `@.claude/rules/mcp-phase-gates.md` | Which MCP/REST operations are allowed per phase | Every agent — before any MCP call |
-| `@.claude/rules/repo-learning-loop.md` | When and what to save to repo-knowledge.md | Every agent — after phase completion |
-| `@.claude/rules/escalation-policy.md` | Mandatory escalation triggers with routing rules | Every agent — throughout execution |
-
-### Quick Reference
-
-**Skill routing:** Score every candidate module 0.0–1.0. Load threshold: ≥ 0.70. Max 2 domain + 2 advisory per agent. See `skill-confidence-routing.md`.
-
-**Skill cache:** First loader writes a 150-token summary to `workspace/skill-cache/<module>.cache.md`. All subsequent agents read the summary. See `cross-agent-skill-cache.md`.
-
-**MCP phases:**
-- Phase 1 (investigation): READ ONLY — no writes of any kind
-- Phase 2 (implementation): LIMITED WRITE — scripts, scoped prefabs only
-- Phase 3 (validation): PLAYMODE + READ — run tests, no code changes
-- Phase 4 (refactor): STEP-GATED WRITE — each step needs tester OK before next
-See `mcp-phase-gates.md`.
-
-**Learning triggers:** Save to `workspace/repo-knowledge.md` after: bug fix (bug-investigation), architecture approval (architect), tester sign-off (tester), performance regression (data-tool/tester), refactor incident (refactor-agent). Quality gate: must name specific systems, include detection signal, ≤200 tokens. See `repo-learning-loop.md`.
-
-**Escalation:**
-- `[AUTO_ESCALATE]` — non-blocking, appends to open risks
-- `[BLOCK]` — hard stop, halts phase
-- `[ESCALATE_ARCHITECT]` — architect must respond before phase resumes
-- `[ESCALATE_HUMAN]` — human engineer required
-Mandatory triggers: >3 systems touched, Burst removed, sync point added, >500 LOC, 3+ failed fixes. See `escalation-policy.md`.
-
-## Anti-Patterns — Banned Behaviors
-
-The following behaviors are forbidden for all agents in all modes:
+### Pipeline
+- Spawning the fixed 4-agent team out of habit
+- Spawning `data-tool` for tasks that produce no tooling
+- Spawning `tester` for tiny/small tasks unless confidence < 0.7
+- Starting `unity-dev` before `approved_plan.json` exists (when plan requires it)
+- Setting `parallel_allowed=true` with confidence < 0.8
 
 ### Investigation
-- Reading files without prior CRG query evidence
+- Reading files without CRG evidence
 - Grepping the repository as a first step
-- Opening more than 8 files per investigation
+- Opening more than 8 files in triage (it is a scout)
 - Inferring architecture from filenames
-- Calling both `codebase-reader` AND `feature-dev-agent` — use `code-tracer` (one call)
-- Calling `architecture-agent` — use `system-mapper` (prevents naming collision with `architect`)
+- Calling `architecture-agent` (use `system-mapper`)
 
 ### Implementation
-- Writing any code before `system-mapper` has mapped existing systems (in `--feature` mode)
-- Starting implementation before root cause is proven (in `--bug` mode)
-- Fixing a bug without a failing baseline test first
-- Opportunistic refactoring — fixing code beyond the exact root cause
-- Signaling tester before verifying compilation is clean
-- Moving or renaming a system's update group without architect approval
-- Removing `[BurstCompile]` from a hot-path `ISystem`
-- Performing structural changes (`AddComponent`/`RemoveComponent`) inside a scheduled job
+- Writing code before `triage.json` exists
+- Fixing a bug without a proven root cause (`root_cause.json.status="COMPLETE"`)
+- Opportunistic refactoring beyond the approved scope
+- Signaling verifier before verifying compilation is clean
+- Editing files outside the agent's ownership partition
+- Removing `[BurstCompile]` from a hot-path `ISystem` (BLOCK)
+- Performing structural changes inside a scheduled job (use ECB)
 
 ### Orchestration
-- Spawning `architect` in `--feature` Phase 1 — Phase 1 is always `system-mapper`
-- Confusing `system-mapper` (reads codebase) with `architect` (designs new systems)
-- Leaving a `--refactor` migration half-done — if a step fails, roll back that step immediately
-- Allowing unity-dev to wait indefinitely in step-by-step refactor — tester must reply or unblock
-- Declaring a bug fixed without both baseline-FAIL and post-fix-PASS evidence
-- Using `--fast-fix` for changes touching system execution order, Burst jobs, or structural changes
+- Skipping `orchestrate.py validate` on any artifact
+- Skipping `orchestrate.py gate` between phases
+- Treating gate exit-2 as a warning instead of a halt
+- Manually splitting tmux panes
+- Declaring a run complete while `verification_result.json.status != "PASS"`
 
-### ECS-Specific
-- Designing components that duplicate existing components without explicit architect approval
-- Adding main-thread work to a system that was previously job-scheduled
-- Modifying system execution order (`[UpdateBefore/After]`) without a blast-radius analysis
-- Using `Time.time`, `Random.Range`, or `DateTime.Now` in any ECS system (breaks determinism)
-- Calling `EntityManager` directly on main thread inside a system that also schedules jobs
+## Knowledge System (unchanged)
 
----
+Persistent across sessions, committed to repo:
 
-## CRG-First Codebase Understanding
+- `workspace/repo-knowledge.md` — stable architecture facts (section-tagged,
+  confidence-decayed)
+- `workspace/ecs-registry.md` — ECS component/system ownership
+- `workspace/recent-changes.md` — 14-day rolling architectural mutations
 
-Five specialized agents handle codebase investigation. All query `code-review-graph` MCP before reading any files.
+Session-scoped, gitignored:
 
-| Agent | Use Case |
-|-------|----------|
-| `architecture-agent` | System architecture mapping, domain boundaries, execution flow |
-| `codebase-reader` | Feature reading, entry point discovery, behavior summary |
-| `bug-investigation` | Root cause tracing, write conflict detection, fix validation |
-| `refactor-agent` | Blast radius analysis, safe migration planning |
-| `feature-dev-agent` | Pattern discovery, extension point identification, consistent implementation |
+- `workspace/triage.json`, `pipeline.json`, `root_cause.json`,
+  `approved_plan.json`, `impl_result.json`, `verification_result.json`,
+  `ownership.lock.json`, `escalation-log.md`
+- `workspace/skill-cache/*.cache.md`
 
-### CRG Rules (apply to all 5 agents)
+Read the full rules:
+- `@.claude/rules/knowledge-ownership-model.md`
+- `@.claude/rules/knowledge-decay-system.md`
+- `@.claude/rules/knowledge-token-budget.md`
+- `@.claude/rules/agent-knowledge-policy.md`
 
-- Query `code-review-graph` before opening any file
-- Never grep the repository blindly
-- Never infer architecture from filenames
-- Never open more than 8 files without graph justification
-- If CRG is unavailable: state "Running without CRG evidence" once, then use targeted Grep
+## Codex Review Gate (deep depth only)
 
-Full rules: `@.claude/rules/GRAPH_FIRST.md`
+When `depth=deep` OR `complexity=critical`:
+
+1. **Plan review** — after `architect` writes `approved_plan.json`, run
+   `/codex:review` against the plan. Blocker → architect re-issues.
+2. **Implementation review** — after `verifier`/`tester` writes
+   `verification_result.json` and BEFORE `orchestrate.py finalize`, run
+   `/codex:review` over the diff. Blocker → re-spawn `unity-dev`.
+
+For `quick` and `normal` depth: Codex review is optional. Not running it is
+not a process violation.
+
+## Reference
+
+- `team.md` — the command itself
+- `MIGRATION.md` — moving from the fixed-4 v1 flow to v2 adaptive pipeline
+- `.claude/rules/GRAPH_FIRST.md` — CRG-first investigation rules
+- `.claude/rules/mcp-phase-gates.md` — Phase 1–4 MCP permission gates
+- `.claude/rules/ownership-boundaries.md` — DOTS vs Unity ownership of state
+- `.claude/rules/escalation-policy.md` — escalation signals and routing
+- `.claude/rules/dual-stack-domain-system.md` — DOTS / Unity / Hybrid domains

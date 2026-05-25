@@ -1,0 +1,18 @@
+{
+  "intent": "feature",
+  "task": "REPLACE_WITH_TASK_DESCRIPTION",
+  "depth": "normal",
+  "complexity": "small",
+  "blast_radius": "local",
+  "systems_affected": [],
+  "files_touched_estimate": 0,
+  "confidence_score": 0.0,
+  "domain": "Ambiguous",
+  "recommended_pipeline": ["unity-dev", "verifier"],
+  "parallel_allowed": false,
+  "verification_strategy": "bundle",
+  "ownership_partition": {},
+  "skill_packs": [],
+  "rationale": "REPLACE_WITH_ONE_PARAGRAPH_REASONING",
+  "escalations": []
+}

@@ -1,0 +1,8 @@
+{
+  "partitions": {
+    "unity-dev": []
+  },
+  "shared_read_only": [],
+  "forbidden": [],
+  "rationale": "Set by architect (large/critical) or triage (tiny/small/medium). Globs are repo-root-relative."
+}

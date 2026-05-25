@@ -1,0 +1,13 @@
+{
+  "status": "REJECTED",
+  "goal": "REPLACE — one sentence",
+  "scope": [],
+  "constraints": [],
+  "ownership": {
+    "unity-dev": []
+  },
+  "migration_plan": [],
+  "acceptance_criteria": [],
+  "risks": [],
+  "rejection_reason": "Template — replace before approval"
+}

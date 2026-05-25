@@ -1,0 +1,11 @@
+{
+  "status": "BLOCKED",
+  "method": "bundle",
+  "regressions": [],
+  "edge_cases_checked": [],
+  "stress_results": [],
+  "evidence": [],
+  "notes": "",
+  "risk_level": "HIGH",
+  "fail_reason": "Template — replace after verification"
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "approved_plan.schema.json",
+  "title": "Architect-Approved Plan",
+  "type": "object",
+  "required": ["status", "goal", "scope", "ownership", "acceptance_criteria"],
+  "properties": {
+    "status": { "type": "string", "enum": ["APPROVED", "REJECTED"] },
+    "goal": { "type": "string", "minLength": 1 },
+    "scope": { "type": "array", "items": { "type": "string" } },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } },
+      "minProperties": 1
+    },
+    "migration_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "what", "verify", "rollback"],
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "what": { "type": "string", "minLength": 1 },
+          "verify": { "type": "string", "minLength": 1 },
+          "rollback": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "acceptance_criteria": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "rejection_reason": { "type": "string" }
+  }
+}

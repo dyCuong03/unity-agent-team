@@ -1,0 +1,17 @@
+{
+  "status": "BLOCKED",
+  "changed_files": [],
+  "lines_added": 0,
+  "lines_removed": 0,
+  "compilation": "UNKNOWN",
+  "verification_bundle": {
+    "repro_steps": [],
+    "expected_state": [],
+    "invariants": [],
+    "edge_cases": [],
+    "stress_cases": [],
+    "logs_to_inspect": []
+  },
+  "deviations_from_plan": [],
+  "block_reason": "Template — replace after implementation"
+}

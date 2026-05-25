@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "verification_result.schema.json",
+  "title": "Verification Result",
+  "type": "object",
+  "required": ["status", "method", "risk_level"],
+  "properties": {
+    "status": { "type": "string", "enum": ["PASS", "FAIL", "BLOCKED"] },
+    "method": { "type": "string", "enum": ["bundle", "verifier", "tester", "stepgated"] },
+    "regressions": { "type": "array", "items": { "type": "string" } },
+    "edge_cases_checked": { "type": "array", "items": { "type": "string" } },
+    "stress_results": { "type": "array", "items": { "type": "string" } },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" },
+    "risk_level": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+    "fail_reason": { "type": "string" }
+  }
+}

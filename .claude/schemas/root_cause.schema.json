@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "root_cause.schema.json",
+  "title": "Root Cause Investigation Result",
+  "type": "object",
+  "required": [
+    "status",
+    "root_cause",
+    "confidence",
+    "affected_files",
+    "affected_systems",
+    "evidence",
+    "proposed_fix"
+  ],
+  "properties": {
+    "status": { "type": "string", "enum": ["COMPLETE", "INCONCLUSIVE", "ESCALATE"] },
+    "root_cause": { "type": "string", "minLength": 1 },
+    "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "affected_files": { "type": "array", "items": { "type": "string" } },
+    "affected_systems": { "type": "array", "items": { "type": "string" } },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "ref"],
+        "properties": {
+          "type": { "type": "string", "enum": ["CRG", "grep", "log", "MCP", "test"] },
+          "ref": { "type": "string", "minLength": 1 },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "proposed_fix": { "type": "string", "minLength": 1 },
+    "regression_test": { "type": "string" },
+    "escalation": { "type": "string" }
+  }
+}
