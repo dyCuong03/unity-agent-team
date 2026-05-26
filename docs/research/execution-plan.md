@@ -126,8 +126,18 @@ Candidates: `dots-chunk-iteration`, `dots-versioning-1x`, `dots-anti-patterns`, 
 - `dots-update-groups`, `dots-singleton-patterns`, `dots-transform-patterns`, `dots-hybrid-bridge`, `dots-event-driven-ecs`
 - Read: HelloCube/{5.Reparenting, 7.GameObjectSync, 11.FixedTimestep, 12.CustomTransforms, 15.UnityObjectRef}
 
-### Wave 2 — (not started)
+### Wave 2 — Architecture & Hybrid (ROLLED BACK 2026-05-26)
 
-### Wave 2 — (not started)
+**Status:** Drafts written, then rolled back per anti-collapse rule.
 
-### Wave 3 — (not started)
+**Why:** The orchestrator (this Claude session) synthesized the 5 SKILL.md files from 3 subagent reports. The user enforced the anti-collapse rule: 1 role = 1 Claude panel = 1 independent agent; the coordinator must NEVER write final skills. The orchestrator-synthesized drafts are preserved under `workspace/dots-program/scratch/wave-2-orchestrator-drafts/` as reference material only.
+
+**Re-execution model (mandatory for Wave 2 redo and all future waves):**
+
+Wave 2 must be re-authored by 4 independent Claude panels per `workspace/dots-program/README.md`. The coordinator (this role) provides per-panel briefs in `workspace/dots-program/inboxes/wave-2/`, does not synthesize, does not write SKILL.md, only routes work and verifies gates.
+
+The 3 subagent reports from the rolled-back attempt are preserved as STARTING MATERIAL (not final) under `workspace/dots-program/inboxes/wave-2/prior-session-reports/`. Panel 2 audits/extends; Panel 1 validates/refines; Panel 3 validates/refines; Panel 4 writes.
+
+**Target skills (panel-pending):** `dots-update-groups`, `dots-singleton-patterns`, `dots-transform-patterns`, `dots-hybrid-bridge`, `dots-event-driven-ecs`.
+
+### Wave 3 — (not started; blocked on Wave 2 panel re-execution)

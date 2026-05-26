@@ -19,14 +19,22 @@ Source-of-truth: `Unity-Technologies/EntityComponentSystemSamples` (read once, g
 | [`dots-entity-lifecycle`](dots-entity-lifecycle/SKILL.md) | DestroyEntity, lifecycle, ICleanupComponentData, cleanup component, orphan entity, two-phase teardown, subscene unload, Entity.Exists | ecb, enableable |
 | [`dots-spawning-patterns`](dots-spawning-patterns/SKILL.md) | spawn, Instantiate, batched spawn, Random.CreateFromIndex, RequireForUpdate, prefab Entity, ECB.Instantiate | baking, ecb, lifecycle |
 
-## Planned (Wave 2+ — see `docs/research/execution-plan.md`)
+## Wave 2 — Architecture & Hybrid (in flight — panel-owned)
 
-- `dots-update-groups` — Initialization/Simulation/Presentation, FixedStepSimulation, UpdateBefore/After
-- `dots-singleton-patterns` — RequireForUpdate, SystemAPI.GetSingleton, ownership rules
-- `dots-transform-patterns` — LocalTransform, Parent, reparenting cost
-- `dots-hybrid-bridge` — Baker authoring → runtime, UnityObjectRef, one-way data flow
-- `dots-event-driven-ecs` — request tags, enableable command components
-- `dots-chunk-iteration`, `dots-versioning-1x`, `dots-anti-patterns`, `dots-debugging-flow` (Wave 3, QA-gated)
+Wave 2 is **NOT shipped**. The orchestrator-synthesized drafts from a prior session are preserved under `workspace/dots-program/scratch/wave-2-orchestrator-drafts/` as reference material. Per the panel-owned execution model, Wave 2 must be re-authored by the 4 Claude panels:
+
+1. Reverse Engineer (Panel 2) audits/extends the prior evidence package
+2. Architect (Panel 1) approves the skill specs
+3. QA Curator (Panel 3) validates against the checklist
+4. Skill Builder (Panel 4) writes the canonical SKILL.md files into this directory via `/skill-creator`
+
+See `workspace/dots-program/README.md` for the protocol and `workspace/dots-program/inboxes/wave-2/` for each panel's assignment.
+
+Target skills (panel-pending): `dots-update-groups`, `dots-singleton-patterns`, `dots-transform-patterns`, `dots-hybrid-bridge`, `dots-event-driven-ecs`.
+
+## Planned (Wave 3+ — see `docs/research/execution-plan.md`)
+
+- `dots-chunk-iteration`, `dots-versioning-1x`, `dots-anti-patterns`, `dots-debugging-flow` (QA-gated)
 
 ## Authoring rules (apply to every skill in this pack)
 

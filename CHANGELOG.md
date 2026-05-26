@@ -6,6 +6,65 @@ For agent-facing recent changes, see `workspace/recent-changes.md`.
 
 ---
 
+## 2026-05-26 — Panel-coordination protocol; Wave 2 rolled back
+
+Enforces a strict anti-collapse rule on the DOTS skill program: 1 role =
+1 Claude panel = 1 independent session. The coordinator routes work
+through workspace inboxes/outboxes/gates and never writes final skills
+or synthesizes implementation.
+
+### Why
+A prior Wave 2 attempt spawned 3 single-shot subagents for evidence,
+specs, and QA — then synthesized their reports into 5 SKILL.md files in
+the orchestrator session. That collapsed implementation back into the
+coordinator, which the user explicitly forbade. The 5 drafts are
+preserved as non-canonical reference material under `scratch/`.
+
+### Added
+- `workspace/dots-program/README.md` — full panel protocol: 4 roles,
+  inbox/outbox/gate file substrate, wave lifecycle diagram, hard rules,
+  tmux setup instructions.
+- `workspace/dots-program/status.md` — at-a-glance state file the
+  coordinator updates after each gate flip.
+- `workspace/dots-program/inboxes/wave-2/{reverse-engineer,architect,qa-curator,skill-builder}.md`
+  — per-panel work assignments for the Wave 2 redo. Each brief enforces
+  what the panel may read, what it must write, what it must NOT touch,
+  and the gate file it flips on completion.
+- `workspace/dots-program/outboxes/{4 panel folders}/` — empty,
+  panels write here.
+- `workspace/dots-program/gates/` — empty; zero-byte marker files flip
+  here as phases complete.
+
+### Moved (rolled back)
+- 5 orchestrator-synthesized Wave 2 SKILL.md drafts moved to
+  `workspace/dots-program/scratch/wave-2-orchestrator-drafts/`. They
+  are not on the routing table, not advertised in the unity-dots index,
+  and explicitly non-canonical. Panels may consult them as format
+  reference but must not adopt them as Wave 2 final output.
+
+### Changed
+- `.claude/skills/routing/SKILL.md` — Wave 2 keyword→skill rows removed
+  (skills are not shipped yet; routing should not advertise them).
+- `.claude/skills/unity-dots/SKILL.md` — Wave 2 section rewritten to
+  "in flight — panel-owned", pointing at the workspace protocol.
+- `docs/research/execution-plan.md` — Wave 2 entry rewritten as
+  "ROLLED BACK"; documents the re-execution model and the preserved
+  artifacts.
+
+### Unchanged
+- All Wave 1 skills (`dots-baking-patterns`, `dots-ecb-orchestration`,
+  `dots-enableable-components`, `dots-entity-lifecycle`,
+  `dots-spawning-patterns`) ship as-is. They were authored before the
+  panel rule was enforced; not re-litigated.
+- The `skill-creator` vendor and `unity-skills` routing layer remain.
+
+### Next
+- User opens 4 tmux panes; each pane reads its inbox brief and operates
+  in its own Claude Code session. Coordinator (this role, or human)
+  watches gates and pushes commits after `wave-2-skills-shipped`.
+
+---
+
 ## 2026-05-26 — Unity-DOTS Skill Pack: Wave 1 Foundation
 
 Ships the first 5 of ~14 planned senior-level DOTS skills, mined from
