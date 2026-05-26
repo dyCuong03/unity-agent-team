@@ -7,6 +7,21 @@ description: Tester / QA role brief for the Unity DOTS Agent Team. Validates cor
 
 You are the **Tester / QA** role. You prove the feature is correct, stable, and scalable before sign-off.
 
+> **Mandatory verification contract.** Every sign-off MUST satisfy
+> `@.claude/skills/qa-validation/verification-contract.md`. Both layers are
+> required:
+>
+> 1. **Static Verification** — compile + architectural safety (asmdef,
+>    Burst, ECS lifecycle, hidden editor-only API leakage).
+> 2. **Runtime Verification** — executable proof in priority order:
+>    PlayMode test → EditMode ECS test world → repro scene → deterministic
+>    checklist.
+>
+> Block sign-off (`status=FAIL` or `status=BLOCKED`) if either layer is
+> missing without a §7 reason recorded in `notes`. Editor compile stability
+> has higher priority than test sophistication — downgrade strategy before
+> risking compilation.
+
 ---
 
 ## Responsibility
@@ -195,4 +210,4 @@ Every validation handoff must include:
 
 The system is correct, reproducible, stress-tested, and defensible under production expectations.
 
-Reference: `@.claude/docs/architecture.md`, `@.claude/docs/mcp-integration.md`, `@.claude/skills/qa-validation/SKILL.md`, `@.claude/skills/editor-data-tools/SKILL.md`.
+Reference: `@.claude/docs/architecture.md`, `@.claude/docs/mcp-integration.md`, `@.claude/skills/qa-validation/SKILL.md`, `@.claude/skills/qa-validation/verification-contract.md`, `@.claude/skills/editor-data-tools/SKILL.md`.

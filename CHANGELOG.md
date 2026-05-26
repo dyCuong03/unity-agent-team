@@ -6,6 +6,45 @@ For agent-facing recent changes, see `workspace/recent-changes.md`.
 
 ---
 
+## 2026-05-26 — Tester verification contract
+
+Adds the mandatory **Tester Runtime + Static Verification Contract**. Both
+the lightweight `verifier` (tiny/small/medium) and the full `tester`
+(large/critical) must satisfy it on every run. The contract is project-
+agnostic and ships with the package — installing this kit into a new Unity
+project applies the contract automatically the first time `/team` runs.
+
+### Added
+- `.claude/skills/qa-validation/verification-contract.md` — canonical
+  contract. Sections 1–7 cover static verification (compile + architecture
+  safety), runtime verification (PlayMode → EditMode → repro scene →
+  checklist), DOTS-specific testing rules, the editor compile safety gate,
+  required output format, schema mapping, and the "explicitly impossible"
+  exemption clause.
+
+### Changed
+- `.claude/skills/qa-validation/SKILL.md` — front-matter callout pointing
+  to the contract; both verification agents inherit it.
+- `.claude/skills/tester/SKILL.md` — sign-off now requires both layers;
+  contract added to the Reference list.
+- `.claude/skills/verifier/SKILL.md` — procedure extended from 5 to 6
+  steps (static layer first); BLOCKED on broken compilation; result
+  artifact now includes `static_verification` and `runtime_verification`
+  blocks.
+- `.claude/schemas/verification_result.schema.json` — added optional
+  `static_verification` and `runtime_verification` objects (backward
+  compatible; required by the contract unless §7 exemption is recorded in
+  `notes`).
+
+### Migration
+- Existing `verification_result.json` artifacts remain valid (new fields
+  are optional in the schema).
+- New runs that omit either layer without a recorded §7 reason should be
+  rejected by the verification agent itself (`status="BLOCKED"`); the
+  schema does not enforce this — the contract does.
+
+---
+
 ## 2026-05-25 — v2: Adaptive Pipeline (breaking)
 
 Full redesign. The fixed 4-agent template is removed in favor of an adaptive

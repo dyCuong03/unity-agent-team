@@ -13,6 +13,32 @@
     "evidence": { "type": "array", "items": { "type": "string" } },
     "notes": { "type": "string" },
     "risk_level": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
-    "fail_reason": { "type": "string" }
+    "fail_reason": { "type": "string" },
+    "static_verification": {
+      "type": "object",
+      "description": "Static (compile + architecture) layer of the Tester Verification Contract. Optional for backward compatibility; required by the contract unless §7 exemption recorded in notes.",
+      "properties": {
+        "compile_clean": { "type": "boolean" },
+        "asmdef_clean": { "type": "boolean" },
+        "banned_patterns_found": { "type": "array", "items": { "type": "string" } },
+        "burst_compatible": { "type": "boolean" },
+        "editor_api_leak": { "type": "boolean" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runtime_verification": {
+      "type": "object",
+      "description": "Runtime (executable proof) layer of the Tester Verification Contract. Optional for backward compatibility; required by the contract unless §7 exemption recorded in notes.",
+      "properties": {
+        "method": { "type": "string", "enum": ["PlayMode", "EditMode", "ReproScene", "Checklist", "None"] },
+        "tests_executed": { "type": "integer", "minimum": 0 },
+        "tests_passed": { "type": "integer", "minimum": 0 },
+        "edge_cases_covered": { "type": "integer", "minimum": 0 },
+        "deterministic_runs": { "type": "integer", "minimum": 0 },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
   }
 }

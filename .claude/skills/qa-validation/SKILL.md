@@ -8,6 +8,12 @@ user-invocable: false
 
 When validating Unity DOTS features, prove correctness with **evidence**, not intuition. See `@.claude/docs/mcp-integration.md` for `ai-game-developer` and `agentmemory` tool usage.
 
+> **MANDATORY contract:** every verification run by the `tester` or `verifier`
+> agent MUST satisfy the **Tester Runtime + Static Verification Contract**.
+> Read `@.claude/skills/qa-validation/verification-contract.md` before
+> producing `workspace/verification_result.json`. Both layers (static +
+> runtime) are required unless explicitly impossible per §7 of the contract.
+
 ## Core Principles
 
 - Test **correctness, edge cases, failure modes, scale limits**.
