@@ -6,6 +6,60 @@ For agent-facing recent changes, see `workspace/recent-changes.md`.
 
 ---
 
+## 2026-05-26 — Unity-DOTS Skill Pack: Wave 1 Foundation
+
+Ships the first 5 of ~14 planned senior-level DOTS skills, mined from
+`Unity-Technologies/EntityComponentSystemSamples` (Entities 1.4.x).
+
+### Added
+- `.claude/skills/unity-dots/SKILL.md` — pack index (router-only, not a skill itself)
+- `.claude/skills/unity-dots/dots-baking-patterns/SKILL.md`
+  TransformUsageFlags, DependsOn dependency tracking, prefab refs via
+  GetEntity, additional entities, banned 0.x APIs.
+- `.claude/skills/unity-dots/dots-ecb-orchestration/SKILL.md`
+  Phase selection across 6 ECB systems, ParallelWriter + ChunkIndexInQuery
+  sort key, deterministic playback rules.
+- `.claude/skills/unity-dots/dots-enableable-components/SKILL.md`
+  Cost-model decision rule (frequency-based), EnabledRefRW, ECB
+  SetComponentEnabled, IgnoreComponentEnabledState query option.
+- `.claude/skills/unity-dots/dots-entity-lifecycle/SKILL.md`
+  ECB-deferred destruction during query iteration, ICleanupComponentData
+  two-phase teardown, Entity-as-(Index,Version) validity model.
+- `.claude/skills/unity-dots/dots-spawning-patterns/SKILL.md`
+  Batched EntityManager.Instantiate, ECB.Instantiate from parallel jobs,
+  Random.CreateFromIndex determinism, Allocator.Temp lifecycle.
+
+### Changed
+- `.claude/skills/routing/SKILL.md` — new "Unity-DOTS Skill Pack" section
+  with keyword → skill mapping and per-complexity load cap. Loaded on
+  DOTS/Hybrid domains in addition to standard layer 1/2; not loaded on
+  Unity-only or Ambiguous.
+- `docs/research/execution-plan.md` — Wave 1 retrospective appended.
+
+### Source attribution
+All skills grounded in real reads of (no inferred content):
+- `EntitiesSamples/Assets/ExampleCode/{Baking,Jobs}.cs`
+- `EntitiesSamples/Assets/Baking/BakingDependencies/`
+- `Dots101/Entities101/Assets/HelloCube/{3,6,13}/*System.cs`
+
+### What's NOT in this release
+- The `/skill-creator` eval/iterate loop (description-tuning, trigger-
+  accuracy benchmarks). That workflow needs Anthropic API access not
+  available to this Claude Code session. Skill *format* matches the
+  workflow's expected output; *measurement* is a follow-up.
+
+### Next
+- Wave 2: dots-update-groups, dots-singleton-patterns,
+  dots-transform-patterns, dots-hybrid-bridge, dots-event-driven-ecs
+
+---
+
+## 2026-05-26 — DOTS skill program: Phase 0 setup (Wave 0)
+
+(see prior commits)
+
+---
+
 ## 2026-05-26 — Vendored Unity-Skills routing layer (v1.9.2)
 
 The `Besty0728/Unity-Skills` AI routing layer is now committed in-tree at

@@ -92,7 +92,41 @@ Candidates: `dots-chunk-iteration`, `dots-versioning-1x`, `dots-anti-patterns`, 
 - **Missing coverage:** None at Phase 0 level. Wave 1 will read sources before judging.
 - **Next priorities:** Verify `/skill-creator` resolves in next session. Begin Wave 1 Phase 1 reads.
 
-### Wave 1 — (not started)
+### Wave 1 — Foundation (2026-05-26)
+
+**Shipped (5/5 candidates):**
+- `dots-baking-patterns` — TransformUsageFlags, DependsOn, prefab refs, additional entities
+- `dots-ecb-orchestration` — phase selection, ParallelWriter + ChunkIndexInQuery, deterministic sort
+- `dots-enableable-components` — vs structural change, EnabledRefRW, IgnoreComponentEnabledState
+- `dots-entity-lifecycle` — ECB-deferred destroy, ICleanupComponentData two-phase teardown, Entity validity
+- `dots-spawning-patterns` — batched Instantiate, ECB.Instantiate from jobs, Random.CreateFromIndex
+
+**Routing patched** — new "Unity-DOTS Skill Pack" section in `routing/SKILL.md` mapping keywords to each of the 5 skills with ECS_DEFAULT loading on DOTS/Hybrid domains; per-agent cap by complexity.
+
+**Source files read (8-file cap respected — 5 used):**
+- `EntitiesSamples/Assets/ExampleCode/Baking.cs`
+- `EntitiesSamples/Assets/ExampleCode/Jobs.cs`
+- `EntitiesSamples/Assets/Baking/BakingDependencies/ImageGeneratorAuthoring.cs`
+- `Dots101/Entities101/Assets/HelloCube/3. Prefabs/SpawnSystem.cs` + `FallAndDestroySystem.cs`
+- `Dots101/Entities101/Assets/HelloCube/6. EnableableComponents/RotationSystem.cs`
+- `Dots101/Entities101/Assets/HelloCube/13. StateChange/SetStateSystem.cs`
+
+**What worked:**
+- The "sample is learning material, not truth" rule paid off in `dots-enableable-components` — the StateChange sample literally compares VALUE/STRUCTURAL/ENABLEABLE side-by-side; the skill says "ENABLEABLE wins, ignore the other two for production."
+- Skill format matched `/skill-creator` template: front-matter `name` + `description`, body with intent / use-when / avoid-when / senior pattern / anti-patterns / failure modes / runtime + static verification / performance / version notes.
+- Each skill includes the Tester Verification Contract's two layers (static + runtime).
+
+**What didn't:**
+- The `/skill-creator` eval/iterate loop wasn't executed — that workflow requires Anthropic API access to score skill triggering accuracy, which isn't available in this Claude Code session. Skills are authored to the format the loop expects; running the loop is a follow-up task.
+- Phase 0's pre-review confidence scores are no substitute for measured trigger accuracy. Wave 2 will integrate description-tuning if API access is available, or annotate skills with measured-vs-predicted accuracy after a project tries them.
+
+**Missing coverage:** none at this wave's scope. The 5 candidates form the foundation other waves build on.
+
+**Next priorities (Wave 2 — Architecture & Hybrid):**
+- `dots-update-groups`, `dots-singleton-patterns`, `dots-transform-patterns`, `dots-hybrid-bridge`, `dots-event-driven-ecs`
+- Read: HelloCube/{5.Reparenting, 7.GameObjectSync, 11.FixedTimestep, 12.CustomTransforms, 15.UnityObjectRef}
+
+### Wave 2 — (not started)
 
 ### Wave 2 — (not started)
 

@@ -57,6 +57,23 @@ Hard scoping rules:
 - NEVER load DOTween modules for ECS simulation layer tasks
 - NEVER load `gameobject` or `component` modules for runtime ECS entity tasks
 
+## Unity-DOTS Skill Pack (ECS_DEFAULT — auto-loaded when triage classifies DOTS or Hybrid)
+
+The `unity-dots/*` sub-skills (vendored under `.claude/skills/unity-dots/`) are loaded **in addition to** Layer 1 / Layer 2 when the triage domain classification is DOTS or Hybrid. They are NOT loaded for Unity-only tasks.
+
+| Keywords (case-insensitive) | unity-dots skill | Confidence floor |
+|---|---|---|
+| baking, baker, authoring, TransformUsageFlags, BlobAsset, prefab reference, DependsOn | `dots-baking-patterns` | 0.80 |
+| ECB, EntityCommandBuffer, structural change, ParallelWriter, ChunkIndexInQuery, playback phase, BeginSimulation, EndSimulation | `dots-ecb-orchestration` | 0.80 |
+| enableable, IEnableableComponent, EnabledRefRW, SetComponentEnabled, state flip, hot toggle, archetype churn | `dots-enableable-components` | 0.78 |
+| DestroyEntity, lifecycle, ICleanupComponentData, orphan entity, two-phase teardown, subscene unload | `dots-entity-lifecycle` | 0.78 |
+| spawn, Instantiate, batched spawn, Random.CreateFromIndex, RequireForUpdate, ECB.Instantiate | `dots-spawning-patterns` | 0.78 |
+
+Loading rules:
+- Apply on top of the existing per-domain budget (max 2 unity-skills domain + 2 advisory). Unity-dots skills count **separately** as ECS_DEFAULT — they are not gated by the 2+2 budget.
+- Hard-cap unity-dots skills per agent: **2** for a tiny/small task, **3** for medium, **all** for large/critical or refactor-agent runs.
+- For ambiguous classification: do NOT load unity-dots skills. Architect must classify first.
+
 ## Boot Requirement
 
 Before calling any REST skill, the orchestrator MUST call:
