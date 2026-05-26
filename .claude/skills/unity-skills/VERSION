@@ -1,0 +1,12 @@
+source: https://github.com/Besty0728/Unity-Skills
+upstream_version: 1.9.2
+upstream_package: com.besty.unity-skills
+vendored_at: 2026-05-26
+vendored_subset: SkillsForUnity/unity-skills~/ (SKILL.md + skills/ + references/ + scripts/unity_skills.py copied to .claude/scripts/)
+license: see UPSTREAM-LICENSE in this folder
+
+This is the AI routing layer only — read-only markdown definitions used by
+agents to discover and call Unity-Skills REST modules. The actual Unity
+Editor package (com.besty.unity-skills) must be installed separately into
+the consuming Unity project for the REST server at http://localhost:8090
+to respond to calls.

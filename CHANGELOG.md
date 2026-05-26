@@ -6,6 +6,50 @@ For agent-facing recent changes, see `workspace/recent-changes.md`.
 
 ---
 
+## 2026-05-26 — Vendored Unity-Skills routing layer (v1.9.2)
+
+The `Besty0728/Unity-Skills` AI routing layer is now committed in-tree at
+`.claude/skills/unity-skills/`. Previously the router referenced paths
+that did not exist on disk and silently fell back to role briefs. Now
+every `@.claude/skills/unity-skills/skills/<module>/SKILL.md` resolves.
+
+### Added
+- `.claude/skills/unity-skills/SKILL.md` — root AI definition (from
+  `unity-skills~/SKILL.md`).
+- `.claude/skills/unity-skills/skills/` — 69 module SKILL.md files (49
+  functional REST + 20 advisory).
+- `.claude/skills/unity-skills/references/` — upstream reference docs.
+- `.claude/skills/unity-skills/VERSION` — version pin and source URL.
+- `.claude/skills/unity-skills/UPSTREAM-LICENSE` — upstream MIT license.
+- `.claude/scripts/unity_skills.py` — Python REST client for the Unity
+  Editor server at `http://localhost:8090`.
+
+### Changed
+- `.claude/skills/routing/SKILL.md` — new **Status** and **Domain
+  Gating** sections at the top make the DOTS / Unity / Hybrid /
+  Ambiguous scoping explicit and binding before the keyword table is
+  consulted.
+- `unity-skills-audit.md` — version bumped 1.9.1 → 1.9.2; marked as
+  VENDORED with vendoring date.
+
+### Scoping rule (now enforced by router, was advisory before)
+
+| Triage domain | unity-skills modules |
+|---|---|
+| DOTS | Skipped unless hybrid touchpoint demands it; MonoBehaviour-first modules forbidden |
+| Unity | Primary source — keyword table selects, max 2 domain + 2 advisory |
+| Hybrid | Both stacks loaded; bridge contract required in `workspace/design.md` |
+| Ambiguous | None — escalate to architect |
+
+### Migration / setup for consuming projects
+- No agent-side changes required — routing now resolves locally.
+- Unity Editor package still needs separate installation
+  (`com.besty.unity-skills` via UPM) for REST calls to succeed at
+  runtime. The agents will issue `unity_diagnose` first and degrade
+  gracefully if the server is unreachable.
+
+---
+
 ## 2026-05-26 — Tester verification contract
 
 Adds the mandatory **Tester Runtime + Static Verification Contract**. Both

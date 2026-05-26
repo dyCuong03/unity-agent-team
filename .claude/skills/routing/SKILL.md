@@ -5,10 +5,49 @@ description: Lazy skill loading router for the Unity DOTS agent team. Use this t
 
 # Unity Skill Router
 
+## Status
+
+Unity-Skills routing layer **vendored** at `.claude/skills/unity-skills/`
+(upstream `Besty0728/Unity-Skills` v1.9.2 — see
+`.claude/skills/unity-skills/VERSION`). 69 module SKILL.md files are
+available locally; the orchestrator can resolve every `@.claude/skills/
+unity-skills/skills/<module>/SKILL.md` reference without a missing-file
+fallback. The Unity Editor package (`com.besty.unity-skills`) must still
+be installed into the consuming Unity project for REST calls to
+`http://localhost:8090` to succeed.
+
 ## Purpose
 
 Select the minimum set of Unity-Skills modules to load for a given task.
 Prevent prompt bloat. Maximize relevance. Preserve DOTS-first policy.
+
+## Domain Gating (MANDATORY — applies before keyword routing)
+
+The classifier from `.claude/rules/dual-stack-domain-system.md` runs first.
+Its output decides which side of the catalog the router is even allowed to
+draw from:
+
+| Triage domain | Layer 1 (DOTS) | Layer 2 (Unity Foundation) | Layer 3 (unity-skills modules) |
+|---|---|---|---|
+| **DOTS** (Domain 1) | Heavy — always | Light — always | **Skip by default.** Load only if a unity-skills module is explicitly required by a hybrid touchpoint (e.g. Baker authoring, presentation bridge). MonoBehaviour-first modules are forbidden in this domain. |
+| **Unity** (Domain 2) | Light — advisory only | Heavy — always | **Primary source.** Use the keyword table below. Max 2 domain + 2 advisory. |
+| **Hybrid** (Domain 3) | Heavy — DOTS owns runtime truth | Heavy — Unity owns presentation | **Both sides loaded.** Pick one DOTS-side concern and one Unity-side concern; `verification-contract.md` requires the bridge contract be documented in `workspace/design.md`. |
+| **Ambiguous** | Layer 1 + 2 only | Layer 1 + 2 only | None — escalate to architect per `escalation-rules-domain.md`. |
+
+Hard scoping rules:
+
+- **DOTS domain → never load** `ui`, `animator`, `navmesh`, `dotween`,
+  `event`, `gameobject`, `component` (all MonoBehaviour-first; see
+  `unity-skills-conflicts.md`). The ecs-penalty modifier in
+  `skill-confidence-routing.md` already drops these below threshold; the
+  router must respect that and not bypass it.
+- **Unity domain → never load** burst, scheduling, native-container, ECS
+  job pattern advisory unless DOTS APIs are detected in touched code.
+- **Hybrid domain → BOTH allowed**, but the bridge direction is one-way
+  (DOTS writes state, Unity reads). Verify this in `ownership-boundaries.md`.
+- **Loaded module budget** (any domain): max 2 domain + 2 advisory per agent
+  per task. The confidence threshold ≥ 0.70 from
+  `skill-confidence-routing.md` still applies.
 
 ## Hard Limits
 

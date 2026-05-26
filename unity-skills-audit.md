@@ -1,5 +1,7 @@
 # Unity-Skills Repository Audit
-<!-- Source: https://github.com/Besty0728/Unity-Skills v1.9.1 -->
+<!-- Source: https://github.com/Besty0728/Unity-Skills v1.9.2 -->
+<!-- Status: VENDORED into .claude/skills/unity-skills/ on 2026-05-26 -->
+<!-- See .claude/skills/unity-skills/VERSION for the exact pin -->
 <!-- Grounded in real repository inspection — no invented modules -->
 
 ## Real Folder Structure
