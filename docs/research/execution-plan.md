@@ -141,3 +141,22 @@ The 3 subagent reports from the rolled-back attempt are preserved as STARTING MA
 **Target skills (panel-pending):** `dots-update-groups`, `dots-singleton-patterns`, `dots-transform-patterns`, `dots-hybrid-bridge`, `dots-event-driven-ecs`.
 
 ### Wave 3 — (not started; blocked on Wave 2 panel re-execution)
+
+---
+
+## 2026-05-26 — Wave plan reorganized (user directive)
+
+The user issued a new 8-wave learning program with HelloCube + Basic ECS Lifecycle as Wave 1. The existing `inboxes/wave-2/` (old taxonomy: Architecture & Hybrid) is **deprecated** in favor of `inboxes/wave-1/` (new taxonomy). Old wave-2 target skills are redistributed:
+
+- `dots-update-groups` → New Wave 1
+- `dots-singleton-patterns` → New Wave 1
+- `dots-transform-patterns` → New Wave 5
+- `dots-hybrid-bridge` → New Wave 7
+- `dots-event-driven-ecs` → New Wave 6 or 8
+
+Workspace updated:
+- `inboxes/wave-1/{reverse-engineer,architect,qa-curator,skill-builder}.md` — Wave 1 panel briefs
+- `inboxes/wave-2/DEPRECATED.md` — marker
+- `status.md` — full 8-wave taxonomy table
+
+Next action: TeamCreate + spawn 4 panel agents. Coordinator does NOT synthesize.
