@@ -18,6 +18,11 @@ Source-of-truth: `Unity-Technologies/EntityComponentSystemSamples` (read once, g
 | [`dots-enableable-components`](dots-enableable-components/SKILL.md) | enableable, IEnableableComponent, EnabledRefRW, SetComponentEnabled, state flip, hot toggle, archetype churn | ecb, lifecycle |
 | [`dots-entity-lifecycle`](dots-entity-lifecycle/SKILL.md) | DestroyEntity, lifecycle, ICleanupComponentData, cleanup component, orphan entity, two-phase teardown, subscene unload, Entity.Exists | ecb, enableable |
 | [`dots-spawning-patterns`](dots-spawning-patterns/SKILL.md) | spawn, Instantiate, batched spawn, Random.CreateFromIndex, RequireForUpdate, prefab Entity, ECB.Instantiate | baking, ecb, lifecycle |
+| [`ecs-fundamentals-isystem-default`](ecs-fundamentals-isystem-default/SKILL.md) | ISystem, SystemBase, BurstCompile, BurstDiscard, unmanaged system, managed system, bridge system | systemapi-query, requireforupdate-gating |
+| [`ecs-fundamentals-transformusageflags`](ecs-fundamentals-transformusageflags/SKILL.md) | TransformUsageFlags, Dynamic, Renderable, ManualOverride, None, WriteGroup, LocalToWorld, archetype bloat | baking, spawning |
+| [`singleton-patterns-config-and-access`](singleton-patterns-config-and-access/SKILL.md) | singleton, GetSingleton, GetSingletonRW, config, registry, input state, prefab table | requireforupdate-gating, baking, ecb |
+| [`entity-query-patterns-systemapi-query`](entity-query-patterns-systemapi-query/SKILL.md) | SystemAPI.Query, foreach, RefRW, RefRO, WithAll, WithNone, WithEntityAccess, IJobEntity promotion | isystem-default, requireforupdate-gating, ecb, enableable |
+| [`entity-query-patterns-requireforupdate-gating`](entity-query-patterns-requireforupdate-gating/SKILL.md) | RequireForUpdate, prerequisite gate, feature flag tag, ExecuteXxx, first-frame race, system gating | singleton-config, isystem-default, systemapi-query, baking |
 
 ## Wave 2 — Architecture & Hybrid (in flight — panel-owned)
 
