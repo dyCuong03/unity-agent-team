@@ -1,0 +1,6 @@
+source: https://github.com/anthropics/skills/tree/main/skills/skill-creator
+vendored_at: 2026-05-26
+purpose: Required skill-generation workflow for the unity-dots skill build program.
+        Wave 1 of the DOTS skill program needs this skill loaded into the Claude session
+        before any unity-dots/* SKILL.md files may be written. See docs/research/execution-plan.md.
+license: see LICENSE.txt
