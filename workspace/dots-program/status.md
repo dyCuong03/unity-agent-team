@@ -1,6 +1,6 @@
 # DOTS Program — Status
 
-Last updated: 2026-05-26 (post-renumber)
+Last updated: 2026-05-26 (Wave 1 specs verified — QA up next)
 
 ## Wave taxonomy (user-issued)
 
@@ -31,16 +31,19 @@ Under `.claude/skills/unity-dots/`:
 ## Current wave
 
 **Wave 1 — IN FLIGHT (panel-owned)**
-- Phase: Awaiting panel kickoff. Coordinator just wrote `inboxes/wave-1/*.md` for the 4 panels.
-- Next gate: `wave-1-evidence-ready` (Panel 2 / Reverse Engineer)
+- Phase: QA Curator (approvals pending; Panel 3 / dots-qa-skill-builder)
+- Kickoff verified: `inboxes/wave-1/{reverse-engineer,architect,qa-curator,skill-builder}.md` present; `gates/wave-1-kickoff` touched.
+- Evidence verified by Coordinator: `outboxes/reverse-engineer/wave-1-evidence.md` (24 KB / 178 lines, 4 target skills covered with HelloCube + ExampleCode/ComponentsSystems.cs citations); `gates/wave-1-evidence-ready` touched.
+- Specs verified by Coordinator: `outboxes/architect/wave-1-specs.md` (43 KB / 360 lines, 4 skills DRAFT, confidence 0.88–0.92, no DEFER/ESCALATE_QA/REJECT_DUPLICATE); `gates/wave-1-specs-ready` touched 2026-05-26 11:10.
+- Next gate: `wave-1-qa-approved` OR `wave-1-qa-rejected` (Panel 3 / QA Curator)
 
 ## Gate ledger (Wave 1)
 
 | Gate | Flipped? | Owner |
 |---|---|---|
-| `wave-1-kickoff` | ❌ pending | Coordinator |
-| `wave-1-evidence-ready` | ❌ | Panel 2 |
-| `wave-1-specs-ready` | ❌ | Panel 1 |
+| `wave-1-kickoff` | ✅ 2026-05-26 | Coordinator |
+| `wave-1-evidence-ready` | ✅ 2026-05-26 | Panel 2 |
+| `wave-1-specs-ready` | ✅ 2026-05-26 | Panel 1 |
 | `wave-1-qa-approved` | ❌ | Panel 3 |
 | `wave-1-qa-rejected` | n/a | Panel 3 |
 | `wave-1-skills-shipped` | ❌ | Panel 4 |
