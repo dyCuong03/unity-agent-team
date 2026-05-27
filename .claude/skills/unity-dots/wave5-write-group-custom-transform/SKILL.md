@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-write-group-custom-transform
 description: Bypass the standard Unity transform system for specific entities by registering a custom component in the LocalToWorld write group, allowing a developer-owned system to compute LocalToWorld for tho...
+tags: [transforms]
 ---
 
 # WriteGroup Custom Transform

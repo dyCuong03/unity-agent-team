@@ -1,6 +1,7 @@
 ﻿---
 name: wave4-entity-index-in-query-scatter-pattern
 description: Write each entity''s computed result to a pre-allocated NativeArray using a stable per-entity index, enabling lock-free parallel scatter for inter-job data passing.
+tags: [jobs, query]
 ---
 
 # EntityIndexInQuery Scatter Pattern

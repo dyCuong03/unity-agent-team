@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-baker-dependency-registration
 description: Register all external asset and component dependencies in a Baker so that incremental baking re-triggers correctly when referenced objects change.
+tags: [baking, antipattern, debug]
 ---
 
 # Baker Dependency Registration — DependsOn

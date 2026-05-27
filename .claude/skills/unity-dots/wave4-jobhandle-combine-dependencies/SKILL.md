@@ -1,6 +1,7 @@
 ﻿---
 name: wave4-jobhandle-combine-dependencies
 description: Create a fan-in barrier that forces a downstream job to wait for multiple independent upstream jobs without introducing a sync point.
+tags: [jobs, performance]
 ---
 
 # JobHandle.CombineDependencies — Fan-In Barrier

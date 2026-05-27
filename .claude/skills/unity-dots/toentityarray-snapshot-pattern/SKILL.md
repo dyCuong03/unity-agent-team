@@ -1,6 +1,7 @@
 ﻿---
 name: toentityarray-snapshot-pattern
 description: Safely combine entity iteration with per-entity structural changes by snapshotting entity IDs and component data into NativeArrays before performing structural changes, avoiding iterator invalidation.
+tags: [query, structural-change]
 ---
 
 # ToEntityArray Snapshot Pattern

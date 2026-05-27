@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-enableable-component-query-mismatch
 description: Select the correct EntityQuery filter method (WithAll, WithDisabled, WithNone, IgnoreComponentEnabledState) for IEnableableComponent to avoid silently processing the wrong entity set.
+tags: [enableable, antipattern, debug]
 ---
 
 # Enableable Component Query Mismatch

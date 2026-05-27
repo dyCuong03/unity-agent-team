@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-wrong-system-group-fixed-timestep
 description: Identify and fix the failure mode of placing fixed-timestep physics or simulation logic in the wrong system group, causing frame-rate-dependent execution instead of fixed-rate execution.
+tags: [systems, antipattern, debug]
 ---
 
 # Wrong System Group — Fixed Timestep Failure Mode

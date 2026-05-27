@@ -1,6 +1,7 @@
 ﻿---
 name: wave7-add-component-object-hybrid-attach
 description: Attach a managed Unity object (MonoBehaviour, ScriptableObject, or any UnityEngine.Object subclass) to an ECS entity at runtime or bake time for hybrid access.
+tags: [hybrid, managed]
 ---
 
 # AddComponentObject — Hybrid Managed Object Attachment

@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-local-transform-write-pattern
 description: Write entity movement, rotation, and uniform scale through LocalTransform — the single authoritative local-space transform component in Entities 1.x.
+tags: [transforms]
 ---
 
 # LocalTransform Write Pattern

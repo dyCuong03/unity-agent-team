@@ -1,6 +1,7 @@
 ﻿---
 name: wave7-system-api-managed-api-query
 description: Query managed IComponentData and UnityEngine components from ECS systems using the correct non-Burst API surface (SystemAPI.ManagedAPI or SystemAPI.Query for managed types).
+tags: [hybrid, managed, query]
 ---
 
 # SystemAPI.ManagedAPI — Managed Component Query

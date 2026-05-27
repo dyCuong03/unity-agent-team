@@ -1,6 +1,7 @@
 ﻿---
 name: wave6-ecb-set-component-enabled
 description: Record a deferred enable/disable command for an IEnableableComponent from a parallel job using ECB.SetComponentEnabled<T>() with a deterministic sort key.
+tags: [enableable, ecb]
 ---
 
 # ECB.SetComponentEnabled — Deferred Parallel Enable/Disable

@@ -1,6 +1,7 @@
 ﻿---
 name: system-update-order
 description: Declare a system''s group membership and relative ordering within that group using attributes, producing deterministic execution order verified at world initialization.
+tags: [core, systems]
 ---
 
 # System Update Order

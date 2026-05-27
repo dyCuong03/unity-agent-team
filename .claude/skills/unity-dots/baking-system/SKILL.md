@@ -1,6 +1,7 @@
 ﻿---
 name: baking-system
 description: Perform post-Baker ECS processing in the baking world — cross-entity aggregation, complex structural changes, blob asset construction, and render mesh setup — that cannot be expressed within a sing...
+tags: [baking]
 ---
 
 # Baking System

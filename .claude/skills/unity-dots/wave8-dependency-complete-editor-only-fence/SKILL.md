@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-dependency-complete-editor-only-fence
 description: Use state.Dependency.Complete() only as an editor-mode diagnostic fence to inspect intermediate job state, never as a production pattern for forcing job completion.
+tags: [jobs, antipattern, debug]
 ---
 
 # state.Dependency.Complete() — Editor-Only Diagnostic Fence

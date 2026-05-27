@@ -1,6 +1,7 @@
 ﻿---
 name: wave4-unity-mathematics-random-per-entity
 description: Generate statistically independent, deterministic random streams per entity in parallel jobs using `Unity.Mathematics.Random.CreateFromIndex()`.
+tags: [jobs, math]
 ---
 
 # Unity.Mathematics.Random — Per-Entity Parallel RNG

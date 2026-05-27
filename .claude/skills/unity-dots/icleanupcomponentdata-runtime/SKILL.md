@@ -1,6 +1,7 @@
 ﻿---
 name: icleanupcomponentdata-runtime
 description: React to entity destruction at runtime by attaching a cleanup component that survives DestroyEntity, allowing a system to detect destroyed entities, release associated resources, and finalise true ...
+tags: [structural-change, lifecycle]
 ---
 
 # ICleanupComponentData — Runtime Entity Lifecycle

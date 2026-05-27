@@ -1,6 +1,7 @@
 ﻿---
 name: entity-prefab-reference
 description: Store a lazy-loaded prefab handle that defers entity scene loading until explicitly requested, enabling on-demand prefab loading without paying the memory cost at world initialization.
+tags: [baking, spawn]
 ---
 
 # EntityPrefabReference — Deferred Prefab Loading

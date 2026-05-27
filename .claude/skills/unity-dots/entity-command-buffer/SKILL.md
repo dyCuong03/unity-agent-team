@@ -1,6 +1,7 @@
 ﻿---
 name: entity-command-buffer
 description: Record structural changes (AddComponent, RemoveComponent, Instantiate, DestroyEntity) during job execution or entity iteration, then play them back safely on the main thread after the frame boundary.
+tags: [core, ecb, structural-change]
 ---
 
 # Entity Command Buffer

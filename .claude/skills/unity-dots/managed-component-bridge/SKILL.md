@@ -1,6 +1,7 @@
 ﻿---
 name: managed-component-bridge
 description: Store managed references (GameObject, MonoBehaviour, Unity UI objects) on an ECS entity to bridge the ECS and GameObject worlds during hybrid initialization.
+tags: [core, managed, hybrid]
 ---
 
 # Managed Component Bridge

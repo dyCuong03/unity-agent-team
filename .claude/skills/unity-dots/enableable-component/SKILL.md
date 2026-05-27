@@ -1,6 +1,7 @@
 ﻿---
 name: enableable-component
 description: Toggle a component''s active state without archetype migration, preserving component data while excluding the entity from standard queries until re-enabled.
+tags: [core, enableable]
 ---
 
 # Enableable Component

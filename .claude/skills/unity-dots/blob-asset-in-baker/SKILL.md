@@ -1,6 +1,7 @@
 ﻿---
 name: blob-asset-in-baker
 description: Build immutable, Burst-safe, shareable constant data blobs at bake time using BlobBuilder, register them with BlobAssetStore for lifetime management, and store BlobAssetReference<T> in a runtime co...
+tags: [baking]
 ---
 
 # Blob Asset in Baker

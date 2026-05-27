@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-handle-complete-sync-point-antipattern
 description: Identify and eliminate inline handle.Complete() calls in production systems that create unintended main-thread stalls, and replace them with WorldUpdateAllocator + dependency chain patterns.
+tags: [jobs, antipattern, debug, performance]
 ---
 
 # handle.Complete() Sync Point Anti-Pattern

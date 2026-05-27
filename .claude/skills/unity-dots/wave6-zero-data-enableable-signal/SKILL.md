@@ -1,6 +1,7 @@
 ﻿---
 name: wave6-zero-data-enableable-signal
 description: Use a zero-field IEnableableComponent as a single-bit signal between producer and consumer systems, avoiding event queues and DynamicBuffer cleanup overhead.
+tags: [enableable, performance]
 ---
 
 # Zero-Data Enableable Signal — Inter-System Signaling

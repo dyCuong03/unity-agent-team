@@ -1,6 +1,7 @@
 ﻿---
 name: wave6-baker-set-component-enabled
 description: Set the initial enabled state of an IEnableableComponent at bake time using Baker.SetComponentEnabled<T>(), avoiding runtime first-frame conditionals.
+tags: [enableable, baking]
 ---
 
 # Baker.SetComponentEnabled — Bake-Time Initial State

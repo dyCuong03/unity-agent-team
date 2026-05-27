@@ -1,6 +1,7 @@
 ﻿---
 name: wave4-world-update-allocator-per-frame-native
 description: Allocate per-frame temporary NativeArrays and NativeContainers without manual `Dispose()` using `WorldUpdateAllocator` (RewindableAllocator), which auto-rewinds at end of each world update.
+tags: [jobs, native-containers, performance]
 ---
 
 # WorldUpdateAllocator — Per-Frame Native Allocations

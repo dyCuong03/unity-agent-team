@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-fixed-step-simulation-system-group
 description: Schedule physics-affecting and fixed-rate simulation systems inside FixedStepSimulationSystemGroup with correct ordering relative to PhysicsSystemGroup and its sub-groups.
+tags: [physics, systems]
 ---
 
 # Fixed-Step Simulation System Group — Physics Ordering

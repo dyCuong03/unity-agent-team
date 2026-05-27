@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-local-to-world-read-only-contract
 description: Read the computed world-space transform matrix from LocalToWorld for rendering, physics queries, and spatial calculations — never write it from gameplay systems.
+tags: [transforms]
 ---
 
 # LocalToWorld Read-Only Contract

@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-stateful-physics-event-buffers
 description: Detect Enter, Stay, and Exit states for trigger and collision events using Unity Physics''s built-in stateful event buffer systems, which maintain per-entity DynamicBuffer<StatefulTriggerEvent>.
+tags: [physics]
 ---
 
 # Stateful Physics Event Buffers

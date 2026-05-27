@@ -1,6 +1,7 @@
 ﻿---
 name: systemapi-query-main-thread
 description: Iterate matching entities on the main thread using a concise, source-generated foreach that declares read/write intent and eliminates manual type handle boilerplate.
+tags: [core, query]
 ---
 
 # SystemAPI Query — Main Thread Iteration

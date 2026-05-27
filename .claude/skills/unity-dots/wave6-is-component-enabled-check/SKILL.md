@@ -1,6 +1,7 @@
 ﻿---
 name: wave6-is-component-enabled-check
 description: Check the current enabled state of an IEnableableComponent on a specific entity using EntityManager.IsComponentEnabled<T>() for imperative main-thread branching.
+tags: [enableable]
 ---
 
 # IsComponentEnabled — Main-Thread Enabled State Check

@@ -1,6 +1,7 @@
 ﻿---
 name: ijobentity-parallel-job
 description: Execute per-entity computation in parallel across worker threads using a source-generated job whose query is inferred from the Execute method signature.
+tags: [core, jobs]
 ---
 
 # IJobEntity — Parallel Job

@@ -1,6 +1,7 @@
 ﻿---
 name: baker-authoring-conversion
 description: Convert designer-facing MonoBehaviour authoring data into unmanaged ECS components at subscene import time, with zero runtime conversion overhead.
+tags: [core, baking, hybrid]
 ---
 
 # Baker and Authoring Conversion

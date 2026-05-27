@@ -1,6 +1,7 @@
 ﻿---
 name: ecb-system-timing
 description: Select the correct ECBSystem playback boundary (BeginSimulation vs EndSimulation) based on when the structural change result must be visible, and guard both with RequireForUpdate.
+tags: [ecb, systems]
 ---
 
 # ECB System Timing — Begin vs End Simulation

@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-ijobchunk-use-enabled-mask-guard
 description: Correctly handle the enableable component bitmask in IJobChunk to avoid processing disabled entities or skipping enabled ones.
+tags: [jobs, chunks, enableable, antipattern]
 ---
 
 # IJobChunk useEnabledMask Guard

@@ -1,6 +1,7 @@
 ﻿---
 name: wave7-managed-singleton-pattern
 description: Store a single managed object (shared service, UnityEngine asset, or configuration class) as an ECS singleton accessible from systems without dependency injection.
+tags: [hybrid, managed, singleton]
 ---
 
 # Managed Singleton Pattern

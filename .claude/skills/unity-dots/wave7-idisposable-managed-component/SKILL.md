@@ -1,6 +1,7 @@
 ﻿---
 name: wave7-idisposable-managed-component
 description: Safely release unmanaged or native resources held by a managed IComponentData when the component is removed or the entity is destroyed.
+tags: [hybrid, managed, lifecycle]
 ---
 
 # IDisposable Managed Component — Native Resource Cleanup

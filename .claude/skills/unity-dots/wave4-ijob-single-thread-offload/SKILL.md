@@ -1,6 +1,7 @@
 ﻿---
 name: wave4-ijob-single-thread-offload
 description: Schedule sequential work off the main thread using IJob without parallelism overhead.
+tags: [jobs]
 ---
 
 # IJob — Single-Thread Offload

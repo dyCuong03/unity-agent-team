@@ -1,6 +1,7 @@
 ﻿---
 name: require-for-update-gate
 description: Declare a precondition that prevents a system from running when its required singleton or component type is absent, eliminating boilerplate null-checks and reducing unnecessary scheduling cost.
+tags: [core, query, gating]
 ---
 
 # RequireForUpdate Gate

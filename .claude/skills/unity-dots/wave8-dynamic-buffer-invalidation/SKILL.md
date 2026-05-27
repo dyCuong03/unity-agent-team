@@ -1,6 +1,7 @@
 ﻿---
 name: wave8-dynamic-buffer-invalidation
 description: Prevent unsafe access to DynamicBuffer references after structural changes have invalidated the underlying chunk memory pointer.
+tags: [antipattern, debug]
 ---
 
 # DynamicBuffer Invalidation After Structural Changes

@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-physics-world-singleton-queries
 description: Perform runtime spatial queries (raycast, collider cast, distance, overlap) against the Unity Physics collision world using PhysicsWorldSingleton.
+tags: [physics, query, singleton]
 ---
 
 # PhysicsWorldSingleton Spatial Queries

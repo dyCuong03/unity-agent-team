@@ -1,6 +1,7 @@
 ﻿---
 name: wave6-entity-manager-set-component-enabled
 description: Immediately enable or disable an IEnableableComponent on one entity or all entities matching a query using EntityManager.SetComponentEnabled or SystemAPI.SetComponentEnabled on the main thread.
+tags: [enableable]
 ---
 
 # EntityManager.SetComponentEnabled — Immediate Main-Thread Toggle

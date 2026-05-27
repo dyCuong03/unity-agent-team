@@ -1,6 +1,7 @@
 ﻿---
 name: wave5-collision-filter-layer-masking
 description: Control which physics bodies interact with each other and with spatial queries using CollisionFilter bitmask layer assignment, reducing broadphase pairs and query false positives.
+tags: [physics]
 ---
 
 # Collision Filter Layer Masking

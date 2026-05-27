@@ -1,6 +1,7 @@
 ﻿---
 name: wave6-ecs-state-machine-design
 description: Choose the correct ECS state representation — enum field, IEnableableComponent, or structural add/remove — based on transition frequency, state count, and query-filtering requirements.
+tags: [enableable, state-machine]
 ---
 
 # ECS State Machine Design — Decision Model

@@ -1,6 +1,7 @@
 ﻿---
 name: blob-asset-deduplication
 description: Avoid creating duplicate blob assets for identical source data by checking BlobAssetStore before building, using a stable hash as the deduplication key.
+tags: [baking, performance]
 ---
 
 # Blob Asset Deduplication
