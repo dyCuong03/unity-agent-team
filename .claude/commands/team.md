@@ -1,21 +1,33 @@
 ---
-description: Adaptive Unity DOTS agent pipeline. Triage classifies the task; orchestrate.py derives the minimum viable agent composition; each phase is artifact-gated by Python, not by markdown promises.
-argument-hint: "<intent: bug | feature | refactor | explore> [depth: quick | normal | deep] <task description>"
+description: Adaptive Unity DOTS agent pipeline. Triage classifies the task; orchestrate.py derives the minimum viable agent composition; each phase is artifact-gated by Python, not by markdown promises. Use --full for real multi-agent teams with tmux + git worktrees.
+argument-hint: "[--full] <intent: bug | feature | refactor | explore> [depth: quick | normal | deep] <task description>"
 ---
 
 # `/team` — Adaptive Unity DOTS Pipeline
 
 ```
 /team <intent> [depth] <task description>
+/team --full <task description>
 
 intent  ∈ { bug, feature, refactor, explore }
 depth   ∈ { quick, normal, deep }   default: normal
 ```
 
+Two modes:
+
+| Mode | Command | Behavior |
+|------|---------|----------|
+| **Adaptive** (default) | `/team <intent> [depth] <task>` | Triage → minimum agents → artifact-gated |
+| **Full Team** | `/team --full <task>` | Real 4-agent team with tmux + git worktrees |
+
 This command **always** runs `triage` first, **always** calls
 `orchestrate.py plan` to derive the pipeline, and **never** spawns agents that
 the plan does not list. Every phase boundary is a Python gate; if the gate
 exits non-zero, you halt — no exceptions, no markdown promises.
+
+**Exception:** `/team --full` bypasses adaptive triage and always spawns exactly
+4 agents in separate tmux windows with separate git worktrees. See the
+`--full` section below.
 
 ## What changed from the fixed 4-agent team
 
@@ -204,6 +216,216 @@ When `depth == "deep"` OR `intent == "critical"` is plan-derived:
 Codex output goes in the completion report under `Codex review:`. If
 `/codex:review` is unavailable: state `"Running without codex review"` once
 and require tester (not verifier) regardless of triage choice.
+
+---
+
+---
+
+## `/team --full` — Real Multi-Agent Team Mode
+
+```
+/team --full <task description>
+```
+
+This mode creates a **real parallel agent team** with:
+- 4 separate git worktrees (one per agent)
+- 4 tmux windows (one per agent)
+- 4 Claude Code instances with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+- Strict file ownership per role
+- QA gate before any merge
+
+### Prerequisites (HARD — no fallback)
+
+1. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` set in `~/.claude/settings.json`
+2. `tmux` installed and available
+3. `git` with worktree support
+4. `claude` CLI available in PATH
+
+If ANY prerequisite is missing, `/team --full` **fails fast** and reports what's
+missing. It does NOT fall back to internal subagents. "Full" means real
+infrastructure or nothing.
+
+### Agents (exactly 4, always)
+
+| Agent | Role | Domain |
+|-------|------|--------|
+| `architect` | System architect / task planner | Planning, ownership, merge order |
+| `unity-dev` | Senior Unity developer (non-DOTS) | MonoBehaviour, SO, UI, Addressables, VContainer, DOTween |
+| `unity-dot-dev` | Senior DOTS/ECS developer | Entities, ISystem, Jobs, Burst, ECS components, physics |
+| `qa-tester` | QA tester / reviewer | Diff review, compile check, behavior/performance risk |
+
+### Execution Flow (Teammates First, Then Assign)
+
+```
+/team --full <task>
+    │
+    ▼ PHASE 1: SPAWN TEAMMATES FIRST
+    │
+    ├─ Step 1.1: Parse task → generate slug
+    │
+    ├─ Step 1.2: Environment check (fail fast if missing)
+    │            tmux, git, claude, CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+    │            ↳ ABORT immediately if any missing. No fallback.
+    │
+    ├─ Step 1.3: Create tmux session with 4 windows
+    │            unity-agent-team-<slug>:architect
+    │            unity-agent-team-<slug>:unity-dev
+    │            unity-agent-team-<slug>:unity-dot-dev
+    │            unity-agent-team-<slug>:qa-tester
+    │
+    ├─ Step 1.4: Launch Claude in STANDBY in each window
+    │            Each teammate gets a bootstrap prompt:
+    │            "You are <role>. Wait for assignment. Do not act."
+    │
+    ├─ Step 1.5: VALIDATE teammate sessions (MANDATORY)
+    │            - Verify exactly 4 tmux windows exist
+    │            - Verify each role name exists as a window
+    │            - Verify panes are present
+    │            - Check for running claude processes
+    │            - Print: tmux ls, list-windows, list-panes -a, ps aux | grep claude
+    │            ↳ ABORT if validation fails. No worktrees. No analysis.
+    │
+    ▼ PHASE 2: ANALYZE + ASSIGN (only after Phase 1 passes)
+    │
+    ├─ Step 2.1: Detect base branch
+    │
+    ├─ Step 2.2: Working tree dirty check
+    │
+    ├─ Step 2.3: Create 4 git worktrees + branches
+    │            ../worktrees/<slug>/architect    → agent/architect/<slug>
+    │            ../worktrees/<slug>/unity-dev    → agent/unity-dev/<slug>
+    │            ../worktrees/<slug>/unity-dot-dev → agent/unity-dot-dev/<slug>
+    │            ../worktrees/<slug>/qa-tester    → agent/qa-tester/<slug>
+    │
+    ├─ Step 2.4: Create report + message directories
+    │
+    ├─ Step 2.5: Generate per-agent assignment prompts
+    │
+    ├─ Step 2.6: Send assignments to running teammate sessions
+    │            Each teammate: cd into worktree → receive full role prompt
+    │
+    ├─ Step 2.7: Full setup validation
+    │            Teammates + worktrees + branches all verified
+    │
+    └─ Step 2.8: Print summary with attach/status/teardown commands
+```
+
+**Critical ordering rule:** Worktrees do NOT exist before teammate sessions.
+Task analysis does NOT happen before teammate sessions. No exceptions.
+
+### How to invoke
+
+When the user runs `/team --full <task>`, execute:
+
+```sh
+# Full two-phase setup (teammates first, then assign)
+python .claude/scripts/full_team.py setup "<task>"
+```
+
+Or run the two phases separately:
+
+```sh
+# Phase 1 only: spawn teammates in standby
+python .claude/scripts/full_team.py spawn-teammates "<task>"
+
+# Phase 2 only: create worktrees + send assignments (teammates must be running)
+python .claude/scripts/full_team.py assign "<task>"
+```
+
+**If the script exits non-zero**, report the exact error and stop. Do NOT
+attempt to work around it with internal subagents.
+
+**If the script exits 0**, read and print the output. The team is running.
+Provide the user with:
+- tmux attach command
+- Status check command
+- Teardown command
+
+### Post-launch workflow
+
+After all 4 agents have received their assignments:
+
+1. **Architect** creates the plan first (`reports/team/<slug>/architect-plan.md`)
+2. **unity-dev** and **unity-dot-dev** implement their areas (may run in parallel)
+3. **qa-tester** reviews all branches after implementation
+4. **Integrator** (you, the main session) merges ONLY after QA approves
+
+### Integration (after QA approval)
+
+When `reports/team/<slug>/qa-report.md` exists and says APPROVE:
+
+```sh
+# Check merge readiness
+python .claude/scripts/full_team.py status "<task>"
+
+# Merge in safe order (architect first, then devs, verify after each)
+git merge agent/architect/<slug>
+git merge agent/unity-dev/<slug>
+git merge agent/unity-dot-dev/<slug>
+
+# Final verification
+python .claude/scripts/full_team.py verify "<task>"
+```
+
+Do NOT merge if QA report says REJECT. Fix issues first.
+
+### Reports
+
+Each agent writes to `reports/team/<slug>/`:
+
+| File | Author |
+|------|--------|
+| `architect.md` | architect |
+| `architect-plan.md` | architect |
+| `unity-dev.md` | unity-dev |
+| `unity-dot-dev.md` | unity-dot-dev |
+| `qa-tester.md` | qa-tester |
+| `qa-report.md` | qa-tester |
+| `final-integration-report.md` | integrator (main session) |
+
+### Teardown
+
+```sh
+python .claude/scripts/full_team.py teardown "<task>"
+```
+
+Removes worktrees, kills tmux session, deletes branches.
+
+### Management commands
+
+```sh
+# Phase 1 only: spawn teammates in standby
+python .claude/scripts/full_team.py spawn-teammates "<task>"
+
+# Phase 2 only: assign work to running teammates
+python .claude/scripts/full_team.py assign "<task>"
+
+# Check status of all agents
+python .claude/scripts/full_team.py status "<task>"
+
+# Re-verify infrastructure (teammates + worktrees)
+python .claude/scripts/full_team.py verify "<task>"
+
+# Generate new prompts (e.g., after architect updates ownership)
+python .claude/scripts/full_team.py prompts "<task>"
+```
+
+### Strict Rules
+
+1. **Teammates first.** tmux sessions with Claude in standby MUST be created
+   and validated BEFORE any task analysis, worktree creation, or implementation
+2. `/team --full` MUST create real git worktrees — not simulated
+3. `/team --full` MUST create real tmux windows — not internal subagents
+4. Each agent MUST work in its own worktree only
+5. Each agent MUST have `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+6. No merge without QA approval
+7. Fail fast on any missing prerequisite — no partial setup, no fallback
+8. `validate_teammate_sessions_first()` MUST pass before Phase 2 begins
+9. Post-setup validation MUST confirm exactly 4 worktrees + 4 tmux windows
+10. Print `tmux ls`, `tmux list-windows`, `tmux list-panes -a`,
+    `ps aux | grep claude`, `git worktree list` as proof
+11. If teammate validation fails: ABORT. Do NOT create worktrees.
+    Do NOT analyze the task. Do NOT fall back to internal subagents.
 
 ---
 
