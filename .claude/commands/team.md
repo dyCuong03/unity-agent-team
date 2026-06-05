@@ -180,9 +180,13 @@ For each phase in `pipeline.json.phases` in order:
 2. **Spawn** the agents listed in `phase.agents`:
    - `mode == "sequential"` → one agent at a time, wait for each artifact
    - `mode == "parallel"` → spawn all in one message
-   - Each agent prompt MUST include the skill packs from
-     `pipeline.json.skill_packs` and its required artifact from
-     `pipeline.json.artifacts_required`
+   - Each agent prompt MUST `@`-import the **lane-correct skills for that agent**
+     from `pipeline.json.skills_by_agent[<agent>]` — one `@.claude/skills/<m>/SKILL.md`
+     per listed module. Do NOT hardcode `unity-dots-best-practices` for every agent:
+     the Unity-classic lane (`unity-dev`) gets `unity-classic`, the DOTS lane
+     (`unity-dots-dev`) gets `unity-dots-best-practices` + DOTS extras. `orchestrate.py`
+     already attached DOTS `skill_packs` to DOTS lanes only — do not re-add them to
+     `unity-dev`/`tester`/`verifier`/`data-tool`.
    - Each agent prompt MUST instruct it to validate its artifact before
      returning:
      `python3 .claude/scripts/orchestrate.py validate workspace/<artifact> <schema>`
@@ -195,9 +199,33 @@ For each phase in `pipeline.json.phases` in order:
 Agent({
   subagent_type: "<agent name from phase.agents>",
   description: "<role> — phase <id>",
-  prompt: "@.claude/agents/<agent>.md @.claude/skills/unity-dots-best-practices/SKILL.md [+ skill_packs from pipeline.json]\n\nIntent: <INTENT>\nTask: <TASK>\nRead workspace/triage.json and any prior artifacts listed in pipeline.json.artifacts_required for upstream agents.\n\nProduce workspace/<your-artifact>.json. Validate before returning:\n  python3 .claude/scripts/orchestrate.py validate workspace/<your-artifact>.json <schema-name>\n\nDo not edit files outside your ownership partition (.claude/scripts/orchestrate.py ownership-check <agent> <files>)."
+  prompt: "@.claude/agents/<agent>.md [one @.claude/skills/<m>/SKILL.md per module in pipeline.json.skills_by_agent[<agent>]]\n\nIntent: <INTENT>\nTask: <TASK>\nRead workspace/triage.json and any prior artifacts listed in pipeline.json.artifacts_required for upstream agents.\n\nProduce workspace/<your-artifact>.json. Validate before returning:\n  python3 .claude/scripts/orchestrate.py validate workspace/<your-artifact>.json <schema-name>\n\nDo not edit files outside your ownership partition (.claude/scripts/orchestrate.py ownership-check <agent> <files>)."
 })
 ```
+
+Example: a Unity-domain task routes the impl phase to `unity-dev`, so
+`pipeline.json.skills_by_agent["unity-dev"] = ["unity-classic", "unity-foundation"]`
+→ the prompt imports `@.claude/skills/unity-classic/SKILL.md
+@.claude/skills/unity-foundation/SKILL.md` (NOT `unity-dots-best-practices`).
+A DOTS-domain task routes to `unity-dots-dev` →
+`["unity-dots-best-practices", "ecs-job-patterns", "burst-safety", "memory-safety"]`.
+
+### Per-agent skill map (mirrors orchestrate.py `AGENT_PRIMARY_SKILLS`)
+
+| Agent | Primary skills | DOTS extras (skill_packs)? |
+|-------|----------------|----------------------------|
+| `architect` | `architect`, `unity-foundation` | no |
+| `unity-dots-dev` | `unity-dots-best-practices`, `ecs-job-patterns`, `burst-safety`, `memory-safety` | yes (DOTS lane) |
+| `unity-dev` | `unity-classic`, `unity-foundation` | **no** |
+| `tester` / `verifier` / `qa-tester` | `tester`, `qa-validation` | **no** |
+| `bug-investigation` | `investigation`, `codebase-understanding` | no |
+| `data-tool` | `data-tool`, `editor-data-tools` | **no** |
+| `refactor-agent` | `codebase-understanding`, `ownership-partitioning` | no |
+| `system-mapper` | `codebase-understanding` | no |
+
+DOTS `skill_packs` (`ecs-job-patterns`/`burst-safety`/`memory-safety`) and
+`ownership-partitioning` (when `parallel_allowed`) are merged into the map by
+`orchestrate.py` — DOTS extras land on DOTS lanes only.
 
 ### Per-agent artifact map (mirrors orchestrate.py)
 
@@ -247,6 +275,40 @@ Reads `verification_result.json`, computes the completion report, and exits:
 
 On success, print the completion report exactly as the script outputs it. Do
 not paraphrase. Do not add a markdown summary on top.
+
+---
+
+## STEP 5 — Commit & push (mandatory on PASS)
+
+After `finalize` exits `0`, commit and push the run:
+
+```sh
+python3 .claude/scripts/orchestrate.py commit "<one-line task summary>"
+```
+
+Rules enforced by the script (do not reimplement them by hand):
+
+- Only a run whose `verification_result.json.status == "PASS"` may commit. A
+  missing/FAIL verification returns exit 2/4 — the run does **not** commit.
+- `explore` intent commits nothing (triage-only run).
+- Commits on the **current branch** only. Detached HEAD → exit 2 (checkout a
+  branch first). The script never auto-creates branches and never force-pushes.
+- Stages exactly: the `changed_files` from `impl_result.json` plus the
+  persistent knowledge files (`repo-knowledge.md`, `ecs-registry.md`,
+  `recent-changes.md`). Nothing else.
+- If no remote is configured or `push` is rejected, the commit is retained
+  locally and the gate still exits `0` (push failure is non-fatal, surfaced as
+  a WARN). Use `--no-push` to commit without pushing.
+- The repo committed is `UNITY_TEAM_PROJECT_ROOT` if set, else the package root
+  (same resolution as `full_team.py`).
+
+Print the `[commit]` output verbatim. Do **not** run a manual `git commit` /
+`git push` — always go through this gate so the PASS-only and branch-safety
+rules apply.
+
+`--team` / `--worktrees` modes: the same rule applies — the teamlead (or the
+worktree merge step) runs `orchestrate.py commit` only after `qa-tester`
+posts `APPROVE`.
 
 ---
 

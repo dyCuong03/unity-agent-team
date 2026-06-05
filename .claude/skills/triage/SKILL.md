@@ -100,14 +100,22 @@ ownership partition ≥ 2. The orchestrate.py planner enforces this.
 
 ## Skill Pack Selection
 
+`skill_packs[]` holds **DOTS extras only** — modules layered on top of an agent's
+lane-correct primary skills. Each agent's primary skills are resolved by
+`orchestrate.py` (`AGENT_PRIMARY_SKILLS`), NOT from `skill_packs`. The Unity-classic
+lane (`unity-dev`) gets `unity-classic` + `unity-foundation` as its primaries — it
+does NOT use `unity-dots-best-practices` as a stand-in Unity layer.
+
 Add up to 4 skill packs to `skill_packs[]` based on domain:
 
 - DOTS: `ecs-job-patterns`, `burst-safety`, `memory-safety`
-- Unity: (none — Unity-domain work uses the Unity layer of unity-dots-best-practices)
+- Unity: (none — the Unity lane's `unity-classic` primary skill IS the Unity classic layer; do NOT add `unity-dots-best-practices`)
 - Hybrid: `ecs-job-patterns` + `ownership-partitioning`
 
-`ownership-partitioning` is added whenever `parallel_allowed=true` so downstream
-writers respect their assigned globs.
+`skill_packs` attach to **DOTS lanes only** (`unity-dots-dev`); they are never
+merged into `unity-dev`/`tester`/`verifier`/`data-tool`. `ownership-partitioning`
+is added whenever `parallel_allowed=true` so downstream writers respect their
+assigned globs.
 
 ## Helper Command
 
