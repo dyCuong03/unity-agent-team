@@ -13,6 +13,7 @@ Subcommands:
   gate <phase>                 — pre-phase check: all required artifacts present + valid
   ownership-check <agent> <files...>  — verify edits respect ownership.lock.json
   finalize                     — post-run completion gate; reads verification_result.json
+  commit [task] [--no-push]    — post-finalize gate: stage changed files, commit, push
 
 Exit codes:
   0   ok
@@ -32,6 +33,7 @@ import fnmatch
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -264,6 +266,56 @@ DOMAIN_IMPL_AGENT = {
     "Ambiguous": "unity-dev",     # default; architect should confirm the lane
 }
 
+# Skill selection is delegated to the registry-backed router (scripts/route_skills.py),
+# the single source of truth for "which skills does this agent load". The fallback map
+# below is used ONLY if the router/registry cannot be imported (degraded mode). The
+# router enforces: DOTS extras to DOTS lanes only; tester/verifier/data-tool/unity-dev
+# never get DOTS skills; agentmemory-codebase-recall + codebase-understanding are
+# must-keep for code-reading roles; total capped at registry.max_total_skills.
+try:  # pragma: no cover - exercised at runtime
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import route_skills as _route_skills  # type: ignore
+except Exception:  # registry/router unavailable — degrade gracefully
+    _route_skills = None
+
+# Fallback-only primary map (degraded mode when route_skills cannot load).
+AGENT_PRIMARY_SKILLS: dict[str, list[str]] = {
+    "architect":         ["architect", "unity-foundation", "codebase-understanding", "agentmemory-codebase-recall"],
+    "unity-dots-dev":    ["unity-dots-best-practices", "ecs-job-patterns", "burst-safety", "memory-safety", "codebase-understanding", "agentmemory-codebase-recall"],
+    "unity-dev":         ["unity-classic", "unity-foundation", "codebase-understanding", "agentmemory-codebase-recall"],
+    "tester":            ["tester", "qa-validation", "verifier", "codebase-understanding", "agentmemory-codebase-recall"],
+    "verifier":          ["tester", "qa-validation", "verifier", "codebase-understanding", "agentmemory-codebase-recall"],
+    "qa-tester":         ["tester", "qa-validation", "verifier", "codebase-understanding", "agentmemory-codebase-recall"],
+    "bug-investigation": ["investigation", "codebase-understanding", "agentmemory-codebase-recall"],
+    "data-tool":         ["data-tool", "editor-data-tools", "codebase-understanding", "agentmemory-codebase-recall"],
+    "refactor-agent":    ["codebase-understanding", "ownership-partitioning", "agentmemory-codebase-recall"],
+    "system-mapper":     ["codebase-understanding", "agentmemory-codebase-recall"],
+}
+
+
+def _compute_skills_by_agent(
+    pipeline: list[str],
+    domain: str = "Ambiguous",
+    intent: str = "feature",
+    task_text: str = "",
+    parallel_allowed: bool = False,
+) -> dict[str, list[str]]:
+    """Map every agent in the pipeline to its router-selected skill set.
+
+    Uses the registry-backed router when available; otherwise the fallback primary
+    map (degraded mode). DOTS extras never reach unity-dev/tester/verifier/data-tool.
+    """
+    out: dict[str, list[str]] = {}
+    for agent in pipeline:
+        if _route_skills is not None:
+            out[agent] = _route_skills.route(
+                agent, domain=domain, intent=intent,
+                task_text=task_text, parallel_allowed=parallel_allowed,
+            )
+        else:
+            out[agent] = list(AGENT_PRIMARY_SKILLS.get(agent, []))
+    return out
+
 
 def _route_impl_by_domain(
     pipeline: list[str], artifacts: dict[str, str], domain: str
@@ -332,6 +384,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
             "parallel_allowed": False,
             "artifacts_required": {},
             "skill_packs": triage.get("skill_packs", []),
+            "skills_by_agent": {},
             "ownership_partition": triage.get("ownership_partition", {}),
             "notes": "explore intent — triage-only, no implementation phase",
         }
@@ -372,6 +425,13 @@ def cmd_plan(args: argparse.Namespace) -> int:
             "parallel_allowed": parallel_allowed,
             "artifacts_required": artifacts,
             "skill_packs": triage.get("skill_packs", []),
+            "skills_by_agent": _compute_skills_by_agent(
+                pipeline,
+                domain=triage["domain"],
+                intent=intent,
+                task_text=triage.get("task", ""),
+                parallel_allowed=parallel_allowed,
+            ),
             "ownership_partition": partition,
             "confidence_score": triage["confidence_score"],
             "domain": triage["domain"],
@@ -620,6 +680,142 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Commit + push gate
+# ---------------------------------------------------------------------------
+
+# Footer added to every /team auto-commit. Keep in sync with project policy.
+COMMIT_COAUTHOR = "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+
+
+def _project_root() -> Path:
+    """Repo that holds the code /team edited. Honours the same override as
+    full_team.py so a nested package install still commits the real project."""
+    override = os.environ.get("UNITY_TEAM_PROJECT_ROOT")
+    return Path(override).resolve() if override else REPO_ROOT
+
+
+def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args], cwd=str(cwd), capture_output=True, text=True
+    )
+
+
+def cmd_commit(args: argparse.Namespace) -> int:
+    """Post-finalize commit+push gate. Only a PASS run may commit. Stages the
+    files unity-dev reported plus persistent knowledge, commits on the current
+    branch, and pushes to origin. Never auto-creates branches; never force-pushes.
+    """
+    root = _project_root()
+
+    # 0. must be a git work tree
+    if _git(["rev-parse", "--is-inside-work-tree"], root).returncode != 0:
+        print(f"[commit] SKIP — {root} is not a git repository", file=sys.stderr)
+        return 0
+
+    # 1. completion gate — mirror finalize. explore = nothing to commit.
+    pipeline_path = WORKSPACE / "pipeline.json"
+    intent = None
+    if pipeline_path.exists():
+        try:
+            intent = json.loads(pipeline_path.read_text(encoding="utf-8")).get("intent")
+        except json.JSONDecodeError:
+            pass
+    if intent == "explore":
+        print("[commit] SKIP — explore intent produces no changes")
+        return 0
+
+    vr_path = WORKSPACE / "verification_result.json"
+    if not vr_path.exists():
+        print("[commit] BLOCK — verification_result.json missing (run finalize first)",
+              file=sys.stderr)
+        return 2
+    try:
+        vr = load_artifact(vr_path)
+        _validate(vr, load_schema("verification_result"))
+    except (FileNotFoundError, ValidationError) as e:
+        print(f"[commit] BLOCK — invalid verification result: {e}", file=sys.stderr)
+        return 4
+    if vr.get("status") != "PASS":
+        print(f"[commit] BLOCK — verification status={vr.get('status')}; only PASS may commit",
+              file=sys.stderr)
+        return 4
+
+    # 2. branch safety — no detached HEAD, no force.
+    branch = _git(["rev-parse", "--abbrev-ref", "HEAD"], root).stdout.strip()
+    if not branch or branch == "HEAD":
+        print("[commit] BLOCK — detached HEAD; checkout a branch before /team commit",
+              file=sys.stderr)
+        return 2
+
+    # 3. stage: files unity-dev changed + persistent knowledge files.
+    impl_path = WORKSPACE / "impl_result.json"
+    changed: list[str] = []
+    if impl_path.exists():
+        try:
+            changed = load_artifact(impl_path).get("changed_files") or []
+        except ValidationError:
+            changed = []
+    persistent = [
+        "workspace/repo-knowledge.md",
+        "workspace/ecs-registry.md",
+        "workspace/recent-changes.md",
+    ]
+    for rel in changed + persistent:
+        p = Path(rel) if os.path.isabs(rel) else (root / rel)
+        if p.exists():
+            _git(["add", "--", str(p)], root)
+
+    staged = _git(["diff", "--cached", "--name-only"], root).stdout.strip()
+    if not staged:
+        print("[commit] nothing to commit — working tree clean for tracked changes")
+        return 0
+    n_files = len(staged.splitlines())
+
+    # 4. commit message
+    task = (args.task or vr.get("notes") or "automated change").strip().replace("\n", " ")
+    complexity = ""
+    if pipeline_path.exists():
+        try:
+            spec = json.loads(pipeline_path.read_text(encoding="utf-8"))
+            intent = spec.get("intent") or intent or "team"
+            complexity = spec.get("effective_complexity") or ""
+        except json.JSONDecodeError:
+            pass
+    scope = f"{intent or 'team'}" + (f"/{complexity}" if complexity else "")
+    subject = f"team({scope}): {task}"
+    if len(subject) > 72:
+        subject = subject[:69] + "..."
+    body = (
+        f"Auto-committed by /team after verification PASS "
+        f"({vr.get('method', 'unknown')}, risk={vr.get('risk_level', 'n/a')}).\n"
+        f"{n_files} file(s) changed.\n\n"
+        f"{COMMIT_COAUTHOR}"
+    )
+
+    cr = _git(["commit", "-m", subject, "-m", body], root)
+    if cr.returncode != 0:
+        print(f"[commit] FAIL — git commit failed:\n{cr.stderr.strip()}", file=sys.stderr)
+        return 1
+    sha = _git(["rev-parse", "--short", "HEAD"], root).stdout.strip()
+    print(f"[commit] committed {sha} on {branch} — {n_files} file(s)")
+
+    # 5. push (non-fatal if no remote / rejected — commit stays local)
+    if args.no_push:
+        print("[commit] push skipped (--no-push); commit retained locally")
+        return 0
+    if _git(["remote"], root).stdout.strip() == "":
+        print("[commit] no git remote configured — commit retained locally, not pushed")
+        return 0
+    pr = _git(["push", "origin", "HEAD"], root)
+    if pr.returncode != 0:
+        print(f"[commit] WARN — push failed (commit retained locally):\n{pr.stderr.strip()}",
+              file=sys.stderr)
+        return 0
+    print(f"[commit] pushed {branch} → origin")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Entry
 # ---------------------------------------------------------------------------
 
@@ -650,6 +846,11 @@ def main(argv: list[str] | None = None) -> int:
     p_own.set_defaults(func=cmd_ownership_check)
 
     sub.add_parser("finalize").set_defaults(func=cmd_finalize)
+
+    p_commit = sub.add_parser("commit")
+    p_commit.add_argument("task", nargs="?", default="", help="task summary for the commit subject")
+    p_commit.add_argument("--no-push", action="store_true", help="commit locally, do not push")
+    p_commit.set_defaults(func=cmd_commit)
 
     args = parser.parse_args(argv)
     try:

@@ -178,6 +178,60 @@ python3 .claude/scripts/full_team.py teardown "<task>"
 
 ---
 
+## 5c. Using agentmemory with /team
+
+`agentmemory` is an **optional** MCP server that gives `/team` agents cross-session
+memory — failure patterns, architecture decisions, and performance findings recalled
+from past runs. Every feature works without it.
+
+> **Source:** https://github.com/rohitg00/agentmemory
+> Verify the install steps and `.mcp.json` shape against the current agentmemory
+> docs before following the steps below.
+
+**1. Install:**
+
+```sh
+pip install agentmemory
+# or use directly without global install via: uvx agentmemory  (see step 2)
+```
+
+**2. Add to `.mcp.json`** in your Unity project root (verify shape at
+https://github.com/rohitg00/agentmemory — command/args may vary by version):
+
+```json
+{
+  "mcpServers": {
+    "ai-game-developer": { "...": "..." },
+    "code-review-graph":  { "...": "..." },
+    "agentmemory": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["agentmemory"]
+    }
+  }
+}
+```
+
+Restart Claude Code after editing `.mcp.json`.
+
+**3. Verify:** run `/mcp` — you should see `agentmemory` with tools like
+`mcp__agentmemory__memory_smart_search`, `mcp__agentmemory__memory_lesson_save`,
+`mcp__agentmemory__memory_recall`.
+
+**4. When unavailable:** `/team` agents print `[MEMORY UNAVAILABLE]` once and fall
+back to targeted `Grep` + `code-review-graph` — no features blocked, no session
+halted.
+
+**5. To disable:** remove the `agentmemory` entry from `.mcp.json`. The fallback
+path activates automatically.
+
+> ⚠ **Memory is NOT the source of truth.** Current repo files always win.
+> Agents verify every recalled fact against the live codebase before acting.
+> A memory entry that contradicts the current source code is treated as stale
+> and ignored. See full notes in SETUP.md — Using agentmemory with /team.
+
+---
+
 ## 6. Effective-use tips
 
 - **`--team` (Agent Teams)** is the default for multi-role work — no git worktrees,

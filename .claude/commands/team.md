@@ -105,6 +105,39 @@ python3 .claude/scripts/orchestrate.py reset
 
 ---
 
+## agentmemory codebase recall (ALL `/team` modes — mandatory rule)
+
+Agents must not explore the codebase at random. Every agent that reads or modifies
+code follows the `agentmemory-codebase-recall` skill:
+
+```
+Before broad Read/Grep/Glob exploration, query agentmemory when available.
+Use memory to narrow the search.
+Then read the current files directly.
+Do not claim facts based only on memory.
+Do not edit based only on memory.
+If agentmemory is unavailable, report [MEMORY UNAVAILABLE] and use targeted search.
+```
+
+Correct flow (memory is a recall layer, **not** the source of truth — current repo
+files always win):
+
+```
+agentmemory query
+→ targeted file discovery
+→ Read current files
+→ verify memory against files
+→ analyze or edit
+→ save important findings back to agentmemory
+```
+
+`agentmemory-codebase-recall` is routed into every code-reading role (see the
+per-agent skill map). When agentmemory MCP is absent, this is non-blocking: agents
+report `[MEMORY UNAVAILABLE]` once and fall back to targeted CRG/Grep — never random
+folder reads. Setup: **SETUP.md → "Using agentmemory with /team"**.
+
+---
+
 ## STEP 1 — Triage (ALWAYS, exactly once)
 
 Spawn one `triage` agent. Wait for its artifact. No exceptions.
@@ -180,9 +213,13 @@ For each phase in `pipeline.json.phases` in order:
 2. **Spawn** the agents listed in `phase.agents`:
    - `mode == "sequential"` → one agent at a time, wait for each artifact
    - `mode == "parallel"` → spawn all in one message
-   - Each agent prompt MUST include the skill packs from
-     `pipeline.json.skill_packs` and its required artifact from
-     `pipeline.json.artifacts_required`
+   - Each agent prompt MUST `@`-import the **lane-correct skills for that agent**
+     from `pipeline.json.skills_by_agent[<agent>]` — one `@.claude/skills/<m>/SKILL.md`
+     per listed module. Do NOT hardcode `unity-dots-best-practices` for every agent:
+     the Unity-classic lane (`unity-dev`) gets `unity-classic`, the DOTS lane
+     (`unity-dots-dev`) gets `unity-dots-best-practices` + DOTS extras. `orchestrate.py`
+     already attached DOTS `skill_packs` to DOTS lanes only — do not re-add them to
+     `unity-dev`/`tester`/`verifier`/`data-tool`.
    - Each agent prompt MUST instruct it to validate its artifact before
      returning:
      `python3 .claude/scripts/orchestrate.py validate workspace/<artifact> <schema>`
@@ -195,9 +232,44 @@ For each phase in `pipeline.json.phases` in order:
 Agent({
   subagent_type: "<agent name from phase.agents>",
   description: "<role> — phase <id>",
-  prompt: "@.claude/agents/<agent>.md @.claude/skills/unity-dots-best-practices/SKILL.md [+ skill_packs from pipeline.json]\n\nIntent: <INTENT>\nTask: <TASK>\nRead workspace/triage.json and any prior artifacts listed in pipeline.json.artifacts_required for upstream agents.\n\nProduce workspace/<your-artifact>.json. Validate before returning:\n  python3 .claude/scripts/orchestrate.py validate workspace/<your-artifact>.json <schema-name>\n\nDo not edit files outside your ownership partition (.claude/scripts/orchestrate.py ownership-check <agent> <files>)."
+  prompt: "@.claude/agents/<agent>.md [one @.claude/skills/<m>/SKILL.md per module in pipeline.json.skills_by_agent[<agent>]]\n\nIntent: <INTENT>\nTask: <TASK>\nRead workspace/triage.json and any prior artifacts listed in pipeline.json.artifacts_required for upstream agents.\n\nProduce workspace/<your-artifact>.json. Validate before returning:\n  python3 .claude/scripts/orchestrate.py validate workspace/<your-artifact>.json <schema-name>\n\nDo not edit files outside your ownership partition (.claude/scripts/orchestrate.py ownership-check <agent> <files>)."
 })
 ```
+
+`skills_by_agent` is produced by the **skill router** (`scripts/route_skills.py`),
+backed by the **skill registry** (`.claude/skills/registry.json`). The router
+selects `role primary + domain extras + intent extras + keyword matches +
+agentmemory hints`, capped at `registry.max_total_skills` (7), with role/domain/
+intent priority stronger than keyword. It is the single source of truth — adaptive
+`/team` and `/team --team` both derive their skills from it. Inspect any agent:
+
+```sh
+python3 .claude/scripts/route_skills.py --agent unity-dev --domain Unity --intent bug --task "<task>"
+```
+
+Example: a Unity bug routes the impl phase to `unity-dev` →
+`["unity-classic", "unity-foundation", "codebase-understanding", "agentmemory-codebase-recall", "investigation"]`
+(NOT `unity-dots-best-practices`). A DOTS feature routes to `unity-dots-dev` →
+`["unity-dots-best-practices", "ecs-job-patterns", "burst-safety", "memory-safety", "codebase-understanding", "agentmemory-codebase-recall"]`.
+
+### Per-agent skill map (registry-driven — see `.claude/skills/INDEX.md`)
+
+| Agent | Primary skills | +bug | +parallel/refactor | DOTS extras? |
+|-------|----------------|------|--------------------|--------------|
+| `architect` | `architect`, `unity-foundation`, `codebase-understanding`, `agentmemory-codebase-recall` | — | `ownership-partitioning` | no |
+| `unity-dots-dev` | `unity-dots-best-practices`, `ecs-job-patterns`, `burst-safety`, `memory-safety`, `codebase-understanding`, `agentmemory-codebase-recall` (`unity-dots` index is keyword-reachable, not forced) | `investigation` | `ownership-partitioning` | yes (DOTS lane) |
+| `unity-dev` | `unity-classic`, `unity-foundation`, `codebase-understanding`, `agentmemory-codebase-recall` | `investigation` | `ownership-partitioning` | **no** |
+| `tester` / `verifier` / `qa-tester` | `tester`, `qa-validation`, `verifier`, `codebase-understanding`, `agentmemory-codebase-recall` | — | — | **no** |
+| `bug-investigation` | `investigation`, `codebase-understanding`, `agentmemory-codebase-recall` | +domain: Unity→`unity-classic`, DOTS→`unity-dots-best-practices`+`ecs-job-patterns`, Hybrid→both+`ownership-partitioning` | — | domain-gated |
+| `data-tool` | `data-tool`, `editor-data-tools`, `codebase-understanding`, `agentmemory-codebase-recall` | — | — | **no** |
+| `refactor-agent` | `codebase-understanding`, `ownership-partitioning`, `agentmemory-codebase-recall` | — | — | no |
+
+The cap (`max_total_skills` = 7) drops the lowest-priority entry first. Required
+intent skills are **must-keep** so the cap can't crowd them out: `investigation` on a
+bug and `ownership-partitioning` on refactor/parallel always survive for the roles
+that need them, alongside the full DOTS/Unity core. DOTS skills never reach
+`unity-dev`, `tester`, `verifier`, `qa-tester`, or `data-tool` — enforced by a hard
+guard in the router.
 
 ### Per-agent artifact map (mirrors orchestrate.py)
 
@@ -247,6 +319,40 @@ Reads `verification_result.json`, computes the completion report, and exits:
 
 On success, print the completion report exactly as the script outputs it. Do
 not paraphrase. Do not add a markdown summary on top.
+
+---
+
+## STEP 5 — Commit & push (mandatory on PASS)
+
+After `finalize` exits `0`, commit and push the run:
+
+```sh
+python3 .claude/scripts/orchestrate.py commit "<one-line task summary>"
+```
+
+Rules enforced by the script (do not reimplement them by hand):
+
+- Only a run whose `verification_result.json.status == "PASS"` may commit. A
+  missing/FAIL verification returns exit 2/4 — the run does **not** commit.
+- `explore` intent commits nothing (triage-only run).
+- Commits on the **current branch** only. Detached HEAD → exit 2 (checkout a
+  branch first). The script never auto-creates branches and never force-pushes.
+- Stages exactly: the `changed_files` from `impl_result.json` plus the
+  persistent knowledge files (`repo-knowledge.md`, `ecs-registry.md`,
+  `recent-changes.md`). Nothing else.
+- If no remote is configured or `push` is rejected, the commit is retained
+  locally and the gate still exits `0` (push failure is non-fatal, surfaced as
+  a WARN). Use `--no-push` to commit without pushing.
+- The repo committed is `UNITY_TEAM_PROJECT_ROOT` if set, else the package root
+  (same resolution as `full_team.py`).
+
+Print the `[commit]` output verbatim. Do **not** run a manual `git commit` /
+`git push` — always go through this gate so the PASS-only and branch-safety
+rules apply.
+
+`--team` / `--worktrees` modes: the same rule applies — the teamlead (or the
+worktree merge step) runs `orchestrate.py commit` only after `qa-tester`
+posts `APPROVE`.
 
 ---
 
@@ -362,35 +468,52 @@ Do not use `architech`, `unity-dot-dev`, `QA`, or bare `tester`.
    `model: "sonnet"`, the matching `subagent_type`, and a `prompt` that loads the
    role's skills.
 
-   **Skill loading — use BOTH, in this order (tested):**
-   - `@`-import the skill files at the start of the prompt (best-effort), AND
-   - an explicit **"STEP 0: Read these skill files NOW with the Read tool before any
-     other work: <paths>. Confirm each is loaded."** instruction.
-
-   `@`-import expansion into a teammate's context is **NOT reliable** (observed
-   ~50% of spawns receive the content). The explicit `Read` instruction is the
-   guarantee — the teammate actively pulls the file content in. Do NOT rely on
-   `@`-import alone, and never on `Reference:` footnotes inside `agents/*.md`.
-
-   Per-role skill files (both `@`-import them AND tell the teammate to `Read` them):
+   **Skill loading — same registry/router as adaptive mode, Read-first.**
+   Per-role skill files come from the skill router so `--team` and adaptive `/team`
+   stay in sync. Get the exact list for a role:
+   ```sh
+   python3 .claude/scripts/route_skills.py --agent <role> --domain <DOTS|Unity|Hybrid|Ambiguous> --intent <intent> --task "<task>"
    ```
-   architect:      .claude/skills/architect/SKILL.md  .claude/skills/unity-foundation/SKILL.md
-   unity-dots-dev: .claude/skills/unity-dots-best-practices/SKILL.md  .claude/skills/burst-safety/SKILL.md  .claude/skills/ecs-job-patterns/SKILL.md  .claude/skills/memory-safety/SKILL.md
-   unity-dev:      .claude/skills/unity-classic/SKILL.md  .claude/skills/unity-foundation/SKILL.md
-   qa-tester:      .claude/skills/tester/SKILL.md  .claude/skills/qa-validation/SKILL.md
+   Default `--team` per-role skills (derived from `registry.json`; verify with the
+   command above for the actual domain/intent):
    ```
+   architect:      architect  unity-foundation  codebase-understanding  agentmemory-codebase-recall
+   unity-dots-dev: unity-dots-best-practices  ecs-job-patterns  burst-safety  memory-safety  codebase-understanding  agentmemory-codebase-recall
+   unity-dev:      unity-classic  unity-foundation  codebase-understanding  agentmemory-codebase-recall
+   qa-tester:      tester  qa-validation  verifier  codebase-understanding  agentmemory-codebase-recall
+   ```
+
+   Use BOTH, in this order (tested): `@`-import the skill files at the start of the
+   prompt (best-effort), AND an explicit Read-first STEP 0 block. `@`-import
+   expansion into a teammate's context is **NOT reliable** (~50% of spawns). The
+   explicit Read instruction is the guarantee. Never rely on `@`-import alone or on
+   `Reference:` footnotes inside `agents/*.md`.
+
+   **Every teammate prompt MUST embed this verbatim STEP 0 block** (substitute the
+   role's skill files):
+   ```
+   STEP 0 — Required skill loading
+
+   Read the assigned skill files before analysis or editing:
+     <one .claude/skills/<m>/SKILL.md path per routed module>
+
+   After reading, report:
+   - loaded skill names
+   - 3 concrete rules from each required skill
+   - any missing skill as [BLOCKED: MISSING SKILL]
+   ```
+
    These are persistent Agent Teams teammates (addressable via `SendMessage`), NOT
-   one-shot subagents. Each prompt =
-   `<@-imports>\n\nSTEP 0: Read <same paths> with the Read tool before any work.\n\n<role prompt>`:
+   one-shot subagents. Each prompt = `<@-imports>\n\n<STEP 0 block>\n\n<role prompt>`:
    ```
    Agent({ team_name: "team-<slug>", name: "architect",      subagent_type: "architect",      model: "sonnet",
-           prompt: "@.claude/skills/architect/SKILL.md @.claude/skills/unity-foundation/SKILL.md\n\nSTEP 0: Read .claude/skills/architect/SKILL.md and .claude/skills/unity-foundation/SKILL.md with the Read tool before any work.\n\n<architect role prompt>" })
+           prompt: "@.claude/skills/architect/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/skills/agentmemory-codebase-recall/SKILL.md\n\nSTEP 0 — Required skill loading: Read those skill files with the Read tool before any work. Then report loaded skill names, 3 concrete rules from each, and any missing skill as [BLOCKED: MISSING SKILL].\n\n<architect role prompt>" })
    Agent({ team_name: "team-<slug>", name: "unity-dots-dev", subagent_type: "unity-dots-dev", model: "sonnet",
-           prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/burst-safety/SKILL.md @.claude/skills/ecs-job-patterns/SKILL.md @.claude/skills/memory-safety/SKILL.md\n\nSTEP 0: Read those 4 .claude/skills/*/SKILL.md files with the Read tool before any work.\n\n<unity-dots-dev role prompt>" })
+           prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/ecs-job-patterns/SKILL.md @.claude/skills/burst-safety/SKILL.md @.claude/skills/memory-safety/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/skills/agentmemory-codebase-recall/SKILL.md\n\nSTEP 0 — Required skill loading: Read those skill files with the Read tool before any work. Then report loaded skill names, 3 concrete rules from each, and any missing skill as [BLOCKED: MISSING SKILL].\n\n<unity-dots-dev role prompt>" })
    Agent({ team_name: "team-<slug>", name: "unity-dev",      subagent_type: "unity-dev",      model: "sonnet",
-           prompt: "@.claude/skills/unity-classic/SKILL.md @.claude/skills/unity-foundation/SKILL.md\n\nSTEP 0: Read .claude/skills/unity-classic/SKILL.md and .claude/skills/unity-foundation/SKILL.md with the Read tool before any work.\n\n<unity-dev role prompt>" })
+           prompt: "@.claude/skills/unity-classic/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/skills/agentmemory-codebase-recall/SKILL.md\n\nSTEP 0 — Required skill loading: Read those skill files with the Read tool before any work. Then report loaded skill names, 3 concrete rules from each, and any missing skill as [BLOCKED: MISSING SKILL].\n\n<unity-dev role prompt>" })
    Agent({ team_name: "team-<slug>", name: "qa-tester",      subagent_type: "qa-tester",      model: "sonnet",
-           prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nSTEP 0: Read .claude/skills/tester/SKILL.md and .claude/skills/qa-validation/SKILL.md with the Read tool before any work.\n\n<qa-tester role prompt>" })
+           prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md @.claude/skills/verifier/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/skills/agentmemory-codebase-recall/SKILL.md\n\nSTEP 0 — Required skill loading: Read those skill files with the Read tool before any work. Then report loaded skill names, 3 concrete rules from each, and any missing skill as [BLOCKED: MISSING SKILL].\n\n<qa-tester role prompt>" })
    ```
 5. **architect analyzes first** → publishes ownership map + execution plan +
    acceptance criteria to the shared task / via `SendMessage` to the team.
