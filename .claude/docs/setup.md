@@ -38,7 +38,7 @@ your-project/
 │   ├── agents/                      # Agent role definitions
 │   │   ├── architect.md
 │   │   ├── unity-dev.md
-│   │   ├── unity-dot-dev.md         # DOTS specialist (--full mode)
+│   │   ├── unity-dots-dev.md         # DOTS specialist (--full mode)
 │   │   ├── qa-tester.md             # QA reviewer (--full mode)
 │   │   ├── tester.md
 │   │   ├── verifier.md
@@ -267,7 +267,7 @@ This runs a two-phase startup:
 |-------|------|--------|
 | `architect` | System architect / task planner | Planning, ownership, merge order |
 | `unity-dev` | Senior Unity developer (non-DOTS) | MonoBehaviour, SO, UI, Addressables, VContainer |
-| `unity-dot-dev` | Senior DOTS/ECS developer | Entities, ISystem, Jobs, Burst, components |
+| `unity-dots-dev` | Senior DOTS/ECS developer | Entities, ISystem, Jobs, Burst, components |
 | `qa-tester` | QA tester / reviewer | Diff review, compile check, risk assessment |
 
 ### Worktree Layout
@@ -276,7 +276,7 @@ This runs a two-phase startup:
 ../worktrees/<task-slug>/
 ├── architect/      → branch: agent/architect/<task-slug>
 ├── unity-dev/      → branch: agent/unity-dev/<task-slug>
-├── unity-dot-dev/  → branch: agent/unity-dot-dev/<task-slug>
+├── unity-dots-dev/  → branch: agent/unity-dots-dev/<task-slug>
 └── qa-tester/      → branch: agent/qa-tester/<task-slug>
 ```
 
@@ -286,7 +286,7 @@ This runs a two-phase startup:
 Session: unity-agent-team-<task-slug>
 ├── Window 0: architect    (cd ../worktrees/<slug>/architect)
 ├── Window 1: unity-dev    (cd ../worktrees/<slug>/unity-dev)
-├── Window 2: unity-dot-dev (cd ../worktrees/<slug>/unity-dot-dev)
+├── Window 2: unity-dots-dev (cd ../worktrees/<slug>/unity-dots-dev)
 └── Window 3: qa-tester    (cd ../worktrees/<slug>/qa-tester)
 ```
 
@@ -324,7 +324,7 @@ Each agent writes to `reports/team/<task-slug>/`:
 | `architect-plan.md` | architect |
 | `architect.md` | architect |
 | `unity-dev.md` | unity-dev |
-| `unity-dot-dev.md` | unity-dot-dev |
+| `unity-dots-dev.md` | unity-dots-dev |
 | `qa-tester.md` | qa-tester |
 | `qa-report.md` | qa-tester |
 | `final-integration-report.md` | integrator (main session) |
@@ -383,7 +383,7 @@ Reference them in agent definitions under `.claude/agents/`.
 ### Modify Agent Roles
 
 For projects without DOTS, you can:
-- Replace `unity-dot-dev` with a second domain specialist
+- Replace `unity-dots-dev` with a second domain specialist
 - Adjust ownership patterns in `full_team.py`
 - Update agent definitions in `.claude/agents/`
 

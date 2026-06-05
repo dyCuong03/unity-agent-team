@@ -55,13 +55,19 @@ Without it, every feature still works.
 
 ## Entry Points
 
-- `/team <intent> [depth] <task>` — adaptive pipeline (the only entry point)
-- `intent ∈ {bug, feature, refactor, explore}`
-- `depth  ∈ {quick, normal, deep}` (default `normal`)
+- `/team <intent> [depth] <task>` — **adaptive** pipeline (triage → orchestrate → gates)
+  - `intent ∈ {bug, feature, refactor, explore}`
+  - `depth  ∈ {quick, normal, deep}` (default `normal`)
+- `/team --team <task>` — **Claude Agent Teams** mode: current session = teamlead,
+  spawns exactly 4 Sonnet teammates (`architect`, `unity-dots-dev`, `unity-dev`,
+  `qa-tester`) via `TeamCreate` + `Agent(team_name=…)` with a shared task list.
+  NOT subagents, NOT simulated, NOT worktrees. Fails fast if Agent Teams is off.
+- `/team --full <task>` — deprecated alias of `--team` (prints a deprecation notice).
+- `/team --worktrees <task>` — advanced opt-in: manual tmux + git-worktree team
+  (`full_team.py`). Separate from `--team`.
 
-There is no `--bug` / `--feature` / `--refactor` / `--fast` / `--full` /
-`--fast-fix` / `--teams` flag set. They were collapsed into `intent + depth`.
-See `MIGRATION.md` for the mapping.
+The old `--bug` / `--feature` / `--refactor` / `--fast` / `--full` / `--fast-fix` /
+`--teams` flags were collapsed into `intent + depth`. See `MIGRATION.md`.
 
 ## Pipeline Composition (built into orchestrate.py)
 

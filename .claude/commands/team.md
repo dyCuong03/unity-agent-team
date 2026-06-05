@@ -1,13 +1,13 @@
 ---
-description: Adaptive Unity DOTS agent pipeline. Triage classifies the task; orchestrate.py derives the minimum viable agent composition; each phase is artifact-gated by Python, not by markdown promises. Use --full for real multi-agent teams with tmux + git worktrees.
-argument-hint: "[--full] <intent: bug | feature | refactor | explore> [depth: quick | normal | deep] <task description>"
+description: Adaptive Unity DOTS agent pipeline. Triage classifies the task; orchestrate.py derives the minimum viable agent composition; each phase is artifact-gated by Python, not by markdown promises. Use --team (deprecated alias --full) for a real 4-agent team on Sonnet with tmux + git worktrees.
+argument-hint: "[--team] <intent: bug | feature | refactor | explore> [depth: quick | normal | deep] <task description>"
 ---
 
 # `/team` — Adaptive Unity DOTS Pipeline
 
 ```
 /team <intent> [depth] <task description>
-/team --full <task description>
+/team --team <task description>      # deprecated alias: --full
 
 intent  ∈ { bug, feature, refactor, explore }
 depth   ∈ { quick, normal, deep }   default: normal
@@ -17,17 +17,48 @@ Two modes:
 
 | Mode | Command | Behavior |
 |------|---------|----------|
-| **Adaptive** (default) | `/team <intent> [depth] <task>` | Triage → minimum agents → artifact-gated |
-| **Full Team** | `/team --full <task>` | Real 4-agent team with tmux + git worktrees |
+| **Adaptive** (default) | `/team <intent> [depth] <task>` | Triage → minimum agents → artifact-gated (in-process subagents) |
+| **Team** | `/team --team <task>` (deprecated alias `--full`) | **Claude Agent Teams** — current session is teamlead; exactly 4 persistent teammates on **Sonnet** (NOT subagents, NOT simulated, NOT tmux/worktree) |
+| **Worktrees** | `/team --worktrees <task>` | Advanced opt-in: manual tmux + git-worktree team via `full_team.py` |
 
-This command **always** runs `triage` first, **always** calls
+The adaptive path **always** runs `triage` first, **always** calls
 `orchestrate.py plan` to derive the pipeline, and **never** spawns agents that
 the plan does not list. Every phase boundary is a Python gate; if the gate
 exits non-zero, you halt — no exceptions, no markdown promises.
 
-**Exception:** `/team --full` bypasses adaptive triage and always spawns exactly
-4 agents in separate tmux windows with separate git worktrees. See the
-`--full` section below.
+**Exception:** `/team --team` (deprecated alias `/team --full`) bypasses adaptive
+triage and runs a **Claude Agent Teams** team — the current session is the
+teamlead and spawns exactly 4 Agent Teams teammates (architect, unity-dots-dev,
+unity-dev, qa-tester) on Sonnet via `TeamCreate` + `Agent(team_name=…)`, with a
+shared task list. See the `--team` section below.
+
+## Flags
+
+### `--team`
+
+Use Claude Agent Teams mode. The current Claude Code session is the teamlead and
+creates exactly 4 Agent Teams teammates on Sonnet:
+- `architect`
+- `unity-dots-dev`
+- `unity-dev`
+- `qa-tester`
+
+Real Agent Teams teammates with shared task coordination and teammate-to-teammate
+messaging. This mode does **not** use normal subagents, **not** simulated markdown
+roles, **not** single-agent execution, and **not** the manual tmux/worktree path.
+If Agent Teams is unavailable, it **fails fast** — no degraded fallback.
+
+### `--full`
+
+**Deprecated** alias for `--team`. On use, print:
+`[DEPRECATED] /team --full is an alias for /team --team. Prefer /team --team.`
+then behave exactly as `--team`.
+
+### `--worktrees`
+
+Separate advanced mode: manual tmux + git-worktree isolation via `full_team.py`
+(4 real `claude` CLI sessions, one worktree+branch each). Opt-in only; not
+implied by `--team`/`--full`.
 
 ## What changed from the fixed 4-agent team
 
@@ -43,11 +74,27 @@ exits non-zero, you halt — no exceptions, no markdown promises.
 
 ---
 
+## DISPATCH — read the flags first
+
+Before STEP 0, scan the arguments:
+
+- If they contain **`--team`** → **Claude Agent Teams mode**. Do NOT run
+  triage/plan/gates. Do NOT run `full_team.py`. Jump to the **`/team --team`**
+  section below: run the Step 0 availability check, then `TeamCreate` + spawn the
+  4 Sonnet teammates via `Agent(team_name=…)`. Strip the flag from `<task>`.
+- If they contain **`--full`** → same as `--team`, but FIRST print:
+  `[DEPRECATED] /team --full is an alias for /team --team. Prefer /team --team.`
+- If they contain **`--worktrees`** → the separate manual tmux/worktree mode
+  (`full_team.py`). See the `/team --worktrees` section.
+- Otherwise → **Adaptive mode**. Continue to STEP 0 below.
+
+---
+
 ## STEP 0 — Bootstrap (informational, never blocks)
 
 ```sh
-python .claude/scripts/orchestrate.py preflight
-python .claude/scripts/orchestrate.py reset
+python3 .claude/scripts/orchestrate.py preflight
+python3 .claude/scripts/orchestrate.py reset
 ```
 
 `preflight` reports env, MCP, tmux state. `reset` clears session artifacts:
@@ -73,7 +120,7 @@ Agent({
 After triage returns, validate (script does this too but be explicit):
 
 ```sh
-python .claude/scripts/orchestrate.py validate workspace/triage.json triage
+python3 .claude/scripts/orchestrate.py validate workspace/triage.json triage
 ```
 
 If validation fails → halt and report the error. Do not spawn anything else.
@@ -83,7 +130,7 @@ If validation fails → halt and report the error. Do not spawn anything else.
 ## STEP 2 — Plan (deterministic mapping)
 
 ```sh
-python .claude/scripts/orchestrate.py plan workspace/triage.json
+python3 .claude/scripts/orchestrate.py plan workspace/triage.json
 ```
 
 This writes `workspace/pipeline.json` with:
@@ -123,7 +170,7 @@ For each phase in `pipeline.json.phases` in order:
 1. **Gate** before spawning:
 
    ```sh
-   python .claude/scripts/orchestrate.py gate <phase-id>
+   python3 .claude/scripts/orchestrate.py gate <phase-id>
    ```
 
    Non-zero exit means a prior phase's artifact is missing, malformed, or has
@@ -138,7 +185,7 @@ For each phase in `pipeline.json.phases` in order:
      `pipeline.json.artifacts_required`
    - Each agent prompt MUST instruct it to validate its artifact before
      returning:
-     `python .claude/scripts/orchestrate.py validate workspace/<artifact> <schema>`
+     `python3 .claude/scripts/orchestrate.py validate workspace/<artifact> <schema>`
 
 3. **After all agents in the phase finish**, gate again before the next phase.
 
@@ -148,7 +195,7 @@ For each phase in `pipeline.json.phases` in order:
 Agent({
   subagent_type: "<agent name from phase.agents>",
   description: "<role> — phase <id>",
-  prompt: "@.claude/agents/<agent>.md @.claude/skills/unity-dots-best-practices/SKILL.md [+ skill_packs from pipeline.json]\n\nIntent: <INTENT>\nTask: <TASK>\nRead workspace/triage.json and any prior artifacts listed in pipeline.json.artifacts_required for upstream agents.\n\nProduce workspace/<your-artifact>.json. Validate before returning:\n  python .claude/scripts/orchestrate.py validate workspace/<your-artifact>.json <schema-name>\n\nDo not edit files outside your ownership partition (.claude/scripts/orchestrate.py ownership-check <agent> <files>)."
+  prompt: "@.claude/agents/<agent>.md @.claude/skills/unity-dots-best-practices/SKILL.md [+ skill_packs from pipeline.json]\n\nIntent: <INTENT>\nTask: <TASK>\nRead workspace/triage.json and any prior artifacts listed in pipeline.json.artifacts_required for upstream agents.\n\nProduce workspace/<your-artifact>.json. Validate before returning:\n  python3 .claude/scripts/orchestrate.py validate workspace/<your-artifact>.json <schema-name>\n\nDo not edit files outside your ownership partition (.claude/scripts/orchestrate.py ownership-check <agent> <files>)."
 })
 ```
 
@@ -189,7 +236,7 @@ authoritative completion gate.
 ## STEP 4 — Finalize
 
 ```sh
-python .claude/scripts/orchestrate.py finalize
+python3 .claude/scripts/orchestrate.py finalize
 ```
 
 Reads `verification_result.json`, computes the completion report, and exits:
@@ -221,211 +268,299 @@ and require tester (not verifier) regardless of triage choice.
 
 ---
 
-## `/team --full` — Real Multi-Agent Team Mode
+## `/team --team` — Claude Agent Teams Mode
 
 ```
-/team --full <task description>
+/team --team <task description>
+/team --full <task description>      # deprecated alias — prints a deprecation notice, then behaves as --team
 ```
 
-This mode creates a **real parallel agent team** with:
-- 4 separate git worktrees (one per agent)
-- 4 tmux windows (one per agent)
-- 4 Claude Code instances with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
-- Strict file ownership per role
-- QA gate before any merge
-
-### Prerequisites (HARD — no fallback)
-
-1. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` set in `~/.claude/settings.json`
-2. `tmux` installed and available
-3. `git` with worktree support
-4. `claude` CLI available in PATH
-
-If ANY prerequisite is missing, `/team --full` **fails fast** and reports what's
-missing. It does NOT fall back to internal subagents. "Full" means real
-infrastructure or nothing.
-
-### Agents (exactly 4, always)
-
-| Agent | Role | Domain |
-|-------|------|--------|
-| `architect` | System architect / task planner | Planning, ownership, merge order |
-| `unity-dev` | Senior Unity developer (non-DOTS) | MonoBehaviour, SO, UI, Addressables, VContainer, DOTween |
-| `unity-dot-dev` | Senior DOTS/ECS developer | Entities, ISystem, Jobs, Burst, ECS components, physics |
-| `qa-tester` | QA tester / reviewer | Diff review, compile check, behavior/performance risk |
-
-### Execution Flow (Teammates First, Then Assign)
+`/team --team` runs the task as a **Claude Agent Teams** team. Read this contract
+literally and follow it — it is the behavior of the command:
 
 ```
-/team --full <task>
-    │
-    ▼ PHASE 1: SPAWN TEAMMATES FIRST
-    │
-    ├─ Step 1.1: Parse task → generate slug
-    │
-    ├─ Step 1.2: Environment check (fail fast if missing)
-    │            tmux, git, claude, CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
-    │            ↳ ABORT immediately if any missing. No fallback.
-    │
-    ├─ Step 1.3: Create tmux session with 4 windows
-    │            unity-agent-team-<slug>:architect
-    │            unity-agent-team-<slug>:unity-dev
-    │            unity-agent-team-<slug>:unity-dot-dev
-    │            unity-agent-team-<slug>:qa-tester
-    │
-    ├─ Step 1.4: Launch Claude in STANDBY in each window
-    │            Each teammate gets a bootstrap prompt:
-    │            "You are <role>. Wait for assignment. Do not act."
-    │
-    ├─ Step 1.5: VALIDATE teammate sessions (MANDATORY)
-    │            - Verify exactly 4 tmux windows exist
-    │            - Verify each role name exists as a window
-    │            - Verify panes are present
-    │            - Check for running claude processes
-    │            - Print: tmux ls, list-windows, list-panes -a, ps aux | grep claude
-    │            ↳ ABORT if validation fails. No worktrees. No analysis.
-    │
-    ▼ PHASE 2: ANALYZE + ASSIGN (only after Phase 1 passes)
-    │
-    ├─ Step 2.1: Detect base branch
-    │
-    ├─ Step 2.2: Working tree dirty check
-    │
-    ├─ Step 2.3: Create 4 git worktrees + branches
-    │            ../worktrees/<slug>/architect    → agent/architect/<slug>
-    │            ../worktrees/<slug>/unity-dev    → agent/unity-dev/<slug>
-    │            ../worktrees/<slug>/unity-dot-dev → agent/unity-dot-dev/<slug>
-    │            ../worktrees/<slug>/qa-tester    → agent/qa-tester/<slug>
-    │
-    ├─ Step 2.4: Create report + message directories
-    │
-    ├─ Step 2.5: Generate per-agent assignment prompts
-    │
-    ├─ Step 2.6: Send assignments to running teammate sessions
-    │            Each teammate: cd into worktree → receive full role prompt
-    │
-    ├─ Step 2.7: Full setup validation
-    │            Teammates + worktrees + branches all verified
-    │
-    └─ Step 2.8: Print summary with attach/status/teardown commands
+Use Claude Agent Teams backend.
+The current Claude Code session is the teamlead.
+Create exactly 4 teammates using Agent Teams.
+Do not use normal subagents.
+Do not simulate roles.
+Use Sonnet for all teammates.
+Use shared task coordination.
+Allow teammate-to-teammate communication when useful.
 ```
 
-**Critical ordering rule:** Worktrees do NOT exist before teammate sessions.
-Task analysis does NOT happen before teammate sessions. No exceptions.
+This is **not** the adaptive triage/orchestrate flow, **not** in-process one-shot
+subagents, **not** markdown role-play, and **not** the manual tmux/worktree path
+(that lives under `/team --worktrees`, a separate opt-in mode). `--team` uses the
+harness-native Agent Teams primitives only.
 
-### How to invoke
+### Step 0 — Availability check (FAIL FAST, no fallback)
 
-When the user runs `/team --full <task>`, execute:
+Agent Teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 
 ```sh
-# Full two-phase setup (teammates first, then assign)
-python .claude/scripts/full_team.py setup "<task>"
+grep -q '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"[[:space:]]*:[[:space:]]*"1"' ~/.claude/settings.json \
+  && echo "agent-teams: ON" || echo "agent-teams: OFF"
 ```
 
-Or run the two phases separately:
+If OFF (or the `TeamCreate` / `Agent(team_name=…)` primitives are unavailable in
+this runtime), **STOP** and print exactly:
+
+```
+[BLOCK] /team --team requires Claude Agent Teams, which is not enabled.
+Enable it:
+  1. Add to ~/.claude/settings.json:
+       { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+         "preferences": { "tmuxSplitPanes": true } }
+  2. Restart Claude Code.
+  3. Re-run /team --team <task>.
+Do NOT fall back to subagents, single-agent, or simulated roles.
+```
+
+Do not continue. Do not degrade. Do not fake a team.
+
+If the invocation was `/team --full …`, first print:
+
+```
+[DEPRECATED] /team --full is an alias for /team --team. Prefer /team --team.
+```
+
+then proceed identically to `--team`.
+
+### The 4 teammates (exactly these, always, all Sonnet)
+
+| Teammate | Model | Responsibility |
+|----------|-------|----------------|
+| `architect` | Sonnet | architecture analysis, flow design, ownership, planning, scope control |
+| `unity-dots-dev` | Sonnet | Unity DOTS/ECS, Jobs, Burst, Entities, ECB, dependencies, performance |
+| `unity-dev` | Sonnet | Unity UI, MonoBehaviour, gameplay, VContainer, Addressables, pooling, DOTween |
+| `qa-tester` | Sonnet | testing, regression, reproduction, root-cause validation, final approval |
+
+Canonical names only: `architect`, `unity-dots-dev`, `unity-dev`, `qa-tester`.
+Do not use `architech`, `unity-dot-dev`, `QA`, or bare `tester`.
+
+### Execution protocol (teamlead = current session)
+
+1. **Availability check** (Step 0). Fail fast if Agent Teams is off.
+2. **Create the team:**
+   ```
+   TeamCreate({ team_name: "team-<slug>", description: "<task>", agent_type: "orchestrator" })
+   ```
+3. **Create the shared task list** with real dependencies so QA cannot approve
+   before architect + both devs finish. Capture the returned task IDs:
+   ```
+   tA  = TaskCreate({ subject: "architect: analysis + ownership + plan" })
+   tD  = TaskCreate({ subject: "unity-dots-dev: DOTS/ECS analysis + impl notes" })
+   tU  = TaskCreate({ subject: "unity-dev: Unity classic (UI/Mono) analysis + impl plan" })
+   tQ  = TaskCreate({ subject: "qa-tester: test matrix + regression + APPROVE/BLOCK verdict" })
+   # devs blocked by architect; QA blocked by architect AND both devs:
+   TaskUpdate({ taskId: tD, addBlockedBy: [tA] })
+   TaskUpdate({ taskId: tU, addBlockedBy: [tA] })
+   TaskUpdate({ taskId: tQ, addBlockedBy: [tA, tD, tU] })
+   ```
+4. **Spawn exactly 4 teammates** with the Agent tool — `team_name`, `name`,
+   `model: "sonnet"`, the matching `subagent_type`, and a `prompt` that loads the
+   role's skills.
+
+   **Skill loading — use BOTH, in this order (tested):**
+   - `@`-import the skill files at the start of the prompt (best-effort), AND
+   - an explicit **"STEP 0: Read these skill files NOW with the Read tool before any
+     other work: <paths>. Confirm each is loaded."** instruction.
+
+   `@`-import expansion into a teammate's context is **NOT reliable** (observed
+   ~50% of spawns receive the content). The explicit `Read` instruction is the
+   guarantee — the teammate actively pulls the file content in. Do NOT rely on
+   `@`-import alone, and never on `Reference:` footnotes inside `agents/*.md`.
+
+   Per-role skill files (both `@`-import them AND tell the teammate to `Read` them):
+   ```
+   architect:      .claude/skills/architect/SKILL.md  .claude/skills/unity-foundation/SKILL.md
+   unity-dots-dev: .claude/skills/unity-dots-best-practices/SKILL.md  .claude/skills/burst-safety/SKILL.md  .claude/skills/ecs-job-patterns/SKILL.md  .claude/skills/memory-safety/SKILL.md
+   unity-dev:      .claude/skills/unity-classic/SKILL.md  .claude/skills/unity-foundation/SKILL.md
+   qa-tester:      .claude/skills/tester/SKILL.md  .claude/skills/qa-validation/SKILL.md
+   ```
+   These are persistent Agent Teams teammates (addressable via `SendMessage`), NOT
+   one-shot subagents. Each prompt =
+   `<@-imports>\n\nSTEP 0: Read <same paths> with the Read tool before any work.\n\n<role prompt>`:
+   ```
+   Agent({ team_name: "team-<slug>", name: "architect",      subagent_type: "architect",      model: "sonnet",
+           prompt: "@.claude/skills/architect/SKILL.md @.claude/skills/unity-foundation/SKILL.md\n\nSTEP 0: Read .claude/skills/architect/SKILL.md and .claude/skills/unity-foundation/SKILL.md with the Read tool before any work.\n\n<architect role prompt>" })
+   Agent({ team_name: "team-<slug>", name: "unity-dots-dev", subagent_type: "unity-dots-dev", model: "sonnet",
+           prompt: "@.claude/skills/unity-dots-best-practices/SKILL.md @.claude/skills/burst-safety/SKILL.md @.claude/skills/ecs-job-patterns/SKILL.md @.claude/skills/memory-safety/SKILL.md\n\nSTEP 0: Read those 4 .claude/skills/*/SKILL.md files with the Read tool before any work.\n\n<unity-dots-dev role prompt>" })
+   Agent({ team_name: "team-<slug>", name: "unity-dev",      subagent_type: "unity-dev",      model: "sonnet",
+           prompt: "@.claude/skills/unity-classic/SKILL.md @.claude/skills/unity-foundation/SKILL.md\n\nSTEP 0: Read .claude/skills/unity-classic/SKILL.md and .claude/skills/unity-foundation/SKILL.md with the Read tool before any work.\n\n<unity-dev role prompt>" })
+   Agent({ team_name: "team-<slug>", name: "qa-tester",      subagent_type: "qa-tester",      model: "sonnet",
+           prompt: "@.claude/skills/tester/SKILL.md @.claude/skills/qa-validation/SKILL.md\n\nSTEP 0: Read .claude/skills/tester/SKILL.md and .claude/skills/qa-validation/SKILL.md with the Read tool before any work.\n\n<qa-tester role prompt>" })
+   ```
+5. **architect analyzes first** → publishes ownership map + execution plan +
+   acceptance criteria to the shared task / via `SendMessage` to the team.
+6. **unity-dev and unity-dots-dev work according to the architect's ownership.**
+   Teammate-to-teammate `SendMessage` is allowed (e.g. dev ↔ dev boundary, dev → qa).
+7. **qa-tester reviews** outputs + validation evidence and posts `APPROVE` or `BLOCK`.
+8. **Teamlead synthesizes** the final result from teammate outputs.
+9. **Completion gate:** do NOT mark the task complete if qa-tester has not posted
+   `APPROVE` or if validation evidence is missing. On block, report the blocker
+   with a clear reason.
+10. **Shutdown** the team when done (SendMessage `shutdown_request` to each teammate).
+
+### Inspecting teammates
+
+With `"preferences": { "tmuxSplitPanes": true }` set, each teammate appears in its
+own tmux pane. The teamlead should surface, when the runtime provides them:
+- the team name (`team-<slug>`),
+- any tmux attach hint the runtime prints,
+- live status via `TaskList` (shared task list) and teammate idle/active notifications.
+
+Messages from teammates are delivered to the teamlead automatically as new turns —
+do not poll an inbox; coordinate with `SendMessage` + `TaskUpdate`.
+
+### Role prompt — architect
+
+```
+You are the architect teammate in Claude Agent Teams.
+
+Responsibilities:
+- Analyze the current /team flow.
+- Identify V1/V2 conflicts.
+- Define ownership and execution order.
+- Prevent scope drift.
+- Ensure implementation follows the existing project architecture.
+- For Unity tasks, require project-first analysis before coding.
+- For bugfixes, require root-cause analysis before implementation.
+- For refactors, preserve behavior and reduce duplication.
+- For implementation, avoid creating parallel architecture or unnecessary abstraction.
+
+Output:
+- architecture findings
+- ownership map
+- execution plan
+- risks
+- acceptance criteria
+```
+
+### Role prompt — unity-dots-dev
+
+```
+You are the unity-dots-dev teammate in Claude Agent Teams.
+
+Responsibilities:
+- Handle Unity DOTS/ECS, Entities, Systems, Jobs, Burst, ECB, dependencies, physics, and performance.
+- For bugfixes, find the core root cause instead of applying temporary patches.
+- Implementation must follow existing project patterns and avoid extra logic.
+
+Mandatory DOTS checks (apply every task):
+- Job dependency: scheduled JobHandle is assigned back to state.Dependency (dropped handle = race).
+- ECB writer mode: parallel job → EntityCommandBuffer.ParallelWriter + sortKey; single-thread → plain ECB.
+- ECB playback: correct Begin/End system-group singleton, played back once.
+- Enableable components: prefer IEnableableComponent toggling over structural add/remove in hot loops.
+- Update order: [UpdateBefore]/[UpdateAfter]/group correct — reader must not run before its writer.
+- ComponentLookup/BufferLookup: [ReadOnly] where not written; .Update(ref state) each tick.
+- Structural change in a scheduled job → ECB, never EntityManager directly.
+- NativeContainer lifetime: disposed / TempJob / DeallocateOnJobCompletion — no leaks.
+
+Output:
+- DOTS/ECS analysis
+- risk list
+- implementation notes
+- validation checklist (dependency assigned, ECB writer correct, update order, no leak)
+```
+
+### Role prompt — unity-dev
+
+```
+You are the unity-dev teammate in Claude Agent Teams.
+
+Responsibilities:
+- Handle Unity UI, MonoBehaviour, gameplay logic, VContainer, Addressables, pooling, DOTween, and editor tooling when relevant.
+- Inspect existing code patterns before editing.
+- For bugfixes, trace lifecycle/data flow and fix the root cause.
+- For refactors, preserve behavior, reduce duplication, and avoid unnecessary abstraction.
+- For implementation, integrate with existing architecture and do not create duplicate services/controllers/models.
+
+Check:
+- Awake/OnEnable/Start/OnDisable lifecycle
+- event subscribe/unsubscribe
+- GC allocation
+- DOTween kill/reuse
+- pooling lifecycle
+- UI binding duplication
+- VContainer injection timing
+- async cancellation
+- Addressables load/release
+- per-frame expensive calls
+
+Output:
+- Unity classic analysis
+- implementation plan
+- changed files summary
+- validation steps
+```
+
+### Role prompt — qa-tester
+
+```
+You are the qa-tester teammate in Claude Agent Teams.
+
+Responsibilities:
+- Build a test matrix and regression checklist.
+- Verify that the root cause is actually fixed.
+- Verify that implementation follows architect ownership.
+- Verify no scope drift, no duplicate logic, and no temporary patch.
+- For Unity, define validation steps even if the Unity Editor cannot be run.
+- For DOTS/ECS, check update order, dependencies, structural changes, allocations, and race risks.
+- Block final completion if validation is missing.
+
+Output:
+- test matrix
+- regression checklist
+- QA verdict: APPROVE / BLOCK
+- unresolved risks
+```
+
+### Quality bars (every teammate, every task)
+
+**Bugfix:** understand symptom → trace data flow / lifecycle / update order →
+identify root cause → explain why → fix the correct location → keep diff small →
+validate. Forbidden: null check without proving root cause; delay/timer workaround
+without proving a lifecycle/ordering issue; suppressing an exception without
+understanding the cause; large rewrite when a focused fix suffices.
+
+**Refactor:** preserve behavior; reduce duplication; follow existing architecture;
+avoid unnecessary abstraction; keep diff reviewable; provide validation.
+
+**Implementation:** inspect existing project patterns first; follow current
+architecture; no parallel architecture; no duplicate models/services/controllers;
+consistent naming/style; add only necessary logic; document assumptions.
+
+### Forbidden in `/team --team`
+
+- Simulating a team with markdown-only role descriptions.
+- Running as a single agent while pretending teammates exist.
+- Normal one-shot subagents.
+- Legacy V1 fixed-parallel subagent flow.
+- Silent fallback to single-agent or degraded mode.
+- Manual tmux/worktree orchestration (that is `/team --worktrees`, a separate mode).
+- Marking complete without qa-tester `APPROVE` + validation evidence.
+
+---
+
+## `/team --worktrees` — Manual tmux + git-worktree team (advanced, opt-in)
+
+Separate, explicit mode for isolated parallel branches. NOT `--team`, NOT `--full`.
+Uses `full_team.py` to create 4 real `claude` CLI sessions (Sonnet) in tmux windows,
+each in its own git worktree+branch, with QA-gated merge. Use only when you
+explicitly want branch isolation.
 
 ```sh
-# Phase 1 only: spawn teammates in standby
-python .claude/scripts/full_team.py spawn-teammates "<task>"
-
-# Phase 2 only: create worktrees + send assignments (teammates must be running)
-python .claude/scripts/full_team.py assign "<task>"
+python3 .claude/scripts/full_team.py setup "<task>"      # teammates(standby) → validate → worktrees → assign
+tmux attach -t unity-agent-team-<slug>
+python3 .claude/scripts/full_team.py status "<task>"
+# merge only after reports/team/<slug>/qa-report.md = APPROVE, then:
+python3 .claude/scripts/full_team.py teardown "<task>"
 ```
 
-**If the script exits non-zero**, report the exact error and stop. Do NOT
-attempt to work around it with internal subagents.
-
-**If the script exits 0**, read and print the output. The team is running.
-Provide the user with:
-- tmux attach command
-- Status check command
-- Teardown command
-
-### Post-launch workflow
-
-After all 4 agents have received their assignments:
-
-1. **Architect** creates the plan first (`reports/team/<slug>/architect-plan.md`)
-2. **unity-dev** and **unity-dot-dev** implement their areas (may run in parallel)
-3. **qa-tester** reviews all branches after implementation
-4. **Integrator** (you, the main session) merges ONLY after QA approves
-
-### Integration (after QA approval)
-
-When `reports/team/<slug>/qa-report.md` exists and says APPROVE:
-
-```sh
-# Check merge readiness
-python .claude/scripts/full_team.py status "<task>"
-
-# Merge in safe order (architect first, then devs, verify after each)
-git merge agent/architect/<slug>
-git merge agent/unity-dev/<slug>
-git merge agent/unity-dot-dev/<slug>
-
-# Final verification
-python .claude/scripts/full_team.py verify "<task>"
-```
-
-Do NOT merge if QA report says REJECT. Fix issues first.
-
-### Reports
-
-Each agent writes to `reports/team/<slug>/`:
-
-| File | Author |
-|------|--------|
-| `architect.md` | architect |
-| `architect-plan.md` | architect |
-| `unity-dev.md` | unity-dev |
-| `unity-dot-dev.md` | unity-dot-dev |
-| `qa-tester.md` | qa-tester |
-| `qa-report.md` | qa-tester |
-| `final-integration-report.md` | integrator (main session) |
-
-### Teardown
-
-```sh
-python .claude/scripts/full_team.py teardown "<task>"
-```
-
-Removes worktrees, kills tmux session, deletes branches.
-
-### Management commands
-
-```sh
-# Phase 1 only: spawn teammates in standby
-python .claude/scripts/full_team.py spawn-teammates "<task>"
-
-# Phase 2 only: assign work to running teammates
-python .claude/scripts/full_team.py assign "<task>"
-
-# Check status of all agents
-python .claude/scripts/full_team.py status "<task>"
-
-# Re-verify infrastructure (teammates + worktrees)
-python .claude/scripts/full_team.py verify "<task>"
-
-# Generate new prompts (e.g., after architect updates ownership)
-python .claude/scripts/full_team.py prompts "<task>"
-```
-
-### Strict Rules
-
-1. **Teammates first.** tmux sessions with Claude in standby MUST be created
-   and validated BEFORE any task analysis, worktree creation, or implementation
-2. `/team --full` MUST create real git worktrees — not simulated
-3. `/team --full` MUST create real tmux windows — not internal subagents
-4. Each agent MUST work in its own worktree only
-5. Each agent MUST have `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
-6. No merge without QA approval
-7. Fail fast on any missing prerequisite — no partial setup, no fallback
-8. `validate_teammate_sessions_first()` MUST pass before Phase 2 begins
-9. Post-setup validation MUST confirm exactly 4 worktrees + 4 tmux windows
-10. Print `tmux ls`, `tmux list-windows`, `tmux list-panes -a`,
-    `ps aux | grep claude`, `git worktree list` as proof
-11. If teammate validation fails: ABORT. Do NOT create worktrees.
-    Do NOT analyze the task. Do NOT fall back to internal subagents.
+Prerequisites (hard, fail-fast): `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `tmux`,
+`git` worktree support, `claude` CLI. Same 4 roles and quality bars as `--team`.
 
 ---
 
@@ -436,7 +571,7 @@ python .claude/scripts/full_team.py prompts "<task>"
 - Spawn `data-tool` for tasks that do not produce tooling output
 - Spawn `tester` for small/medium tasks unless confidence < 0.7
 - Spawn agents in parallel before triage emits a partition
-- Touch tmux unless `--teams` is explicitly requested AND
+- Touch tmux unless `--worktrees` is explicitly requested AND
   `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set in user settings
 - Mark a run complete while `verification_result.json.status != "PASS"`
 - Skip schema validation on any artifact

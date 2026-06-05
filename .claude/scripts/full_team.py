@@ -47,14 +47,23 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# REPO_ROOT = the repo that contains the installed `.claude/` package.
+# For real Unity work the package MUST be installed at the Unity project root so
+# this resolves to the host project and worktrees isolate Assets/**. Override with
+# UNITY_TEAM_PROJECT_ROOT when the package lives in a nested folder.
+_ENV_ROOT = os.environ.get("UNITY_TEAM_PROJECT_ROOT")
+REPO_ROOT = Path(_ENV_ROOT).resolve() if _ENV_ROOT else Path(__file__).resolve().parents[2]
 WORKTREE_BASE = REPO_ROOT.parent / "worktrees"
+
+# Model used for every spawned teammate session. Sonnet by default (fast, cheap,
+# strong enough for role-scoped Unity work). Override with --model on any subcommand.
+DEFAULT_MODEL = "sonnet"
 
 # ---------------------------------------------------------------------------
 # Agent role definitions
 # ---------------------------------------------------------------------------
 
-AGENTS = ["architect", "unity-dev", "unity-dot-dev", "qa-tester"]
+AGENTS = ["architect", "unity-dev", "unity-dots-dev", "qa-tester"]
 
 AGENT_ROLES = {
     "architect": {
@@ -83,7 +92,7 @@ AGENT_ROLES = {
             "Must avoid DOTS/ECS files unless architect explicitly allows",
         ],
         "skills": [
-            ".claude/skills/unity-dev/SKILL.md",
+            ".claude/skills/unity-classic/SKILL.md",
             ".claude/skills/unity-foundation/SKILL.md",
         ],
         "allowed_files": [
@@ -94,7 +103,7 @@ AGENT_ROLES = {
         ],
         "forbidden_files": [],
     },
-    "unity-dot-dev": {
+    "unity-dots-dev": {
         "title": "Senior Unity DOTS/ECS Developer",
         "focus": [
             "Entities / ISystem / SystemBase / Jobs / Burst",
@@ -165,6 +174,31 @@ Wait for the main lead to send your assignment, which will include:
 - Report path
 
 Acknowledge this message and wait."""
+
+
+# Non-negotiable quality bars injected into EVERY teammate assignment.
+# These encode the project owner's hard rules for all /team --team work.
+QUALITY_BARS = """## Non-Negotiable Quality Bars (apply to ALL work)
+
+1. ROOT CAUSE, NOT BAND-AID. For any bug, find the core defect — the system/
+   component that actually writes the wrong state. Use CRG (code-review-graph)
+   first: trace_execution_flow → identify writers/readers → get_impact_radius.
+   A fix that hides the symptom (clamp, null-guard, try/catch swallow, re-init)
+   without naming the root cause is REJECTED. State the root cause explicitly in
+   your report before proposing the fix.
+
+2. STICK TO THE PROJECT — NO DRIFT. Match existing patterns, naming, folder
+   layout, and architecture. Before adding anything, search for an existing
+   system/component/util that already does it. Do NOT introduce a parallel
+   architecture when one exists. Extend the established extension points.
+
+3. NO DUPLICATE CODE / NO REDUNDANT LOGIC. Reuse existing systems, helpers, and
+   components. If you would copy-paste logic, extract or call the existing one
+   instead. Do not add a second code path for behavior the project already has.
+   Flag any duplication you are forced to create and explain why in your report.
+
+If a task cannot be done without violating one of these, STOP and write the
+conflict to your report + message the architect — do not work around it."""
 
 
 # ---------------------------------------------------------------------------
@@ -332,19 +366,23 @@ def create_tmux_session(task_slug: str) -> str:
     return session
 
 
-def launch_standby_claude(task_slug: str) -> None:
+def launch_standby_claude(task_slug: str, model: str = DEFAULT_MODEL) -> None:
     """Launch Claude in standby mode in each tmux window.
 
     Each teammate gets a bootstrap prompt telling them to wait.
     This runs BEFORE any task analysis or worktree creation.
+    Every teammate runs on `model` (Sonnet by default).
     """
     session = tmux_session_name(task_slug)
 
     for agent in AGENTS:
         role_title = AGENT_ROLES[agent]["title"]
 
-        # Launch claude CLI in the tmux window
-        launch_cmd = "export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 && claude"
+        # Launch claude CLI in the tmux window on the chosen model
+        launch_cmd = (
+            "export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 && "
+            f"claude --model {model}"
+        )
         run([
             "tmux", "send-keys",
             "-t", f"{session}:{agent}",
@@ -641,6 +679,8 @@ def generate_prompts(
             "## Your Focus",
             focus_lines,
             "",
+            QUALITY_BARS,
+            "",
             ownership_section,
             "",
             "## Skills to Load",
@@ -693,7 +733,7 @@ def generate_prompts(
                 "",
                 "Review ALL agent branches before approving:",
                 f"- `git diff {base_branch}..agent/unity-dev/{task_slug}`",
-                f"- `git diff {base_branch}..agent/unity-dot-dev/{task_slug}`",
+                f"- `git diff {base_branch}..agent/unity-dots-dev/{task_slug}`",
                 f"- `git diff {base_branch}..agent/architect/{task_slug}`",
                 "",
                 "Check for: compile errors, behavior risks, performance risks,",
@@ -871,8 +911,9 @@ def cmd_setup(args: argparse.Namespace) -> int:
     print(f"  Session: {session}")
 
     # Step 1.3: Launch Claude in standby in each window
-    print("\nStep 1.3: Launch Claude in standby mode")
-    launch_standby_claude(task_slug)
+    model = getattr(args, "model", DEFAULT_MODEL)
+    print(f"\nStep 1.3: Launch Claude in standby mode (model={model})")
+    launch_standby_claude(task_slug, model)
 
     # Step 1.4: VALIDATE teammate sessions are alive
     print("\nStep 1.4: Validate teammate sessions (MANDATORY)")
@@ -884,8 +925,8 @@ def cmd_setup(args: argparse.Namespace) -> int:
         print("Cannot proceed to task analysis or worktree creation.", file=sys.stderr)
         print("Do NOT fall back to internal subagents.", file=sys.stderr)
         print("Do NOT simulate the team.", file=sys.stderr)
-        print(f"\nTo retry: python .claude/scripts/full_team.py setup \"{task}\"", file=sys.stderr)
-        print(f"To teardown: python .claude/scripts/full_team.py teardown \"{task}\"", file=sys.stderr)
+        print(f"\nTo retry: python3 .claude/scripts/full_team.py setup \"{task}\"", file=sys.stderr)
+        print(f"To teardown: python3 .claude/scripts/full_team.py teardown \"{task}\"", file=sys.stderr)
         return 5
 
     print("\n✓ All 4 teammate sessions verified. Proceeding to Phase 2.")
@@ -972,13 +1013,13 @@ Switch between agents:
   Ctrl-B then window number (0-3), or Ctrl-B n/p
 
 Check status:
-  python .claude/scripts/full_team.py status "{task}"
+  python3 .claude/scripts/full_team.py status "{task}"
 
 Re-verify setup:
-  python .claude/scripts/full_team.py verify "{task}"
+  python3 .claude/scripts/full_team.py verify "{task}"
 
 Teardown when done:
-  python .claude/scripts/full_team.py teardown "{task}"
+  python3 .claude/scripts/full_team.py teardown "{task}"
 ================================================================================
 """)
     return 0
@@ -1004,7 +1045,7 @@ def cmd_spawn_teammates(args: argparse.Namespace) -> int:
         return 2
 
     session = create_tmux_session(task_slug)
-    launch_standby_claude(task_slug)
+    launch_standby_claude(task_slug, getattr(args, "model", DEFAULT_MODEL))
 
     ok, report = validate_teammate_sessions_first(task_slug)
     print(report)
@@ -1015,7 +1056,7 @@ def cmd_spawn_teammates(args: argparse.Namespace) -> int:
 
     print(f"\nTeammates spawned in session: {session}")
     print(f"Run 'assign' to create worktrees and send assignments:")
-    print(f'  python .claude/scripts/full_team.py assign "{task}"')
+    print(f'  python3 .claude/scripts/full_team.py assign "{task}"')
     return 0
 
 
@@ -1122,6 +1163,11 @@ def main(argv: list[str] | None = None) -> int:
     ]:
         p = sub.add_parser(name)
         p.add_argument("task", help="Task description")
+        p.add_argument(
+            "--model",
+            default=DEFAULT_MODEL,
+            help=f"Model for spawned teammate sessions (default: {DEFAULT_MODEL})",
+        )
         p.set_defaults(func=func)
 
     p_verify = sub.add_parser("verify")

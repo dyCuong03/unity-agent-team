@@ -59,7 +59,7 @@ Write to `reports/team/<slug>/qa-report.md`:
 - Behavior: PASS/FAIL
 - Risks: <list>
 
-### unity-dot-dev
+### unity-dots-dev
 - Compile: PASS/FAIL
 - Tests: PASS/FAIL
 - Behavior: PASS/FAIL
