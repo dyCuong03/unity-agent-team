@@ -121,10 +121,13 @@ No external dependencies. Stdlib only.
 ```
 1. Copy .claude/ into your Unity project root.
 2. (Optional) copy SETUP.md, README.md, CHANGELOG.md, MIGRATION.md, LICENSE.
-3. Verify: python .claude/scripts/orchestrate.py preflight
+3. Verify: python3 .claude/scripts/orchestrate.py preflight
 ```
 
 That is it. Full details in [`SETUP.md`](./SETUP.md).
+
+For cloning into another project + using the real 4-agent **`/team --team`** mode
+(Sonnet sessions in tmux + git worktrees), see [`CLONE-SETUP.md`](./CLONE-SETUP.md).
 
 ---
 

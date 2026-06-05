@@ -54,6 +54,11 @@ SESSION_ARTIFACTS = [
     "escalation-log.md",
 ]
 
+# Minimum root-cause confidence required to unblock implementation.
+# Below this, the investigation is not certain enough — deepen it or escalate.
+# A COMPLETE root_cause with confidence < this value MUST NOT open the impl phase.
+ROOT_CAUSE_MIN_CONFIDENCE = 0.6
+
 # ---------------------------------------------------------------------------
 # Tiny JSON-schema validator. Stdlib-only — no jsonschema dependency.
 # Supports: type, required, enum, minimum/maximum, minLength, minItems,
@@ -248,6 +253,38 @@ COMPLEXITY_PIPELINES: dict[str, dict[str, Any]] = {
 }
 
 
+# Domain → implementation lane. `unity-dev` is the non-DOTS Unity-classic lane;
+# `unity-dots-dev` is the DOTS/ECS lane. COMPLEXITY_PIPELINES use the placeholder
+# `unity-dev`; this remaps it to the correct lane from triage.domain so DOTS/ECS
+# tasks never land on the non-DOTS lane.
+DOMAIN_IMPL_AGENT = {
+    "DOTS": "unity-dots-dev",     # ISystem/Jobs/Burst/Entities/ECB/SystemAPI/Physics
+    "Unity": "unity-dev",         # MonoBehaviour/UI/View/VContainer/DOTween/Addressables/pooling
+    "Hybrid": "unity-dots-dev",   # DOTS owns runtime truth; architect coordinates the UI bridge
+    "Ambiguous": "unity-dev",     # default; architect should confirm the lane
+}
+
+
+def _route_impl_by_domain(
+    pipeline: list[str], artifacts: dict[str, str], domain: str
+) -> tuple[list[str], dict[str, str], str | None]:
+    """Remap the placeholder `unity-dev` impl agent to the domain-correct lane.
+
+    Returns (pipeline, artifacts, note). DOTS/Hybrid tasks must NOT land on the
+    non-DOTS `unity-dev` lane.
+    """
+    impl = DOMAIN_IMPL_AGENT.get(domain, "unity-dev")
+    note = None
+    if impl != "unity-dev":
+        pipeline = [impl if a == "unity-dev" else a for a in pipeline]
+        if "unity-dev" in artifacts:
+            artifacts[impl] = artifacts.pop("unity-dev")
+        note = f"domain={domain}: implementation routed to {impl}"
+    elif domain == "Ambiguous":
+        note = "domain=Ambiguous: impl lane defaulted to unity-dev — architect should confirm"
+    return pipeline, artifacts, note
+
+
 def _apply_intent_overrides(pipeline: list[str], intent: str) -> list[str]:
     """Intent prepends a mandatory investigator."""
     if intent == "bug" and "bug-investigation" not in pipeline:
@@ -309,6 +346,11 @@ def cmd_plan(args: argparse.Namespace) -> int:
             artifacts["refactor-agent"] = "root_cause.json"  # reuses schema (status + evidence)
             artifacts["architect"] = "approved_plan.json"
 
+        # Domain routing: send the impl phase to the correct lane (DOTS → unity-dots-dev).
+        pipeline, artifacts, route_note = _route_impl_by_domain(
+            pipeline, artifacts, triage["domain"]
+        )
+
         # Parallelism rule: certainty-first. Only allow when confidence ≥ 0.8 AND
         # complexity ≥ medium AND ownership partition has ≥ 2 disjoint agents.
         partition = triage.get("ownership_partition") or {}
@@ -333,7 +375,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
             "ownership_partition": partition,
             "confidence_score": triage["confidence_score"],
             "domain": triage["domain"],
-            "notes": triage.get("rationale", ""),
+            "notes": "; ".join(filter(None, [triage.get("rationale", ""), route_note])),
         }
 
     WORKSPACE.mkdir(exist_ok=True)
@@ -362,7 +404,7 @@ def _phaseize(pipeline: list[str], parallel_allowed: bool) -> list[dict]:
         phases.append({"id": f"phase-{len(phases) + 1}", "agents": ["architect"], "mode": "sequential"})
         rest = [a for a in rest if a != "architect"]
     # Implementation
-    impl_agents = [a for a in rest if a in ("unity-dev", "data-tool")]
+    impl_agents = [a for a in rest if a in ("unity-dev", "unity-dots-dev", "data-tool")]
     if impl_agents:
         mode = "parallel" if parallel_allowed and len(impl_agents) > 1 else "sequential"
         phases.append({"id": f"phase-{len(phases) + 1}", "agents": impl_agents, "mode": mode})
@@ -403,6 +445,9 @@ def cmd_gate(args: argparse.Namespace) -> int:
         "verification_result.json": "verification_result",
         "ownership.lock.json": "ownership",
     }
+    # Drift gate only applies when an architect-approved plan is part of this
+    # pipeline. tiny/small tasks have no approved_plan, so deviations are moot.
+    approved_plan_required = "approved_plan.json" in artifacts_required.values()
     for prior in phases[:target_idx]:
         for agent in prior["agents"]:
             art = artifacts_required.get(agent)
@@ -420,8 +465,22 @@ def cmd_gate(args: argparse.Namespace) -> int:
             # Status checks
             if art == "approved_plan.json" and data.get("status") != "APPROVED":
                 failed.append(f"{agent} → {art}: status={data.get('status')!r} (must be APPROVED)")
-            if art == "root_cause.json" and data.get("status") not in ("COMPLETE",):
-                failed.append(f"{agent} → {art}: status={data.get('status')!r} (must be COMPLETE)")
+            if art == "root_cause.json":
+                if data.get("status") not in ("COMPLETE",):
+                    failed.append(f"{agent} → {art}: status={data.get('status')!r} (must be COMPLETE)")
+                else:
+                    # Root-cause confidence gate — a COMPLETE-but-uncertain
+                    # investigation must NOT unblock the fix. This enforces
+                    # "find the real root cause, not a guess".
+                    conf = data.get("confidence")
+                    if not isinstance(conf, (int, float)) or isinstance(conf, bool):
+                        failed.append(f"{agent} → {art}: confidence missing/invalid ({conf!r})")
+                    elif conf < ROOT_CAUSE_MIN_CONFIDENCE:
+                        failed.append(
+                            f"{agent} → {art}: confidence={conf} < {ROOT_CAUSE_MIN_CONFIDENCE} "
+                            "— root cause not certain enough to start implementation; "
+                            "deepen the investigation or set status=ESCALATE"
+                        )
             if art == "impl_result.json":
                 if data.get("compilation") != "CLEAN":
                     failed.append(f"{agent} → {art}: compilation={data.get('compilation')!r} (must be CLEAN)")
@@ -432,6 +491,19 @@ def cmd_gate(args: argparse.Namespace) -> int:
                     failed.append(f"{agent} → {art}: verification_bundle.invariants is empty")
                 if not bundle.get("repro_steps"):
                     failed.append(f"{agent} → {art}: verification_bundle.repro_steps is empty")
+                # Plan-adherence (anti-drift) gate — unreconciled deviations from
+                # the approved plan block the phase. The architect must fold the
+                # change into approved_plan.json (then this list is cleared) or
+                # unity-dev reverts the drift. Silent drift is not allowed.
+                deviations = data.get("deviations_from_plan") or []
+                if deviations and approved_plan_required:
+                    preview = "; ".join(str(d) for d in deviations[:5])
+                    failed.append(
+                        f"{agent} → {art}: {len(deviations)} unreconciled deviation(s) from approved_plan "
+                        "— implementation drifted from the design. Architect must approve & fold them "
+                        "into approved_plan.json (then clear deviations_from_plan), or revert. "
+                        f"Deviations: {preview}"
+                    )
             if art == "approved_plan.json":
                 if not data.get("acceptance_criteria"):
                     failed.append(f"{agent} → {art}: acceptance_criteria is empty (must list ≥1)")

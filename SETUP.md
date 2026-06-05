@@ -106,6 +106,59 @@ The orchestrator picks the agent composition. You do not pre-select agents.
 
 ---
 
+## Using `/team --team`
+
+`/team --team <task>` runs the task as a **Claude Agent Teams** team instead of the
+adaptive single-session pipeline. The current Claude Code session becomes the
+**teamlead** and spawns exactly **4 persistent teammates on Sonnet** via the
+harness-native `TeamCreate` + `Agent(team_name=…)` primitives, coordinating them
+through a shared task list. This is **not** normal subagents, **not** simulated
+markdown roles, and **not** the manual worktree mode.
+
+**1. Enable Agent Teams** (one-time). In `~/.claude/settings.json`:
+```json
+{ "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "preferences": { "tmuxSplitPanes": true } }
+```
+Restart Claude Code. (`tmuxSplitPanes` gives one tmux pane per teammate.)
+
+**2. Verify availability:**
+```sh
+grep -q '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"[[:space:]]*:[[:space:]]*"1"' ~/.claude/settings.json \
+  && echo "agent-teams: ON" || echo "agent-teams: OFF"
+```
+
+**3. Run:**
+```
+/team --team analyze the /team flow and improve Unity task support
+```
+
+**4. The 4 required teammates** (all Sonnet):
+
+| Teammate | Responsibility |
+|----------|----------------|
+| `architect` | architecture analysis, ownership, execution plan, scope control |
+| `unity-dots-dev` | Unity DOTS/ECS, Jobs, Burst, Entities, ECB, dependencies, performance |
+| `unity-dev` | Unity UI, MonoBehaviour, gameplay, VContainer, Addressables, pooling, DOTween |
+| `qa-tester` | test matrix, regression, root-cause validation, final APPROVE/BLOCK |
+
+**5. Inspect teammates:** with `tmuxSplitPanes: true`, each teammate is a tmux pane.
+The teamlead surfaces the team name (`team-<slug>`) and any attach hint the runtime
+prints. Track progress via the shared task list (`TaskList`); teammate messages are
+delivered to the teamlead automatically.
+
+**6. If Agent Teams is unavailable:** the command **fails fast** with a `[BLOCK]`
+message explaining how to enable it. It does **not** fall back to subagents,
+single-agent, or simulated roles.
+
+**7–9. `/team --team` is NOT:** normal subagent mode · simulated markdown roleplay ·
+manual worktree mode. (For git-worktree isolation use the separate `/team --worktrees`.)
+
+`/team --full` is a **deprecated alias** for `--team` (prints a deprecation notice,
+then behaves identically).
+
+---
+
 ## File layout reference
 
 ```
