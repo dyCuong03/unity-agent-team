@@ -35,6 +35,10 @@ violation. Markdown promises are not enforcement.
 If a server is unavailable, agents state the fallback once and keep working.
 See `@.claude/docs/mcp-integration.md`.
 
+For `agentmemory` install + `.mcp.json` setup, see **SETUP.md → "Using agentmemory
+with /team"**. Memory is optional; agents fall back to targeted search when absent.
+Memory is **not** the source of truth — current repo files always win.
+
 ## Optional: tmux pane-per-agent UI
 
 The default uses the standard `Agent` tool — works everywhere, zero config.
@@ -190,6 +194,9 @@ Domain-specific reasoning is loaded via skill packs based on triage's
 - Treating gate exit-2 as a warning instead of a halt
 - Manually splitting tmux panes
 - Declaring a run complete while `verification_result.json.status != "PASS"`
+- Running `git commit`/`git push` by hand instead of `orchestrate.py commit`
+  (the gate enforces PASS-only + current-branch + no force-push)
+- Committing a FAIL or no-verification run
 
 ## Knowledge System (unchanged)
 

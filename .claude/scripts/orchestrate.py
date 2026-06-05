@@ -266,57 +266,55 @@ DOMAIN_IMPL_AGENT = {
     "Ambiguous": "unity-dev",     # default; architect should confirm the lane
 }
 
-# Per-agent PRIMARY skill modules (lane-correct). The adaptive (non --team) phase
-# template reads this via pipeline.json.skills_by_agent — it does NOT hardcode any
-# single skill for every agent. The DOTS lane gets the DOTS stack; the Unity-classic
-# lane gets unity-classic. DOTS extras (skill_packs) attach ONLY to DOTS lanes — never
-# to unity-dev/tester/verifier/data-tool. Mirrors the --team per-role map in team.md.
+# Skill selection is delegated to the registry-backed router (scripts/route_skills.py),
+# the single source of truth for "which skills does this agent load". The fallback map
+# below is used ONLY if the router/registry cannot be imported (degraded mode). The
+# router enforces: DOTS extras to DOTS lanes only; tester/verifier/data-tool/unity-dev
+# never get DOTS skills; agentmemory-codebase-recall + codebase-understanding are
+# must-keep for code-reading roles; total capped at registry.max_total_skills.
+try:  # pragma: no cover - exercised at runtime
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import route_skills as _route_skills  # type: ignore
+except Exception:  # registry/router unavailable — degrade gracefully
+    _route_skills = None
+
+# Fallback-only primary map (degraded mode when route_skills cannot load).
 AGENT_PRIMARY_SKILLS: dict[str, list[str]] = {
-    "architect":         ["architect", "unity-foundation"],
-    "unity-dots-dev":    ["unity-dots-best-practices", "ecs-job-patterns", "burst-safety", "memory-safety"],
-    "unity-dev":         ["unity-classic", "unity-foundation"],
-    "tester":            ["tester", "qa-validation"],
-    "verifier":          ["tester", "qa-validation"],
-    "qa-tester":         ["tester", "qa-validation"],
-    "bug-investigation": ["investigation", "codebase-understanding"],
-    "data-tool":         ["data-tool", "editor-data-tools"],
-    "refactor-agent":    ["codebase-understanding", "ownership-partitioning"],
-    "system-mapper":     ["codebase-understanding"],
+    "architect":         ["architect", "unity-foundation", "codebase-understanding", "agentmemory-codebase-recall"],
+    "unity-dots-dev":    ["unity-dots-best-practices", "ecs-job-patterns", "burst-safety", "memory-safety", "codebase-understanding", "agentmemory-codebase-recall"],
+    "unity-dev":         ["unity-classic", "unity-foundation", "codebase-understanding", "agentmemory-codebase-recall"],
+    "tester":            ["tester", "qa-validation", "verifier", "codebase-understanding", "agentmemory-codebase-recall"],
+    "verifier":          ["tester", "qa-validation", "verifier", "codebase-understanding", "agentmemory-codebase-recall"],
+    "qa-tester":         ["tester", "qa-validation", "verifier", "codebase-understanding", "agentmemory-codebase-recall"],
+    "bug-investigation": ["investigation", "codebase-understanding", "agentmemory-codebase-recall"],
+    "data-tool":         ["data-tool", "editor-data-tools", "codebase-understanding", "agentmemory-codebase-recall"],
+    "refactor-agent":    ["codebase-understanding", "ownership-partitioning", "agentmemory-codebase-recall"],
+    "system-mapper":     ["codebase-understanding", "agentmemory-codebase-recall"],
 }
-
-# Lanes allowed to receive DOTS skill_packs (ecs-job-patterns/burst-safety/memory-safety).
-DOTS_LANES = {"unity-dots-dev"}
-# Writers that need ownership-partitioning when parallel execution is enabled.
-WRITER_AGENTS = {"unity-dev", "unity-dots-dev", "data-tool"}
-
-
-def _skills_for_agent(
-    agent: str, skill_packs: list[str], parallel_allowed: bool
-) -> list[str]:
-    """Resolve the lane-correct skill set for one agent.
-
-    Primary skills come from AGENT_PRIMARY_SKILLS. DOTS extras (skill_packs from
-    triage) attach ONLY to DOTS lanes, so a Unity-classic unity-dev never inherits
-    DOTS skills. ownership-partitioning is added to writers when parallel is allowed.
-    """
-    skills = list(AGENT_PRIMARY_SKILLS.get(agent, []))
-    if agent in DOTS_LANES:
-        for sp in skill_packs:
-            if sp not in skills:
-                skills.append(sp)
-    if parallel_allowed and agent in WRITER_AGENTS and "ownership-partitioning" not in skills:
-        skills.append("ownership-partitioning")
-    return skills
 
 
 def _compute_skills_by_agent(
-    pipeline: list[str], skill_packs: list[str], parallel_allowed: bool
+    pipeline: list[str],
+    domain: str = "Ambiguous",
+    intent: str = "feature",
+    task_text: str = "",
+    parallel_allowed: bool = False,
 ) -> dict[str, list[str]]:
-    """Map every agent in the pipeline to its lane-correct skill set."""
-    return {
-        agent: _skills_for_agent(agent, skill_packs, parallel_allowed)
-        for agent in pipeline
-    }
+    """Map every agent in the pipeline to its router-selected skill set.
+
+    Uses the registry-backed router when available; otherwise the fallback primary
+    map (degraded mode). DOTS extras never reach unity-dev/tester/verifier/data-tool.
+    """
+    out: dict[str, list[str]] = {}
+    for agent in pipeline:
+        if _route_skills is not None:
+            out[agent] = _route_skills.route(
+                agent, domain=domain, intent=intent,
+                task_text=task_text, parallel_allowed=parallel_allowed,
+            )
+        else:
+            out[agent] = list(AGENT_PRIMARY_SKILLS.get(agent, []))
+    return out
 
 
 def _route_impl_by_domain(
@@ -428,7 +426,11 @@ def cmd_plan(args: argparse.Namespace) -> int:
             "artifacts_required": artifacts,
             "skill_packs": triage.get("skill_packs", []),
             "skills_by_agent": _compute_skills_by_agent(
-                pipeline, triage.get("skill_packs", []), parallel_allowed
+                pipeline,
+                domain=triage["domain"],
+                intent=intent,
+                task_text=triage.get("task", ""),
+                parallel_allowed=parallel_allowed,
             ),
             "ownership_partition": partition,
             "confidence_score": triage["confidence_score"],

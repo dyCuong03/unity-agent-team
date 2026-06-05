@@ -1,0 +1,225 @@
+{
+  "$comment": "Skill registry for /team routing. Generated/refreshed by scripts/build_skill_registry.py. `name` is the skill FOLDER name (the routing key used in pipeline.json.skills_by_agent and route_skills.py) — note some SKILL.md frontmatter `name:` differs (e.g. investigation -> unity-investigation). Routing keys on folder name. Role/domain/intent priority is stronger than keyword matching; the router caps total skills (max_total_skills=7); required intent skills (investigation on bug, ownership-partitioning on refactor/parallel) are must-keep and survive the cap.",
+  "version": 1,
+  "max_total_skills": 7,
+  "domains": ["DOTS", "Unity", "Hybrid", "Any"],
+  "roles": [
+    "architect", "unity-dots-dev", "unity-dev", "tester", "verifier",
+    "qa-tester", "bug-investigation", "refactor-agent", "data-tool",
+    "system-mapper", "triage"
+  ],
+  "skills": [
+    {
+      "name": "agentmemory-codebase-recall",
+      "path": ".claude/skills/agentmemory-codebase-recall/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["architect", "unity-dots-dev", "unity-dev", "bug-investigation", "data-tool", "tester", "verifier", "qa-tester", "refactor-agent", "system-mapper"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance", "explore"],
+      "keywords": ["memory", "recall", "prior", "remember", "agentmemory", "history"],
+      "priority": 98
+    },
+    {
+      "name": "codebase-understanding",
+      "path": ".claude/skills/codebase-understanding/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["architect", "unity-dots-dev", "unity-dev", "bug-investigation", "data-tool", "refactor-agent", "system-mapper", "tester", "verifier", "qa-tester"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance", "explore"],
+      "keywords": ["trace", "navigate", "architecture", "CRG", "code-review-graph", "impact", "dependency"],
+      "priority": 95
+    },
+    {
+      "name": "architect",
+      "path": ".claude/skills/architect/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["architect"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["design", "architecture", "boundaries", "ownership", "update order", "plan", "acceptance criteria"],
+      "priority": 100
+    },
+    {
+      "name": "unity-foundation",
+      "path": ".claude/skills/unity-foundation/SKILL.md",
+      "domains": ["Unity", "Any"],
+      "roles": ["architect", "unity-dev"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["asmdef", "assembly", "scene lifecycle", "bootstrap", "project structure"],
+      "priority": 85
+    },
+    {
+      "name": "unity-classic",
+      "path": ".claude/skills/unity-classic/SKILL.md",
+      "domains": ["Unity"],
+      "roles": ["unity-dev", "bug-investigation"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["MonoBehaviour", "UI", "Canvas", "DOTween", "VContainer", "Addressables", "pooling", "Awake", "OnEnable", "OnDisable", "OnDestroy", "GC Alloc", "UniTask", "MessagePipe", "coroutine", "prefab", "Animator"],
+      "priority": 100
+    },
+    {
+      "name": "unity-dots-best-practices",
+      "path": ".claude/skills/unity-dots-best-practices/SKILL.md",
+      "domains": ["DOTS", "Hybrid"],
+      "roles": ["unity-dots-dev", "architect", "bug-investigation"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["ISystem", "IComponentData", "DOTS", "ECS", "Entities", "Burst", "jobs", "EntityQuery", "BlobAsset", "SystemAPI", "LocalTransform"],
+      "priority": 100
+    },
+    {
+      "name": "unity-dots",
+      "path": ".claude/skills/unity-dots/SKILL.md",
+      "domains": ["DOTS"],
+      "roles": ["unity-dots-dev"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["DOTS", "ECS", "samples", "reference", "entities"],
+      "priority": 72,
+      "$note": "Senior DOTS skill index (96 skills). Its own SKILL.md says not to load standalone, so it is NOT a forced primary — keyword-reachable only (task text naming DOTS/ECS/entities/samples). See route_skills.py ROLE_PRIMARY."
+    },
+    {
+      "name": "ecs-job-patterns",
+      "path": ".claude/skills/ecs-job-patterns/SKILL.md",
+      "domains": ["DOTS", "Hybrid"],
+      "roles": ["unity-dots-dev", "bug-investigation"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["IJobEntity", "IJobChunk", "EntityCommandBuffer", "ECB", "Dependency", "Schedule", "ScheduleParallel", "AddJobHandleForProducer"],
+      "priority": 92
+    },
+    {
+      "name": "burst-safety",
+      "path": ".claude/skills/burst-safety/SKILL.md",
+      "domains": ["DOTS"],
+      "roles": ["unity-dots-dev"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["BurstCompile", "burst", "managed", "Mathematics", "job safety"],
+      "priority": 90
+    },
+    {
+      "name": "memory-safety",
+      "path": ".claude/skills/memory-safety/SKILL.md",
+      "domains": ["DOTS"],
+      "roles": ["unity-dots-dev"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["NativeArray", "NativeList", "allocator", "dispose", "lifetime", "leak", "TempJob", "Persistent"],
+      "priority": 88
+    },
+    {
+      "name": "investigation",
+      "path": ".claude/skills/investigation/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["bug-investigation"],
+      "intents": ["bug"],
+      "keywords": ["root cause", "repro", "debug", "console", "error", "regression", "symptom"],
+      "priority": 90
+    },
+    {
+      "name": "ownership-partitioning",
+      "path": ".claude/skills/ownership-partitioning/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["architect", "unity-dev", "unity-dots-dev", "refactor-agent", "data-tool"],
+      "intents": ["refactor"],
+      "keywords": ["parallel", "ownership", "partition", "glob", "write conflict", "lock"],
+      "priority": 80,
+      "conditional": "parallel_or_refactor",
+      "$note": "Only routed when parallel_allowed=true OR intent=refactor."
+    },
+    {
+      "name": "tester",
+      "path": ".claude/skills/tester/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["tester", "verifier", "qa-tester"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["test", "sign-off", "regression", "stress", "determinism"],
+      "priority": 95
+    },
+    {
+      "name": "qa-validation",
+      "path": ".claude/skills/qa-validation/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["tester", "verifier", "qa-tester"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance"],
+      "keywords": ["validate", "test matrix", "regression", "playmode", "evidence"],
+      "priority": 92
+    },
+    {
+      "name": "verifier",
+      "path": ".claude/skills/verifier/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["verifier"],
+      "intents": ["bug", "feature", "refactor", "implement"],
+      "keywords": ["verify", "bundle", "compilation", "verification"],
+      "priority": 90
+    },
+    {
+      "name": "data-tool",
+      "path": ".claude/skills/data-tool/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["data-tool"],
+      "intents": ["feature", "implement"],
+      "keywords": ["editor tool", "validator", "inspector", "diagnostics", "authoring", "data processor"],
+      "priority": 90
+    },
+    {
+      "name": "editor-data-tools",
+      "path": ".claude/skills/editor-data-tools/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["data-tool"],
+      "intents": ["feature", "implement"],
+      "keywords": ["editor", "authoring", "validator", "diagnostics", "tooling", "pipeline"],
+      "priority": 85
+    },
+    {
+      "name": "triage",
+      "path": ".claude/skills/triage/SKILL.md",
+      "domains": ["Any"],
+      "roles": ["triage"],
+      "intents": ["bug", "feature", "refactor", "implement", "performance", "explore"],
+      "keywords": ["triage", "classify", "complexity", "blast radius"],
+      "priority": 100
+    },
+    {
+      "name": "unity-dev",
+      "path": ".claude/skills/unity-dev/SKILL.md",
+      "domains": ["Unity", "DOTS", "Hybrid"],
+      "roles": ["unity-dev"],
+      "intents": ["bug", "feature", "refactor", "implement"],
+      "keywords": ["implementation", "runtime"],
+      "priority": 60,
+      "mode": "role-brief",
+      "$note": "Role brief auto-loaded by .claude/agents/unity-dev.md. Not routed as an extra skill; lane primaries are unity-classic + unity-foundation."
+    },
+    {
+      "name": "routing",
+      "path": ".claude/skills/routing/SKILL.md",
+      "domains": ["Any"],
+      "roles": [],
+      "intents": [],
+      "keywords": [],
+      "priority": 0,
+      "mode": "meta",
+      "load_by_default": false,
+      "$note": "Lazy skill router skill — orchestrator concept, not loaded into task agents."
+    },
+    {
+      "name": "skill-creator",
+      "path": ".claude/skills/skill-creator/SKILL.md",
+      "domains": ["Any"],
+      "roles": [],
+      "intents": [],
+      "keywords": [],
+      "priority": 0,
+      "mode": "meta",
+      "load_by_default": false,
+      "$note": "Authoring tool for skills. Never loaded for normal /team task execution."
+    },
+    {
+      "name": "unity-skills",
+      "path": ".claude/skills/unity-skills/SKILL.md",
+      "domains": ["Any"],
+      "roles": [],
+      "intents": [],
+      "keywords": [],
+      "priority": 0,
+      "mode": "meta",
+      "load_by_default": false,
+      "$note": "Unity Editor REST automation via MCP. Triggered by MCP usage, not by /team skill routing."
+    }
+  ]
+}

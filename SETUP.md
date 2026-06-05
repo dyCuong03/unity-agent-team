@@ -20,6 +20,46 @@
 
 That is the whole install. There is no global config to enable.
 
+### Use `/team` in another project (cross-project)
+
+`/team` is **self-contained in `.claude/`**. To use it in any other repo, copy that
+folder into the target repo root — nothing else is global, and it works for Unity
+classic, Unity DOTS/ECS, and plain C# / non-Unity repos alike (irrelevant skills
+just score low and never load).
+
+```sh
+# from this package repo into a target project:
+cp -R .claude /path/to/other-project/.claude
+cp SETUP.md README.md CHANGELOG.md MIGRATION.md LICENSE /path/to/other-project/   # optional but recommended
+
+cd /path/to/other-project
+python3 .claude/scripts/orchestrate.py preflight         # env / MCP / tmux sanity
+python3 .claude/scripts/build_skill_registry.py check    # registry intact (22/22 skills)
+python3 .claude/scripts/validate_skill_routing.py        # routing lanes correct (4/4)
+```
+
+Then open Claude Code in that project and run `/team <intent> [depth] <task>`.
+
+What carries over and is enforced per-project, with **no global config**:
+
+- **Skill registry + router** (`.claude/skills/registry.json` + `scripts/route_skills.py`):
+  each agent loads a curated, role-correct subset (`role + domain + intent + keyword
+  + memory hint`, capped at `max_total_skills=7`). DOTS skills never reach
+  `unity-dev` / `tester` / `verifier` / `qa-tester` / `data-tool`. Dry-run any route:
+  ```sh
+  python3 .claude/scripts/route_skills.py --agent unity-dots-dev --domain DOTS --intent bug --task "ISystem race"
+  ```
+- **Both modes**: adaptive `/team` (writes `pipeline.json.skills_by_agent` from the
+  router) and `/team --team` (4 Sonnet teammates, Read-first skill loading) use the
+  same registry — see [`CLONE-SETUP.md`](./CLONE-SETUP.md) for the full `--team` walkthrough.
+- **agentmemory recall** is optional and per-project (see "Using agentmemory with
+  /team" below). When absent, the pipeline still runs — agents report
+  `[MEMORY UNAVAILABLE]` and use targeted search.
+
+> If the target repo is not a Unity project, `/team` still works — domain scoring
+> classifies the task and only loads relevant skills. Memory is never the source of
+> truth; the target repo's current files always win.
+
 ### Optional: tmux pane-per-agent UI
 
 Only if you want one tmux pane per spawned agent. Add to `~/.claude/settings.json`:
@@ -156,6 +196,95 @@ manual worktree mode. (For git-worktree isolation use the separate `/team --work
 
 `/team --full` is a **deprecated alias** for `--team` (prints a deprecation notice,
 then behaves identically).
+
+---
+
+## Using agentmemory with /team
+
+`agentmemory` is an **optional** MCP server that lets `/team` agents recall
+cross-session engineering knowledge — failure patterns, architecture decisions,
+and performance findings accumulated from past runs. Every feature works without it.
+
+> **Source:** https://github.com/rohitg00/agentmemory
+> Verify the install steps and MCP entry shape against the current agentmemory docs
+> before following the steps below — they reflect a typical stdio setup but may not
+> match the latest release.
+
+### 1. Install agentmemory
+
+Follow the install instructions at https://github.com/rohitg00/agentmemory.
+The server is typically installed as a Python package:
+
+```sh
+pip install agentmemory
+# or, without a global install:
+# uvx agentmemory   (used directly in .mcp.json — see step 2)
+```
+
+You do not need to start it manually. Claude Code launches it as a stdio process
+when the project is opened (once `.mcp.json` is configured).
+
+### 2. Connect to Claude Code via `.mcp.json`
+
+Add an `agentmemory` entry to your project's `.mcp.json` alongside the other servers.
+The typical stdio shape (verify against https://github.com/rohitg00/agentmemory):
+
+```json
+{
+  "mcpServers": {
+    "ai-game-developer": { "...": "..." },
+    "code-review-graph":  { "...": "..." },
+    "agentmemory": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["agentmemory"]
+    }
+  }
+}
+```
+
+> **Verify this shape** against the current docs before committing — the command
+> name and args may differ across versions.
+
+Restart Claude Code after editing `.mcp.json`.
+
+### 3. Verify the memory tools are present
+
+After restarting, confirm the `mcp__agentmemory__*` tools are available:
+
+```
+/mcp
+```
+
+You should see `agentmemory` listed with tools including
+`mcp__agentmemory__memory_smart_search`, `mcp__agentmemory__memory_lesson_save`,
+`mcp__agentmemory__memory_recall`, and others.
+
+### 4. Behavior when agentmemory is unavailable
+
+If the server is not running or the tools are absent, `/team` agents continue
+normally — no session is blocked:
+
+- Agents print `[MEMORY UNAVAILABLE]` **once** (not repeated).
+- Investigation agents (`bug-investigation`, `system-mapper`) fall back to targeted
+  `Grep` + `code-review-graph` queries against the current codebase.
+- No `/team` features are disabled; memory only enriches the initial hypothesis.
+
+### 5. Disable the memory requirement
+
+Memory is opt-in by design. To ensure no agent ever attempts a memory call, remove
+the `agentmemory` entry from `.mcp.json`. The `[MEMORY UNAVAILABLE]` fallback
+activates automatically — no other config change needed.
+
+### ⚠ WARNING: memory is NOT the source of truth
+
+> **Current repo files always win over memory.**
+>
+> Agents use memory only to seed an initial hypothesis (known failure patterns,
+> prior architecture decisions). They **verify every recalled fact against the
+> live codebase** before acting. A memory entry that contradicts current source
+> code or `workspace/repo-knowledge.md` is treated as stale and ignored. Never
+> act on a memory recall without confirming it against the actual files.
 
 ---
 

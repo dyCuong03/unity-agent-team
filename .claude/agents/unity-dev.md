@@ -34,13 +34,19 @@ DI, Addressables, object pooling, DOTween, async/UniTask, and editor tooling. EC
 - Lifecycle: `Awake`/`OnEnable`/`Start`/`OnDisable`/`OnDestroy` correctness;
   pooled objects re-init in `OnEnable`, clean up in `OnDisable`.
 - Events: every `+=` has a matching `-=` (subscribe in OnEnable, unsubscribe in OnDisable).
+- UI listeners: guard `Button.onClick.AddListener` / `Toggle.onValueChanged` etc.
+  against re-subscription on re-show — call `RemoveAllListeners()` before re-adding,
+  or bind once and gate with a bool. Stacked listeners fire N times silently.
+- MessagePipe: every `Subscribe` must be disposed — collect in a `DisposableBagBuilder`
+  / `CancellationDisposable`; dispose in `OnDisable`/`OnDestroy` or on pool Return.
 - DOTween: cache + `Kill()` on disable/return/destroy; bind lifetime (`SetLink`).
 - Pooling: full state reset on Get; kill tweens / cancel async / unsubscribe on Return.
 - VContainer: injection completes after Awake — don't use injected refs in Awake;
   correct `LifetimeScope`; resolve, don't `new`, container-owned services.
 - Async/UniTask: pass `destroyCancellationToken`; no `async void` except top handlers.
 - Addressables: `Load`↔`Release`, `Instantiate`↔`ReleaseInstance` — release once.
-- Performance: no `GetComponent`/`Camera.main`/alloc/LINQ/`string.Format` per frame.
+- Performance: no `GetComponent`/`Camera.main`/alloc/LINQ/`string.Format` per frame;
+  no expensive per-frame `Update` work (cache, throttle, or event-drive instead).
 
 ## Implementation rules
 

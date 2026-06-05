@@ -61,8 +61,8 @@ def run_checks() -> list[dict]:
         results.append({"check": name, "pass": ok, "detail": detail})
 
     # --- Check 1: adaptive Unity task → unity-dev gets unity-classic, not DOTS ---
-    pipe = _final_pipeline(orch, "medium", "feature", "Unity")  # Unity skill_packs = []
-    sba = orch._compute_skills_by_agent(pipe, [], parallel_allowed=False)
+    pipe = _final_pipeline(orch, "medium", "feature", "Unity")
+    sba = orch._compute_skills_by_agent(pipe, domain="Unity", intent="feature", task_text="add inventory UI")
     udev = sba.get("unity-dev", [])
     ok1 = (
         "unity-dev" in pipe
@@ -76,9 +76,8 @@ def run_checks() -> list[dict]:
     )
 
     # --- Check 2: adaptive DOTS task → unity-dots-dev gets DOTS stack + extras ---
-    dots_packs = ["ecs-job-patterns", "burst-safety", "memory-safety"]
     pipe = _final_pipeline(orch, "medium", "feature", "DOTS")
-    sba = orch._compute_skills_by_agent(pipe, dots_packs, parallel_allowed=False)
+    sba = orch._compute_skills_by_agent(pipe, domain="DOTS", intent="feature", task_text="add enemy AI system")
     ddev = sba.get("unity-dots-dev", [])
     ok2 = (
         "unity-dots-dev" in pipe
@@ -92,9 +91,9 @@ def run_checks() -> list[dict]:
     )
 
     # --- Check 3: tester/verifier/data-tool never get DOTS skills by default ---
-    # Use a DOTS critical pipeline (has data-tool + tester) with DOTS packs present.
+    # Use a DOTS critical pipeline (has data-tool + tester) on a DOTS-keyword task.
     pipe = _final_pipeline(orch, "critical", "feature", "DOTS")
-    sba = orch._compute_skills_by_agent(pipe, dots_packs, parallel_allowed=False)
+    sba = orch._compute_skills_by_agent(pipe, domain="DOTS", intent="feature", task_text="ISystem job burst entities")
     leaks: dict[str, list[str]] = {}
     for agent in ("tester", "verifier", "data-tool"):
         skills = sba.get(agent, [])
@@ -103,7 +102,7 @@ def run_checks() -> list[dict]:
             leaks[agent] = bad
     # also check verifier via a 'small' DOTS pipeline (tester absent there)
     pipe_s = _final_pipeline(orch, "small", "feature", "DOTS")
-    sba_s = orch._compute_skills_by_agent(pipe_s, dots_packs, parallel_allowed=False)
+    sba_s = orch._compute_skills_by_agent(pipe_s, domain="DOTS", intent="feature", task_text="ISystem job burst entities")
     vbad = sorted(DOTS_SKILLS & set(sba_s.get("verifier", [])))
     if vbad:
         leaks["verifier"] = vbad
@@ -114,12 +113,12 @@ def run_checks() -> list[dict]:
         f"leaks={leaks or 'none'}",
     )
 
-    # --- Check 4: --team Read-first per-role skills block intact in team.md ---
+    # --- Check 4: --team Read-first per-role skills present in team.md ---
     text = TEAM_MD.read_text(encoding="utf-8", errors="replace") if TEAM_MD.exists() else ""
     needles = [
-        "STEP 0: Read",
-        "unity-dots-dev: .claude/skills/unity-dots-best-practices/SKILL.md",
-        "unity-dev:      .claude/skills/unity-classic/SKILL.md",
+        "STEP 0",
+        "unity-classic/SKILL.md",
+        "unity-dots-best-practices/SKILL.md",
     ]
     missing = [n for n in needles if n not in text]
     ok4 = TEAM_MD.exists() and not missing

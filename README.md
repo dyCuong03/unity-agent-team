@@ -126,8 +126,38 @@ No external dependencies. Stdlib only.
 
 That is it. Full details in [`SETUP.md`](./SETUP.md).
 
+### Use `/team` in another project
+
+The package is **self-contained in `.claude/`** — drop it into any other repo's
+root and `/team` works there immediately, for both Unity classic and Unity
+DOTS/ECS work (and any C# / non-Unity repo too; the Unity-specific skills simply
+score low and don't load).
+
+```sh
+# from this package repo, into a target project:
+cp -R unity-agent-team/.claude /path/to/other-project/.claude
+cp unity-agent-team/{SETUP.md,README.md,CHANGELOG.md,MIGRATION.md,LICENSE} /path/to/other-project/   # optional
+cd /path/to/other-project
+python3 .claude/scripts/orchestrate.py preflight        # sanity check
+python3 .claude/scripts/build_skill_registry.py check   # skill registry intact (22/22)
+```
+
+What travels with `.claude/` and works per-project with **no global config**:
+
+- **Skill registry + router** (`.claude/skills/registry.json`, `scripts/route_skills.py`)
+  — picks a curated, role-correct skill subset per agent (cap 7). DOTS skills never
+  leak into Unity-classic / tester / data-tool lanes. Inspect any route:
+  `python3 .claude/scripts/route_skills.py --agent unity-dev --domain Unity --intent bug --task "<task>"`
+- **All `/team` modes**: adaptive `/team <intent> [depth] <task>` and `/team --team`
+  (4 Sonnet teammates) both derive skills from the same registry.
+- **agentmemory recall** (optional): if the `agentmemory` MCP is connected, agents
+  recall prior decisions before reading code, then verify against the live files
+  (files always win). Absent → agents report `[MEMORY UNAVAILABLE]` and fall back to
+  targeted search. Setup in [`SETUP.md`](./SETUP.md#using-agentmemory-with-team).
+
 For cloning into another project + using the real 4-agent **`/team --team`** mode
-(Sonnet sessions in tmux + git worktrees), see [`CLONE-SETUP.md`](./CLONE-SETUP.md).
+(Sonnet sessions in tmux + git worktrees), see the step-by-step
+[`CLONE-SETUP.md`](./CLONE-SETUP.md).
 
 ---
 
