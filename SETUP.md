@@ -20,6 +20,14 @@
 
 That is the whole install. There is no global config to enable.
 
+> **Recommended companion: RTK (token-optimized commands).** The package ships
+> `.rtk/filters.toml` + RTK usage rules in `CLAUDE.md`. To make Claude route
+> commands through RTK in this project (60–90% token savings, auto-applied every
+> session via a Claude hook), follow **CLONE-SETUP.md → §2b "Enable RTK"**:
+> `brew install rtk` (or curl/cargo) → `rtk init -g` (installs the per-session
+> PreToolUse hook) → restart Claude Code → `rtk trust` (enable the committed
+> project filters). Source: https://github.com/rtk-ai/rtk
+
 ### Use `/team` in another project (cross-project)
 
 `/team` is **self-contained in `.claude/`**. To use it in any other repo, copy that

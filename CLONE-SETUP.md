@@ -79,6 +79,57 @@ worktree support, `claude` CLI on PATH, and the env flag.
 
 ---
 
+## 2b. Enable RTK — token-optimized commands (recommended, every project)
+
+> **Rule:** whenever you install `unity-agent-team` into a project, also set up
+> **RTK** ([github.com/rtk-ai/rtk](https://github.com/rtk-ai/rtk)). The package
+> ships with `.rtk/filters.toml` and RTK usage instructions in `CLAUDE.md`; the
+> two steps below make Claude actually route commands through RTK in the new
+> project (60–90% token savings on build/test/git/gh output).
+
+**1. Install RTK** (one-time, user-level — skip if `rtk --version` already works):
+```sh
+brew install rtk                                                               # macOS/Linux (Homebrew)
+# or:
+curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+# or:
+cargo install --git https://github.com/rtk-ai/rtk
+```
+
+**2. Connect RTK to Claude Code so it auto-runs every session** (one-time,
+user-level). The Claude hook rewrites Bash commands through RTK transparently —
+this is what "connect on every new Claude session" means; once the hook is in
+`~/.claude/settings.json` it fires for every session, no per-session action:
+```sh
+rtk init -g          # installs the PreToolUse hook + RTK.md into ~/.claude/
+```
+This adds a `PreToolUse` Bash hook to `~/.claude/settings.json`:
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": "rtk hook claude" } ] }
+    ]
+  }
+}
+```
+**Restart Claude Code** after `rtk init -g`. Verify: `rtk --version` and `rtk gain`.
+
+**3. Trust this project's RTK filters** (per-project, one-time). The package's
+committed `.rtk/filters.toml` is untrusted on first use — RTK prints
+`untrusted project filters … Filters NOT applied. Run rtk trust` until you run:
+```sh
+cd /path/to/MyUnityGame
+rtk trust            # review + enable the project-local .rtk/filters.toml
+```
+
+> **Name-collision check:** if `rtk gain` errors, you may have the unrelated
+> `reachingforthejack/rtk` (Rust Type Kit) on PATH. Confirm with `which rtk` and
+> reinstall from `github.com/rtk-ai/rtk`.
+
+---
+
 ## 3. Verify the install
 
 ```sh

@@ -1,9 +1,10 @@
-# Unity Agent Team — Adaptive Pipeline (v2)
+# Unity Agent Team
 
-A Claude Code package that runs an **adaptive Unity DOTS agent pipeline**.
-Triage classifies the task, an orchestrator script derives the minimum viable
-agent composition, and every phase boundary is a Python gate that exits
-non-zero on violation. There is no fixed team and no always-on tester.
+A self-contained Claude Code package that runs an **adaptive Unity (DOTS + classic)
+agent pipeline**. Triage classifies the task, an orchestrator script derives the
+minimum viable agent composition, and every phase boundary is a Python gate that
+exits non-zero on violation. No fixed team, no always-on tester, no tmux
+dependency. Everything lives in `.claude/` and travels with the folder.
 
 ```
 /team <intent> [depth] <task>
@@ -12,28 +13,21 @@ intent ∈ { bug, feature, refactor, explore }
 depth  ∈ { quick, normal, deep }   default: normal
 ```
 
+Also ships two real multi-session team modes — `/team --team` (Claude Agent
+Teams) and `/team --worktrees` (tmux + git worktrees) — see [Modes](#modes).
+
 ---
 
-## Why v2 (and what v1 got wrong)
+## What's in the box
 
-The v1 framework always spawned 4 agents (architect, unity-dev, data-tool,
-tester) for every task. Most tasks did not need 4 agents. Most "rules" were
-markdown promises ("don't proceed until X") that the orchestrator could
-silently ignore. Parallel execution started before the design was certain,
-producing conflicting edits. tmux was a hard dependency that leaked into the
-architecture.
-
-**v2 fixes those by design, not by docs:**
-
-| v1 problem | v2 design |
-|------------|-----------|
-| Fixed 4-agent shape | Triage emits a `triage.json`; `orchestrate.py plan` derives 1–4 agents |
-| Markdown-only gates | Every phase gate is `orchestrate.py gate <phase-id>` — exit 2 = halt |
-| Always-on tester | `verifier` for tiny/small/medium; `tester` only when complexity ≥ large OR confidence < 0.7 |
-| Nested subagents (`burst-validator`, `code-generator`, …) | Skill packs loaded as text into the relevant agent |
-| Early parallel execution | Parallel allowed only when `confidence ≥ 0.8` AND complexity ≥ medium AND ownership partitioned across ≥ 2 agents |
-| tmux as a dependency | tmux is optional UI; orchestration runs identically without it |
-| 5+ command flags (`--bug`, `--feature`, `--refactor`, `--fast`, `--full`, `--fast-fix`, `--teams`) | `intent` + `depth` |
+| Component | Count | Where |
+|-----------|-------|-------|
+| Subagent definitions | 12 | `.claude/agents/` |
+| Skill packs | 22 | `.claude/skills/` |
+| Python scripts (stdlib only) | 12 | `.claude/scripts/` |
+| Artifact JSON-schemas | 6 | `.claude/schemas/` |
+| Operational rule files | 20+ | `.claude/rules/` |
+| `/team` command spec | 1 | `.claude/commands/team.md` |
 
 ---
 
@@ -46,22 +40,23 @@ architecture.
 [Step 0] Bootstrap                  orchestrate.py preflight + reset
        │
        ▼
-[Step 1] Triage agent               CRG + fingerprinting → workspace/triage.json
+[Step 1] Triage agent               CRG + API fingerprinting → workspace/triage.json
        │
        ▼
 [Step 2] Plan                       orchestrate.py plan workspace/triage.json
-                                    → workspace/pipeline.json (phases, parallelism, artifacts)
+                                    → workspace/pipeline.json (phases, parallelism,
+                                      skills_by_agent, artifacts)
        │
        ▼
 [Step 3] Execute phases             For each phase:
                                       orchestrate.py gate <id>      ← exit 2 → halt
                                       spawn agents from phase.agents
-                                      each agent writes its artifact and validates
+                                      each agent writes + validates its artifact
                                     Loop on verifier FAIL (up to 2 retries).
        │
        ▼
-[Step 4] Finalize                   orchestrate.py finalize
-                                    → completion report or exit 4
+[Step 4] Finalize / commit          orchestrate.py finalize  → completion or exit 4
+                                    orchestrate.py commit     → PASS-only, current-branch
 ```
 
 ### Complexity → pipeline
@@ -77,10 +72,8 @@ architecture.
 Intent overrides:
 
 - `bug` prepends `bug-investigation`
-- `refactor` prepends `refactor-agent`, forces `architect` approval and
-  step-gated execution
-- `explore` produces an empty pipeline — triage runs alone, updates
-  `repo-knowledge.md`, and exits
+- `refactor` prepends `refactor-agent`, forces `architect` approval and step-gated execution
+- `explore` produces an empty pipeline — triage runs alone, updates `repo-knowledge.md`, exits
 
 Depth modifier:
 
@@ -90,10 +83,89 @@ Depth modifier:
 
 ---
 
+## Agents
+
+12 `subagent_type` definitions in `.claude/agents/`. The orchestrator spawns only
+the ones the task needs.
+
+| Agent | Role | Owns | Must not |
+|-------|------|------|----------|
+| `triage` | classify task (complexity, blast radius, domain, confidence) | `triage.json`, pipeline recommendation | spawn agents, edit files |
+| `architect` | ECS/system design, ownership partition, update order | `approved_plan.json`, `ownership.lock.json` | write code |
+| `unity-dev` | Unity **classic** impl (MonoBehaviour, UI, gameplay, VContainer, Addressables, pooling, DOTween) | `impl_result.json` | DOTS/ECS files; change arch without plan |
+| `unity-dots-dev` | Unity **DOTS** impl (ISystem, Jobs, Burst, ECB, bakers, blobs) | `impl_result.json` | pure UI/Mono files |
+| `data-tool` | editor tooling, validators, inspectors, diagnostics | `impl_result.json` (tooling) | silently change runtime behavior |
+| `verifier` | run the deterministic verification bundle | `verification_result.json` | design tests, edit code |
+| `tester` | test matrix, stress, regression, sign-off | `verification_result.json` | approve without evidence |
+| `qa-tester` | `--team` QA lane: review diffs, APPROVE/BLOCK | QA report | edit impl files |
+| `bug-investigation` | CRG-first root cause + evidence chain + fix strategy | `root_cause.json` | implement the fix |
+| `refactor-agent` | blast radius, migration plan, rollback | `root_cause.json` / migration plan | execute migration |
+| `system-mapper` | read existing systems, update `repo-knowledge.md` | domain analysis / system map | design new systems |
+| `code-tracer` | trace execution flow + API fingerprinting | `domain-analysis.md` | design |
+
+---
+
+## Skill packs
+
+22 packs in `.claude/skills/`, loaded into agents **as text — never spawned as
+agents**. A registry + router picks a curated, role-correct subset per agent
+(cap `max_total_skills = 7`), so DOTS skills never leak into the Unity-classic /
+tester / data-tool lanes.
+
+- **Registry** — `.claude/skills/registry.json`: metadata source of truth
+  (each skill's domains / roles / intents / keywords / priority; meta-only flags).
+- **Router** — `scripts/route_skills.py`: `role primary + domain extra + intent
+  extra + keyword + memory hint`, capped and deduped. Dry-run any route:
+  ```sh
+  python3 .claude/scripts/route_skills.py --agent unity-dots-dev --domain DOTS --intent bug --task "ISystem race"
+  ```
+
+Notable packs:
+
+| Pack | Loaded into | Purpose |
+|------|-------------|---------|
+| `triage` | triage | classification protocol, ≤8-file scout budget |
+| `unity-dots-best-practices` | architect, unity-dots-dev | core ECS/Jobs/Burst guidance (always on for DOTS) |
+| `unity-classic` | unity-dev | MonoBehaviour / UI / gameplay / async (non-DOTS lane) |
+| `burst-safety` | unity-dots-dev (DOTS/Hybrid) | Burst-safe rules (replaces v1 `burst-validator`) |
+| `ecs-job-patterns` | unity-dots-dev (DOTS/Hybrid) | IJobEntity/IJobChunk, dependency chains, ECB |
+| `memory-safety` | unity-dots-dev (DOTS/Hybrid) | native container lifetime, allocators, GC avoidance |
+| `ownership-partitioning` | every writer when `parallel_allowed=true` | hard write-partitioning rules |
+| `codebase-understanding` / `investigation` | investigators | CRG-first navigation, scene/log/compile reads |
+| `routing` | orchestrator | lazy skill-loading router logic |
+| `verifier` / `tester` / `qa-validation` | verification lanes | verification bundle, test matrices |
+| `editor-data-tools` | data-tool | authoring pipelines, inspectors, diagnostics |
+| `agentmemory-codebase-recall` | investigators | recall-layer rules (memory is **not** source of truth) |
+| `unity-skills` / `unity-dots` | reference | Unity Editor REST automation; 96-skill DOTS index |
+| `skill-creator` | meta | author/measure skills (meta-only) |
+
+---
+
+## Scripts
+
+12 stdlib-only Python scripts in `.claude/scripts/`. No pip, no node.
+
+| Script | What it does |
+|--------|--------------|
+| `orchestrate.py` | **runtime enforcer.** Subcommands: `preflight`, `reset`, `validate`, `plan`, `gate`, `ownership-check`, `finalize`, `commit`. Non-zero exit blocks the next phase. |
+| `triage.py` | packages the triage agent's CRG + fingerprinting decision into a valid `triage.json` (not a classifier itself). |
+| `route_skills.py` | the skill router — selects the per-agent skill subset from the registry. |
+| `build_skill_registry.py` | load / validate / refresh `registry.json` (`check` subcommand verifies 22/22 intact). |
+| `dots_scan.py` | fast anti-pattern scan for DOTS C# (managed alloc in OnUpdate, structural change in job, etc.) — first-pass signal, not a linter. |
+| `full_team.py` | real multi-agent orchestrator for `/team --worktrees`. Subcommands: `setup`, `assign`, `prompts`, `status`, `teardown` (+ internal `env_check`). Creates tmux session + 4 windows + one git worktree per role. |
+| `unity_skills.py` | Unity Editor REST automation helper (scene/asset/script ops, version routing). |
+| `preflight.py` | environment / MCP / tmux sanity (informational, never blocks). |
+| `validate_skill_registry.py` | structural + behavioral routing assertions over the registry. |
+| `validate_skill_routing.py` | proves lane-correctness for both adaptive (`skills_by_agent`) and `--team` Read-first skill blocks. |
+| `validate_skill_pack.py` | validates an individual skill pack's shape. |
+| `validate_agentmemory_rule.py` | verifies the "agentmemory = recall layer, not source of truth" rule is stated in SKILL.md + CLAUDE.md + team.md. |
+
+---
+
 ## Runtime enforcement
 
-Every artifact has a JSON schema in `.claude/schemas/`. Every phase boundary
-calls `.claude/scripts/orchestrate.py`. The exit code is the contract:
+Every artifact has a JSON schema; every phase boundary calls `orchestrate.py`.
+The exit code is the contract:
 
 | Exit | Meaning |
 |------|---------|
@@ -106,84 +178,19 @@ calls `.claude/scripts/orchestrate.py`. The exit code is the contract:
 Run the gates yourself any time:
 
 ```sh
-python .claude/scripts/orchestrate.py validate workspace/triage.json triage
-python .claude/scripts/orchestrate.py gate phase-2
-python .claude/scripts/orchestrate.py ownership-check unity-dev Assets/Scripts/Combat/Health.cs
-python .claude/scripts/orchestrate.py finalize
+python3 .claude/scripts/orchestrate.py validate workspace/triage.json triage
+python3 .claude/scripts/orchestrate.py gate phase-2
+python3 .claude/scripts/orchestrate.py ownership-check unity-dev Assets/Scripts/Combat/Health.cs
+python3 .claude/scripts/orchestrate.py finalize
+python3 .claude/scripts/orchestrate.py commit          # PASS-only, current-branch, no force-push
 ```
-
-No external dependencies. Stdlib only.
-
----
-
-## Install
-
-```
-1. Copy .claude/ into your Unity project root.
-2. (Optional) copy SETUP.md, README.md, CHANGELOG.md, MIGRATION.md, LICENSE.
-3. Verify: python3 .claude/scripts/orchestrate.py preflight
-```
-
-That is it. Full details in [`SETUP.md`](./SETUP.md).
-
-### Use `/team` in another project
-
-The package is **self-contained in `.claude/`** — drop it into any other repo's
-root and `/team` works there immediately, for both Unity classic and Unity
-DOTS/ECS work (and any C# / non-Unity repo too; the Unity-specific skills simply
-score low and don't load).
-
-```sh
-# from this package repo, into a target project:
-cp -R unity-agent-team/.claude /path/to/other-project/.claude
-cp unity-agent-team/{SETUP.md,README.md,CHANGELOG.md,MIGRATION.md,LICENSE} /path/to/other-project/   # optional
-cd /path/to/other-project
-python3 .claude/scripts/orchestrate.py preflight        # sanity check
-python3 .claude/scripts/build_skill_registry.py check   # skill registry intact (22/22)
-```
-
-What travels with `.claude/` and works per-project with **no global config**:
-
-- **Skill registry + router** (`.claude/skills/registry.json`, `scripts/route_skills.py`)
-  — picks a curated, role-correct skill subset per agent (cap 7). DOTS skills never
-  leak into Unity-classic / tester / data-tool lanes. Inspect any route:
-  `python3 .claude/scripts/route_skills.py --agent unity-dev --domain Unity --intent bug --task "<task>"`
-- **All `/team` modes**: adaptive `/team <intent> [depth] <task>` and `/team --team`
-  (4 Sonnet teammates) both derive skills from the same registry.
-- **agentmemory recall** (optional): if the `agentmemory` MCP is connected, agents
-  recall prior decisions before reading code, then verify against the live files
-  (files always win). Absent → agents report `[MEMORY UNAVAILABLE]` and fall back to
-  targeted search. Setup in [`SETUP.md`](./SETUP.md#using-agentmemory-with-team).
-
-For cloning into another project + using the real 4-agent **`/team --team`** mode
-(Sonnet sessions in tmux + git worktrees), see the step-by-step
-[`CLONE-SETUP.md`](./CLONE-SETUP.md).
-
----
-
-## Skill packs (replaces nested subagents)
-
-Loaded into agents as text — never spawned as agents.
-
-| Pack | Loaded into | Replaces v1 subagent |
-|------|-------------|---------------------|
-| `burst-safety` | unity-dev when domain=DOTS/Hybrid | `burst-validator` |
-| `ecs-job-patterns` | unity-dev when domain=DOTS/Hybrid | `job-optimizer` |
-| `memory-safety` | unity-dev when domain=DOTS/Hybrid | `memory-checker` |
-| `ownership-partitioning` | every writer when parallel_allowed=true | (new) |
-| `triage` | triage agent | (new) |
-| `verifier` | verifier agent | (new) |
-
-The full Unity DOTS skill (`unity-dots-best-practices/SKILL.md`) is always
-loaded into architect and unity-dev. The packs above are the minimum subsets
-that replace the v1 subagent fan-out.
 
 ---
 
 ## Artifacts and schemas
 
-Every artifact is JSON, validated against a schema, and gated by the
-orchestrator before the next phase runs.
+Every artifact is JSON, validated against a schema in `.claude/schemas/`, and
+gated by the orchestrator before the next phase runs.
 
 ```
 .claude/schemas/
@@ -199,78 +206,107 @@ orchestrator before the next phase runs.
 |----------|-------|-------------|
 | `triage.json` | `triage` (always) | every phase |
 | `pipeline.json` | `orchestrate.py plan` | every phase |
-| `root_cause.json` | `bug-investigation` / `refactor-agent` | architect / unity-dev |
-| `approved_plan.json` | `architect` (medium+) | unity-dev / data-tool |
-| `impl_result.json` | `unity-dev`, `data-tool` | verifier / tester |
-| `verification_result.json` | `verifier`, `tester` | `orchestrate.py finalize` |
-| `ownership.lock.json` | `architect` (when parallel) / `triage` (when 2 writers) | every writer's `ownership-check` |
+| `root_cause.json` | `bug-investigation` / `refactor-agent` | architect / impl |
+| `approved_plan.json` | `architect` (medium+) | unity-dev / unity-dots-dev / data-tool |
+| `impl_result.json` | impl agents | verifier / tester |
+| `verification_result.json` | `verifier`, `tester` | `finalize` / `commit` |
+| `ownership.lock.json` | `architect` (parallel) / `triage` (2 writers) | every writer's `ownership-check` |
+
+Persistent knowledge (committed): `workspace/repo-knowledge.md`,
+`ecs-registry.md`, `recent-changes.md`. Session artifacts are gitignored.
+
+---
+
+## Modes
+
+| Mode | Invocation | What it is |
+|------|------------|-----------|
+| **Adaptive** (default) | `/team <intent> [depth] <task>` | single session, triage-derived 1–4 agents, Python-gated, sequential unless certainty ≥ 0.8 |
+| **Agent Teams** | `/team --team <task>` | current session = teamlead, spawns 4 Sonnet teammates (`architect`, `unity-dots-dev`, `unity-dev`, `qa-tester`) via `TeamCreate` + shared task list. Fails fast if Agent Teams off. |
+| **Worktrees** | `/team --worktrees <task>` | `full_team.py`: 4 real `claude` CLI sessions in tmux, one git worktree/branch each, QA-gated merge |
+| **Explore** | `/team explore <question>` | triage-only, no code |
+
+`/team --full` is a deprecated alias of `--team`. Both team modes require
+`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json`.
+
+---
+
+## Install
+
+```
+1. Copy .claude/ into your Unity project root.
+2. (Optional) copy SETUP.md, README.md, CHANGELOG.md, MIGRATION.md, CLONE-SETUP.md, LICENSE.
+3. Verify: python3 .claude/scripts/orchestrate.py preflight
+4. (Recommended) set up RTK token-optimized commands — CLONE-SETUP.md §2b.
+```
+
+Self-contained — drop `.claude/` into any repo's root and `/team` works there
+immediately, for Unity classic, Unity DOTS/ECS, and plain C# / non-Unity repos
+(irrelevant skills score low and never load). Full details in
+[`SETUP.md`](./SETUP.md); cross-project + team modes in
+[`CLONE-SETUP.md`](./CLONE-SETUP.md).
+
+```sh
+# verify a fresh install
+python3 .claude/scripts/orchestrate.py preflight
+python3 .claude/scripts/build_skill_registry.py check    # registry intact (22/22)
+python3 .claude/scripts/validate_skill_routing.py        # routing lanes correct
+```
+
+**Optional MCP servers:** `code-review-graph` (triage + investigators; falls back
+to Grep with −0.2 confidence if absent), `ai-game-developer` (Unity Editor
+introspection/mutation), `agentmemory` (recall only — live files always win).
 
 ---
 
 ## Worked examples
 
 ### Small bug
-
 ```
 /team bug "Damage popup shows 0 when hit lands on enemy with shield"
 ```
-
-- Triage: complexity=`small`, intent=`bug`, domain=`DOTS`, confidence=`0.82`
-- Pipeline: `[bug-investigation] → [unity-dev] → [verifier]`
-- No architect. No data-tool. Sequential only.
-- Artifacts gated: `root_cause.json` → `impl_result.json` → `verification_result.json`
+Triage `small`/`DOTS`/conf `0.82` → `[bug-investigation] → [unity-dots-dev] → [verifier]`.
+No architect, no data-tool, sequential. Gates: `root_cause.json` → `impl_result.json` → `verification_result.json`.
 
 ### Medium feature
-
 ```
 /team feature "Add stamina component with regen and sprint cost"
 ```
-
-- Triage: complexity=`medium`, domain=`DOTS`, confidence=`0.85`
-- Pipeline: `[architect] → [unity-dev] → [verifier]`
-- Skill packs: `ecs-job-patterns`, `burst-safety`, `memory-safety`
-- No tester unless `depth=deep`.
+Triage `medium`/`DOTS` → `[architect] → [unity-dots-dev] → [verifier]`.
+Skill packs: `ecs-job-patterns`, `burst-safety`, `memory-safety`. No tester unless `depth=deep`.
 
 ### Large refactor
-
 ```
 /team refactor deep "Extract zone spawn logic into shared SpawnerSystem"
 ```
-
-- Triage: complexity=`large`, intent=`refactor`, domain=`DOTS`
-- Pipeline: `[refactor-agent] → [architect] → [unity-dev (step-gated)] → [tester]`
-- Architect writes `ownership.lock.json` partitioning runtime files from
-  tooling files. unity-dev executes migration step-by-step; tester verifies
-  between steps. Codex review pre-impl and pre-completion (because
-  `depth=deep`).
+`[refactor-agent] → [architect] → [unity-dots-dev (step-gated)] → [tester]`.
+Architect writes `ownership.lock.json`; impl runs step-by-step, tester verifies between steps;
+Codex review pre-impl and pre-completion (`depth=deep`).
 
 ### Explore
-
 ```
 /team explore "How does the dungeon POI spawner interact with EnemyTrackerSystem?"
 ```
-
-- Triage runs full CRG, writes `triage.json`, appends findings to
-  `repo-knowledge.md`, exits.
-- Pipeline is empty. `orchestrate.py finalize` reports completion with
-  `risk_level=LOW`.
+Triage runs full CRG, writes `triage.json`, appends to `repo-knowledge.md`, exits. Empty pipeline.
 
 ---
 
-## v1 flag mapping (for migration)
+## Background — v1 → v2
 
-| v1 flag | v2 invocation |
-|---------|--------------|
-| `/team <task>` (default) | `/team feature <task>` (triage picks the rest) |
-| `/team <task> --full` | `/team feature deep <task>` |
-| `/team <task> --fast` | `/team feature quick <task>` |
-| `/team <task> --bug` | `/team bug <task>` |
-| `/team <task> --feature` | `/team feature <task>` |
-| `/team <task> --refactor` | `/team refactor <task>` |
-| `/team <task> --fast-fix` | `/team bug quick <task>` |
-| `/team <task> --teams` | enable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` env in `~/.claude/settings.json`; `/team` autodetects |
+v1 always spawned a fixed 4-agent team and relied on markdown "rules" the
+orchestrator could ignore. v2 makes the shape adaptive and the gates executable:
 
-Full migration guide: [`MIGRATION.md`](./MIGRATION.md).
+| v1 problem | v2 design |
+|------------|-----------|
+| Fixed 4-agent shape | `triage.json` → `orchestrate.py plan` derives 1–4 agents |
+| Markdown-only gates | `orchestrate.py gate <id>` — exit 2 = halt |
+| Always-on tester | `verifier` for tiny/small/medium; `tester` only for ≥ large OR confidence < 0.7 |
+| Nested subagents | skill packs loaded as text |
+| Early parallel execution | parallel only when confidence ≥ 0.8 AND complexity ≥ medium AND ownership partitioned |
+| tmux as a dependency | tmux optional |
+| 5+ command flags | `intent` + `depth` |
+
+Flag mapping + full migration guide: [`MIGRATION.md`](./MIGRATION.md).
 
 ---
 
@@ -279,19 +315,18 @@ Full migration guide: [`MIGRATION.md`](./MIGRATION.md).
 ```
 .claude/
 ├── CLAUDE.md                       project memory
-├── commands/team.md                /team command (adaptive)
-├── agents/                         subagent_type definitions
-├── skills/                         skill packs (loaded into agents)
-├── scripts/orchestrate.py          runtime enforcer (preflight, plan, gate, …)
-├── scripts/triage.py               triage helper
-├── schemas/*.schema.json           artifact JSON-schemas
+├── commands/team.md                /team command spec
+├── agents/                         12 subagent definitions
+├── skills/                         22 skill packs + registry.json + INDEX.md
+├── scripts/                        12 stdlib scripts (orchestrate, route, validate, full_team, …)
+├── schemas/                        6 artifact JSON-schemas
 ├── workspace-templates/            canonical empty artifacts
-├── rules/                          operational policy
+├── rules/                          operational policy (phase gates, ownership, escalation, …)
 └── docs/                           architecture + MCP integration deep dives
-workspace/                          runtime artifacts (gitignored except persistent ones)
-SETUP.md                            install + verify
-MIGRATION.md                        v1 → v2 migration
-CHANGELOG.md                        version history
+workspace/                          runtime artifacts (gitignored except persistent knowledge)
+.rtk/filters.toml                   RTK token-optimized command filters
+SETUP.md · CLONE-SETUP.md           install + cross-project / team-mode setup
+MIGRATION.md · CHANGELOG.md         v1→v2 migration · version history
 ```
 
 ---
@@ -299,3 +334,5 @@ CHANGELOG.md                        version history
 ## License
 
 See [`LICENSE`](./LICENSE).
+</content>
+</invoke>
