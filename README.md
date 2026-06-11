@@ -16,6 +16,22 @@ depth  ∈ { quick, normal, deep }   default: normal
 Also ships two real multi-session team modes — `/team --team` (Claude Agent
 Teams) and `/team --worktrees` (tmux + git worktrees) — see [Modes](#modes).
 
+**Highlights**
+
+- **91 SkillHub-discoverable skills** across 3 tiers, with standardized
+  machine-readable frontmatter (`task-categories`, `use-when`,
+  `do-not-use-when`, `platforms`, source/version metadata)
+- **Deterministic per-role skill routing** — agents load only the skills their
+  role needs (cap 7), with priority-resolved trigger-collision handling
+- **Skills CLI** — `list` / `validate` / `doctor` / `unused`, enforcing
+  zero orphan, zero unreachable, zero duplicate skills
+- **494-test suite** — routing corpus, per-skill positive/negative fixtures,
+  security checks, malformed-skill fixtures
+- **Safe dynamic skill discovery policy** ([`AGENTS.md`](./AGENTS.md)) —
+  external skills are reviewed before use, never auto-installed
+- **Cross-platform skill metadata** — claude-code, codex, copilot, cursor,
+  windsurf
+
 ---
 
 ## What's in the box
@@ -23,11 +39,15 @@ Teams) and `/team --worktrees` (tmux + git worktrees) — see [Modes](#modes).
 | Component | Count | Where |
 |-----------|-------|-------|
 | Subagent definitions | 12 | `.claude/agents/` |
-| Skill packs | 22 | `.claude/skills/` |
-| Python scripts (stdlib only) | 12 | `.claude/scripts/` |
+| Skill packs (registered) | 23 | `.claude/skills/` + `registry.json` |
+| SkillHub-discoverable skills | 91 | Tier 1 (23) + Tier 2 vendor modules (68) |
+| Internal sub-skills (Tier 3) | 96 | `.claude/skills/unity-dots/` |
+| Python scripts (stdlib only) | 17 | `.claude/scripts/` |
+| Tests | 494 | `tests/` |
 | Artifact JSON-schemas | 6 | `.claude/schemas/` |
 | Operational rule files | 20+ | `.claude/rules/` |
 | `/team` command spec | 1 | `.claude/commands/team.md` |
+| Discovery policy | 1 | `AGENTS.md` |
 
 ---
 
@@ -107,17 +127,27 @@ the ones the task needs.
 
 ## Skill packs
 
-22 packs in `.claude/skills/`, loaded into agents **as text — never spawned as
-agents**. A registry + router picks a curated, role-correct subset per agent
-(cap `max_total_skills = 7`), so DOTS skills never leak into the Unity-classic /
-tester / data-tool lanes.
+23 registered packs in `.claude/skills/`, loaded into agents **as text — never
+spawned as agents**. A registry + router picks a curated, role-correct subset
+per agent (cap `max_total_skills = 7`), so DOTS skills never leak into the
+Unity-classic / tester / data-tool lanes.
 
-- **Registry** — `.claude/skills/registry.json`: metadata source of truth
-  (each skill's domains / roles / intents / keywords / priority; meta-only flags).
+- **Registry** — `.claude/skills/registry.json` (v2): validated against SKILL.md
+  frontmatter (single source of truth). Each entry carries domains / roles /
+  intents / keywords / priority / `task-categories` / `routing-rule` /
+  positive+negative examples / `routing-eligible` gate / internal-only flags.
 - **Router** — `scripts/route_skills.py`: `role primary + domain extra + intent
-  extra + keyword + memory hint`, capped and deduped. Dry-run any route:
+  extra + keyword + memory hint`, capped and deduped, with per-skill selection
+  reasons (`route_with_reasons()`, `--json`). Dry-run any route:
   ```sh
-  python3 .claude/scripts/route_skills.py --agent unity-dots-dev --domain DOTS --intent bug --task "ISystem race"
+  python3 .claude/scripts/route_skills.py --agent unity-dots-dev --domain DOTS --intent bug --task "ISystem race" --json
+  ```
+- **Skills CLI** — `scripts/skills.py`:
+  ```sh
+  python3 .claude/scripts/skills.py list        # all registered skills
+  python3 .claude/scripts/skills.py validate    # orphans / unreachable / duplicates report
+  python3 .claude/scripts/skills.py doctor      # fix suggestions (no auto-apply)
+  python3 .claude/scripts/skills.py unused      # dead-skill check — nonzero exit on orphans
   ```
 
 Notable packs:
@@ -136,6 +166,7 @@ Notable packs:
 | `verifier` / `tester` / `qa-validation` | verification lanes | verification bundle, test matrices |
 | `editor-data-tools` | data-tool | authoring pipelines, inspectors, diagnostics |
 | `agentmemory-codebase-recall` | investigators | recall-layer rules (memory is **not** source of truth) |
+| `unity-dots-ecb-lifecycle-debugger` | unity-dots-dev, bug-investigation | ECB playback-failure forensics — routes on error signatures (`entityExists=False`, `AppendDestroyedEntityRecordError`, …) with 3 read-only diagnostic scripts (producer inventory, destroy paths, system ordering) |
 | `unity-skills` / `unity-dots` | reference | Unity Editor REST automation; 96-skill DOTS index |
 | `skill-creator` | meta | author/measure skills (meta-only) |
 
@@ -143,14 +174,17 @@ Notable packs:
 
 ## Scripts
 
-12 stdlib-only Python scripts in `.claude/scripts/`. No pip, no node.
+17 stdlib-only Python scripts in `.claude/scripts/`. No pip, no node.
 
 | Script | What it does |
 |--------|--------------|
 | `orchestrate.py` | **runtime enforcer.** Subcommands: `preflight`, `reset`, `validate`, `plan`, `gate`, `ownership-check`, `finalize`, `commit`. Non-zero exit blocks the next phase. |
 | `triage.py` | packages the triage agent's CRG + fingerprinting decision into a valid `triage.json` (not a classifier itself). |
 | `route_skills.py` | the skill router — selects the per-agent skill subset from the registry. |
-| `build_skill_registry.py` | load / validate / refresh `registry.json` (`check` subcommand verifies 22/22 intact). |
+| `build_skill_registry.py` | load / validate / refresh `registry.json` (`check` subcommand verifies 23/23 intact). |
+| `skills.py` | skills CLI — `list` / `validate` / `doctor` / `unused` (dead-skill check fails the build on orphans). |
+| `skills_validator.py` | full skill validator: frontmatter parse, unique names, description quality/truncation, referenced files exist, no secrets / personal paths / unsafe instructions, dead-skill + trigger-collision detection. |
+| `migrate_tier{1,2,3}_frontmatter.py` | tier-aware SKILL.md frontmatter migration (used for the SkillHub standardization; reusable for future schema changes). |
 | `dots_scan.py` | fast anti-pattern scan for DOTS C# (managed alloc in OnUpdate, structural change in job, etc.) — first-pass signal, not a linter. |
 | `full_team.py` | real multi-agent orchestrator for `/team --worktrees`. Subcommands: `setup`, `assign`, `prompts`, `status`, `teardown` (+ internal `env_check`). Creates tmux session + 4 windows + one git worktree per role. |
 | `unity_skills.py` | Unity Editor REST automation helper (scene/asset/script ops, version routing). |
@@ -159,6 +193,58 @@ Notable packs:
 | `validate_skill_routing.py` | proves lane-correctness for both adaptive (`skills_by_agent`) and `--team` Read-first skill blocks. |
 | `validate_skill_pack.py` | validates an individual skill pack's shape. |
 | `validate_agentmemory_rule.py` | verifies the "agentmemory = recall layer, not source of truth" rule is stated in SKILL.md + CLAUDE.md + team.md. |
+
+---
+
+## Skill system & SkillHub discoverability
+
+Every public skill carries standardized, machine-readable SKILL.md frontmatter
+so external indexers (SkillHub and others) can discover it — and so agents can
+route on it deterministically.
+
+**Three tiers:**
+
+| Tier | Count | Discoverable | What |
+|------|-------|--------------|------|
+| 1 — registered | 23 | yes | role briefs, domain packs, the ECB debugger |
+| 2 — vendor modules | 68 | yes | `unity-skills/*` (upstream Besty0728/Unity-Skills v1.9.2, divergences tracked in `CHANGES.md`) |
+| 3 — internal sub-skills | 96 | no (`internal-only`) | `unity-dots/*` patterns loaded via the parent index |
+
+**Frontmatter contract** (validated by `skills_validator.py`): unique `name`
+matching the directory, non-truncated `description`, `use-when` +
+`do-not-use-when`, `task-categories`, `platforms`
+(claude-code / codex / copilot / cursor / windsurf),
+`metadata.source/version/tier`.
+
+**Quality gates** (all enforced by tests + CLI, all currently zero):
+
+```
+orphan skills: 0 · unreachable skills: 0 · unresolved duplicates: 0
+```
+
+**Safe external discovery** — [`AGENTS.md`](./AGENTS.md): external skills go
+through search → inspect source → read SKILL.md → read scripts → verify
+compatibility → install → validate → use. Auto-install is forbidden; external
+entries default to `routing-eligible: false` until human approval; local skills
+always win trigger collisions.
+
+**Test suite** — `tests/` (494 tests): 12-case usage corpus (DOTS perf, classic
+refactor, scene loading, cleanup, editor tooling, Cloud Code, Addressables,
+test framework, both Netcodes, generic C#, docs-only), per-skill
+positive/negative routing fixtures, 12-point orphan verification, security
+checks (secrets, unsafe commands, auto-install prevention, recursive-loop
+detection), malformed-skill fixtures (BOM, truncation, duplicates, bad refs).
+
+```sh
+python3 -m pytest tests/ -q                      # 494 passed
+python3 .claude/scripts/skills.py validate       # PASS — 0 orphans / 0 unreachable / 0 duplicates
+```
+
+Deep dives: [`docs/skillhub-audit.md`](./docs/skillhub-audit.md) (why discovery
+failed before), [`docs/skill-architecture.md`](./docs/skill-architecture.md)
+(schema, capability matrix, trigger priority, reference corpus),
+[`docs/skillhub-validation-report.md`](./docs/skillhub-validation-report.md)
+(final numbers).
 
 ---
 
@@ -249,8 +335,9 @@ immediately, for Unity classic, Unity DOTS/ECS, and plain C# / non-Unity repos
 ```sh
 # verify a fresh install
 python3 .claude/scripts/orchestrate.py preflight
-python3 .claude/scripts/build_skill_registry.py check    # registry intact (22/22)
+python3 .claude/scripts/build_skill_registry.py check    # registry intact (23/23)
 python3 .claude/scripts/validate_skill_routing.py        # routing lanes correct
+python3 .claude/scripts/skills.py validate               # 0 orphans / 0 unreachable / 0 duplicates
 ```
 
 **Optional MCP servers:** `code-review-graph` (triage + investigators; falls back
@@ -314,15 +401,18 @@ Flag mapping + full migration guide: [`MIGRATION.md`](./MIGRATION.md).
 
 ```
 .claude/
-├── CLAUDE.md                       project memory
+├── CLAUDE.md                       project memory + skill discovery policy
 ├── commands/team.md                /team command spec
 ├── agents/                         12 subagent definitions
-├── skills/                         22 skill packs + registry.json + INDEX.md
-├── scripts/                        12 stdlib scripts (orchestrate, route, validate, full_team, …)
+├── skills/                         23 skill packs + registry.json (v2) + INDEX.md
+├── scripts/                        17 stdlib scripts (orchestrate, route, skills CLI, validate, …)
 ├── schemas/                        6 artifact JSON-schemas
 ├── workspace-templates/            canonical empty artifacts
 ├── rules/                          operational policy (phase gates, ownership, escalation, …)
 └── docs/                           architecture + MCP integration deep dives
+AGENTS.md                           safe external-skill discovery policy
+docs/                               SkillHub audit · skill architecture · validation report
+tests/                              494-test suite (routing, security, fixtures)
 workspace/                          runtime artifacts (gitignored except persistent knowledge)
 .rtk/filters.toml                   RTK token-optimized command filters
 SETUP.md · CLONE-SETUP.md           install + cross-project / team-mode setup
