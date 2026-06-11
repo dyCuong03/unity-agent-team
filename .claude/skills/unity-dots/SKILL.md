@@ -1,6 +1,19 @@
 ---
 name: unity-dots
-description: Index of 96 senior-level Unity DOTS/ECS skills mined from EntityComponentSystemSamples. Read ROUTING.md first to find the right skill fast — do NOT load this index as a skill on its own.
+description: Index of 96 senior-level Unity DOTS/ECS skills mined from EntityComponentSystemSamples — covering entities, jobs, Burst, physics, netcode, baking, and transforms. Read ROUTING.md first to locate the right sub-skill. Do NOT load this index file as a standalone skill.
+use-when: |
+  Load for unity-dots-dev agent to navigate to the correct DOTS sub-skill.
+  Use ROUTING.md inside this pack to select the specific sub-skill needed for the task.
+do-not-use-when: |
+  Do not load the index as a standalone skill — use sub-skills via ROUTING.md instead.
+  Do not load for unity-dev (classic lane), tester, verifier, or non-DOTS tasks.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [ecs, reference, samples, dots]
+metadata:
+  source: https://docs.unity3d.com/Packages/com.unity.entities@1.3
+  version: 1.3.8
+  tier: 1
+
 ---
 
 # Unity DOTS Skill Pack — Index

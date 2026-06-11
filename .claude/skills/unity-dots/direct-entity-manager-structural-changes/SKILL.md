@@ -2,6 +2,9 @@
 name: direct-entity-manager-structural-changes
 description: Use EntityManager directly for structural changes outside of any active query iteration — appropriate for one-shot initialisation, infrequent config-driven respawns, and batch operations on the mai...
 tags: [structural-change]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Direct EntityManager Structural Changes

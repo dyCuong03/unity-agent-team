@@ -1,6 +1,9 @@
 ---
 name: singleton-patterns-config-and-access
 description: Senior-level pattern for expressing world-unique data (game config, controls, frame input snapshot, prefab tables) as singleton entities with O(1) `SystemAPI.GetSingleton<T>()` / `GetSingletonRW<T>()` access, gated by `state.RequireForUpdate<T>()`. Covers the >1-instance throw, write-from-parallel safety, scene-merge collision modes, and when "this looks like a static" is actually still a singleton. Use whenever designing config, registries, input state, prefab references, or any data that should exist exactly once per world.
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Singleton Patterns — Senior Patterns

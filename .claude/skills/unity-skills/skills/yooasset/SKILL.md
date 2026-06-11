@@ -1,6 +1,17 @@
 ---
 name: unity-yooasset
 description: "YooAsset hot-update / asset bundle automation. Build bundles via ScriptableBuildPipeline or RawFileBuildPipeline, run Editor simulate builds, manage AssetBundleCollector package/group/collector settings, analyze BuildReport .report files at bundle/asset/dependency-graph level, run PlayMode runtime validation jobs, and open/use YooAsset Reporter/Debugger/AssetArtScanner tools. Triggers: yooasset, YooAsset, AssetBundleBuilder, AssetBundleCollector, BuildReport, ResourcePackage, ScriptableBuildPipeline, RawFileBuildPipeline, EditorSimulateBuildPipeline, CollectorPackage, CollectorGroup, AddressRule, PackRule, FilterRule, IgnoreRule, BuildReport assets, dependency graph, AssetArtScanner, Reporter, Debugger, runtime validation, 资源打包, 资源收集, 资源收集器, 资源规则, 构建报告, 构建管线, 模拟构建, 热更新打包, 资源分组, 资产分析, 依赖图, 孤立资源, 运行时验证, asset bundle build, asset bundle collector, build report, hot update build, bundle dependency, orphan asset, asset pipeline. Requires com.tuyoogame.yooasset (2.3.15+)."
+platforms: [unity-editor, claude-code]
+task-categories: [asset-loading, yooasset, editor-automation]
+use-when: |-
+  Load when the task requires: YooAsset hot-update / asset bundle automation. Build bundles via ScriptableBuildPipeline or RawFileBuildPipeline, run Editor simulate builds, manage AssetBundleCollector package/group/collector settings, analyze BuildReport .report files at bundle/asset/dependency-graph level, run PlayMode runtime validation jobs, and open/use YooAsset Reporter/Debugger/AssetArtScanner tools. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity YooAsset Skills

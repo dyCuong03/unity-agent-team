@@ -2,6 +2,9 @@
 name: batch-structural-change-on-query
 description: Perform a structural change on all entities matching a query in a single pass by passing the EntityQuery directly to EntityManager, rather than iterating entities individually.
 tags: [ecb, structural-change, performance]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Batch Structural Change on Query

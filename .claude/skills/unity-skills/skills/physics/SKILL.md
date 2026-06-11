@@ -1,6 +1,17 @@
 ---
 name: unity-physics
 description: "Unity physics queries and editor-time configuration: raycasts/spherecast/boxcast, overlap checks, gravity, PhysicMaterial assets, layer collision matrix. Triggers: physics, raycast, spherecast, boxcast, overlap, sphere overlap, box overlap, gravity, collision, rigidbody, collider, physics material, PhysicMaterial, PhysicsMaterial, layer mask, layer collision matrix, 物理, 射线检测, 球形射线, 盒形射线, 重叠检测, 重力, 碰撞, 刚体, 碰撞器, 物理材质, 图层碰撞."
+platforms: [unity-editor, claude-code]
+task-categories: [physics, collision, editor-automation]
+use-when: |-
+  Load when the task requires: Unity physics queries and editor-time configuration: raycasts/spherecast/boxcast, overlap checks, gravity, PhysicMaterial assets, layer collision matrix. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For adding physics components → use `component` module instead. For physics material → use `physics_create_material` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Physics Skills

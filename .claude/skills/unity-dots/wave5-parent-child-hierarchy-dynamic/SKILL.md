@@ -2,6 +2,9 @@
 name: wave5-parent-child-hierarchy-dynamic
 description: Attach and detach entities from a parent/child transform hierarchy at runtime using ECB, with correct handling of DynamicBuffer<Child> iteration.
 tags: [transforms, hierarchy]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Parent-Child Hierarchy Dynamic

@@ -1,6 +1,9 @@
 ---
 name: dots-enableable-components
 description: When to use IEnableableComponent vs structural add/remove for entity state flips. Covers the cost-model decision, query semantics (.WithAll vs .WithEnabled, IgnoreComponentEnabledState), and SetComponentEnabled inside jobs. Use when designing state that flips frequently (cooldowns, dirty flags, dead/alive, paused/active, "needs processing" tags).
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Enableable Components — Senior Patterns

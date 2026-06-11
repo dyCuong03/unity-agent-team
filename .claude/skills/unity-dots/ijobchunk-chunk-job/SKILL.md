@@ -2,6 +2,9 @@
 name: ijobchunk-chunk-job
 description: Process entities at the chunk level for maximum control — chunk-level change filtering, enable mask handling, direct pointer access, and explicit sort key management.
 tags: [core, jobs, chunks]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # IJobChunk — Chunk-Level Job

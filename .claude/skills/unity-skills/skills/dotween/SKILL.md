@@ -1,6 +1,17 @@
 ---
 name: unity-dotween
 description: "DOTween Free/Pro automation. Free skills probe install status, read/validate/configure DOTweenSettings, list modules and shortcut extension methods, and generate runtime tween / Sequence / lifetime-safe MonoBehaviour scripts. Pro skills (`dotween_pro_*`) add/configure/inspect `DG.Tweening.DOTweenAnimation` components on scene objects, including stagger/cascade entrance. Triggers: DOTween, DOTweenFree, DOTweenPro, DOTweenAnimation, DOTweenSettings, DG.Tweening, tween, Sequence, ease, easing, OutQuad, OutBack, loops, Yoyo, stagger, cascade, DOMove, DOLocalMove, DORotate, DOScale, DOAnchorPos, DOFade, DOColor, DOPunchPosition, DOShakePosition, SetLink, autoKill, SafeMode, UI animation, UI 动画, 补间动画, 补间, 缓动, 缓动函数, 动画配置, 循环, 序列, 动效, 脚本生成, 错峰动画."
+platforms: [unity-editor, claude-code]
+task-categories: [animation, tweening, editor-automation]
+use-when: |-
+  Load when the task requires: DOTween Free/Pro automation. Free skills probe install status, read/validate/configure DOTweenSettings, list modules and shortcut extension methods, and generate runtime tween / Sequence / lifetime-safe MonoBehaviour scripts. Pro skills (`dotween_pro_*`) add/configure/inspect `DG.Tweening.DOTweenAnimation` components on scene objects, including stagger/cascade entrance. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # DOTween Skills

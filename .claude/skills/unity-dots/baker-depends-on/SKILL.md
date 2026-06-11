@@ -2,6 +2,9 @@
 name: baker-depends-on
 description: Register all data sources a Baker reads via Baker API methods so the baking system reruns the Baker when any of those sources change, enabling correct incremental live-baking.
 tags: [baking]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Baker DependsOn — Dependency Registration

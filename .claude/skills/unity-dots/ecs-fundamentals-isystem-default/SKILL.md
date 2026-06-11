@@ -1,6 +1,9 @@
 ---
 name: ecs-fundamentals-isystem-default
 description: Senior-level rule for choosing between `ISystem` (unmanaged + Burst) and `SystemBase` (managed) in Entities 1.x. ISystem is the default; SystemBase is a deliberate exception. Covers Burst boundaries, the `[BurstDiscard]` silent-fallback trap, managed-field anti-patterns, and the bridge-system pattern for unavoidable managed work. Use when authoring or reviewing any runtime system, deciding whether to keep an existing `SystemBase`, or debugging "I thought this was Bursted but it's allocating GC".
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ISystem vs SystemBase — Senior Patterns

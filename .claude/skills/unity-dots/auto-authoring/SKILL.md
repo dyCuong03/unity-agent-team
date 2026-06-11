@@ -2,6 +2,9 @@
 name: auto-authoring
 description: Eliminate Baker boilerplate for components with a direct field-for-field mapping between authoring Inspector and runtime IComponentData, using a generic base class that auto-generates the Baker via...
 tags: [baking]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # AutoAuthoring — Zero-Boilerplate Baker

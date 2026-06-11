@@ -2,6 +2,9 @@
 name: tag-component
 description: Mark entity membership in a logical group or boolean state without storing any data, enabling query-level dispatch with zero chunk overhead.
 tags: [core, components]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Tag Component

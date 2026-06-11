@@ -1,6 +1,20 @@
 ---
 name: ecs-job-patterns
-description: ECS job scheduling patterns — IJobEntity, IJobChunk, dependency chains, ECB usage. Loaded into unity-dev when triage classifies the task as DOTS or Hybrid. Replaces the job-optimizer subagent.
+description: ECS job scheduling patterns — IJobEntity, IJobChunk, dependency chains, ECB usage, ScheduleParallel safety. Loaded for unity-dots-dev when implementing or debugging DOTS jobs. Replaces the job-optimizer subagent anti-pattern.
+use-when: |
+  Load for unity-dots-dev when the task involves writing IJobEntity, IJobChunk, ECB playback,
+  parallel scheduling, dependency chain setup, or debugging job-related errors such as
+  AccessViolation, AtomicSafetyHandle, or AddJobHandleForProducer issues.
+do-not-use-when: |
+  Do not load for Unity classic MonoBehaviour tasks. Do not load for tester, verifier,
+  qa-tester, or data-tool roles. Not needed if the task has no job scheduling.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [ecs, jobs, scheduling, performance, dots]
+metadata:
+  source: https://docs.unity3d.com/Packages/com.unity.entities@1.3
+  version: 1.3.8
+  tier: 1
+
 ---
 
 # ECS Job Patterns

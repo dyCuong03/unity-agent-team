@@ -1,6 +1,19 @@
 ---
 name: unity-foundation
-description: Lightweight Unity Foundation skill for the agent team. Always loaded for architect, unity-dev, and data-tool. Covers assembly design, scene lifecycle contracts, project navigation, and Unity-specific code quality. Does NOT replace core ECS skills — those take precedence.
+description: Lightweight Unity Foundation skill always loaded for architect, unity-dev, and data-tool agents. Covers asmdef design, scene lifecycle contracts, project structure, asset hygiene, and Unity-specific code quality. Does NOT replace core ECS skills — ECS guidance always takes precedence when both apply.
+use-when: |
+  Always load as P2 foundation context for architect, unity-dev, and data-tool agents.
+  Load when assembly boundaries, scene lifecycle, or project structure decisions must be made.
+do-not-use-when: |
+  Never the primary ECS skill — load unity-dots-best-practices for ECS work.
+  Do not load for tester or verifier roles. Do not load for triage.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [foundation, structure, assemblies, scene-management]
+metadata:
+  source: https://docs.unity3d.com/Manual/AssemblyDefinitionFiles.html
+  version: Unity 6 (6000.0)
+  tier: 1
+
 ---
 
 # Unity Foundation

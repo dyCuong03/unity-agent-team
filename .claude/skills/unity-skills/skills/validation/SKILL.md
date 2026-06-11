@@ -1,6 +1,17 @@
 ---
 name: unity-validation
-description: "Project and scene health validation + cleanup helpers — find missing scripts / null references / non-convex MeshColliders / shader compilation errors / oversized textures / potentially unused assets, validate scene issues, remove missing-script placeholders, delete empty folders, get project structure overview. Triggers: validate, validation, health check, sanity check, project health, scene health, missing script, broken reference, null reference, missing prefab, duplicate names, empty folder, unused assets, oversized texture, large texture, non-convex collider, mesh collider performance, shader error, shader compile error, project structure, project overview, validate_scene, validate_find_missing_scripts, validate_fix_missing_scripts, validate_cleanup_empty_folders, validate_find_unused_assets, validate_texture_sizes, validate_project_structure, validate_missing_references, validate_mesh_collider_convex, validate_shader_errors, 验证, 校验, 健康检查, 项目健康, 场景健康, 丢失脚本, 缺失脚本, 引用检测, 空引用, 丢失引用, 重复命名, 空文件夹, 未使用资源, 冗余资源, 超大纹理, 非凸碰撞体, MeshCollider 性能, 着色器错误, Shader 编译错误, 项目结构, 项目概览, 预构建检查."
+description: "Project and scene health validation + cleanup helpers — find missing scripts / null references / non-convex MeshColliders / shader compilation errors / oversized textures / potentially unused assets, validate scene issues, remove missing-script placeholders, delete empty folders, get project structure overview. Triggers: validate, validation, health check, sanity check, project health, scene health, missing script, broken reference, null reference, missing prefab, duplicate names, empty folder, unused assets, oversized texture, large texture, non-convex collider, mesh collider performance, shader error, shader compile error, project structure, project overview, validate_scene, validate_find_missing_scripts, validate_fix_missing_scripts, validate_cleanup_empty_folders, validate_find_unused_assets, validate_texture_sizes, validate_project_structure, validate_missing_references, validate_mesh_collider_convex, validate_shader_errors, 验证, 校验, 健康检查, 项目健康, 场景健康, 丢失脚本, 缺失脚本, 引用检测, 空引用, 丢失引用, 重复命名, 空文件夹, 未使用资源…"
+platforms: [unity-editor, claude-code]
+task-categories: [validation, diagnostics, editor-automation]
+use-when: |-
+  Load when the task requires: Project and scene health validation + cleanup helpers — find missing scripts / null references / non-convex MeshColliders / shader compilation errors / oversized textures / potentially unused assets, validate scene issues, remove missing-script placeholders, delete empty folders, get project structure overview. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For unused/duplicate asset cleanup → use `cleaner` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Validation Skills

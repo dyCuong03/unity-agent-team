@@ -2,6 +2,9 @@
 name: system-update-order
 description: Declare a system''s group membership and relative ordering within that group using attributes, producing deterministic execution order verified at world initialization.
 tags: [core, systems]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # System Update Order

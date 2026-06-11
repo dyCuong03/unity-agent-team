@@ -1,6 +1,19 @@
 ---
 name: triage
-description: Adaptive pipeline triage. Classify task complexity/blast radius/domain in ≤8 file reads and emit a schema-valid workspace/triage.json that drives every downstream phase.
+description: Adaptive pipeline triage skill. Classify task complexity, blast radius, and domain in ≤8 file reads, then emit schema-valid workspace/triage.json that drives all downstream phase composition and agent selection.
+use-when: |
+  Load for the triage agent at the start of every /team pipeline run.
+  Always the first skill loaded — required before any other agent is spawned.
+do-not-use-when: |
+  Do not load for unity-dev, architect, tester, or verifier roles.
+  Triage runs only once per pipeline at the start; never re-loaded mid-pipeline.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [orchestration, classification, pipeline]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Triage Skill

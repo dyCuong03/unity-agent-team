@@ -1,6 +1,19 @@
 ---
 name: unity-classic
-description: Non-DOTS "Unity classic" skill — MonoBehaviour, UI, gameplay, VContainer, Addressables, pooling, DOTween, async/UniTask, and per-frame performance. Loaded by the unity-dev (non-DOTS) lane. Does NOT cover ECS/DOTS — that is unity-dots-best-practices.
+description: Non-DOTS "Unity classic" skill covering MonoBehaviour, UI Toolkit, UGUI, VContainer, Addressables, pooling, DOTween, async/UniTask, and per-frame performance. Loaded exclusively by the unity-dev (non-DOTS) lane. Does NOT cover ECS/DOTS — use unity-dots-best-practices for entities and systems.
+use-when: |
+  Load for unity-dev lane when triage classifies domain as Unity (not DOTS or Hybrid).
+  Load for MonoBehaviour lifecycle, UI system, Addressables, pooling, or DOTween tasks.
+do-not-use-when: |
+  Do not load for unity-dots-dev lane. Do not load when task involves ISystem, IJobEntity,
+  ECB, NativeContainers, or any ECS API. Do not load for tester, verifier, or architect roles.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [gameplay, ui, animation, audio, implementation, classic-unity]
+metadata:
+  source: https://docs.unity3d.com/Manual/
+  version: Unity 6 (6000.0)
+  tier: 1
+
 ---
 
 # Unity Classic (Non-DOTS) Skill

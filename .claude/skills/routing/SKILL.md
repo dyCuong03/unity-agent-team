@@ -1,6 +1,17 @@
 ---
-name: unity-skill-router
+name: routing
 description: Lazy skill loading router for the Unity DOTS agent team. Use this to determine which Unity-Skills modules to load before spawning agents. Never load all modules — select only what the task requires.
+use-when: |-
+  Load when the orchestrator needs to select which Unity-Skills modules to include for an agent prompt. Load when determining Layer 1/2/3 skill loading strategy before spawning any agent.
+do-not-use-when: |-
+  Do not load as a runtime skill inside any agent role. Internal orchestration helper only — never loaded by triage, unity-dev, architect, or tester.
+platforms: [claude-code]
+task-categories: [meta, orchestration]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Unity Skill Router

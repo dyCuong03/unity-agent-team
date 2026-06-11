@@ -1,6 +1,17 @@
 ---
 name: unity-editor
 description: "Unity Editor control. Use when users want to enter or exit play mode, pause, select GameObjects in Hierarchy, undo/redo, execute menu commands, get editor state/context (selection, focused window, isCompiling), or list tags/layers. Triggers: editor, play mode, enter play, exit play, stop play, pause play, select object, get selection, undo, redo, execute menu, menu path, editor state, editor context, focused window, tags list, layers list, 编辑器, 进入播放, 退出播放, 暂停播放, 选择对象, 当前选择, 撤销, 重做, 执行菜单, 菜单路径, 编辑器状态, 编辑器上下文, 焦点窗口, 标签列表, 图层列表."
+platforms: [unity-editor, claude-code]
+task-categories: [editor-automation, play-mode]
+use-when: |-
+  Load when the task requires: Unity Editor control. Use when users want to enter or exit play mode, pause, select GameObjects in Hierarchy, undo/redo, execute menu commands, get editor state/context (selection, focused window, isCompiling), or list tags/layers. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For compilation check → use `debug` module instead. For console errors → use `debug` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Editor Skills

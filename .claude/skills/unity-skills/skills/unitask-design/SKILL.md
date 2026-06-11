@@ -1,6 +1,17 @@
 ---
 name: unity-unitask-design
 description: "Source-anchored design rules for Cysharp UniTask 2.5.10 (Unity 2018.4+). Load before writing any async UniTask / UniTaskVoid / PlayerLoopTiming / CancellationToken / WhenAll / ToUniTask code to avoid double-await crashes, forgotten .Forget(), wrong PlayerLoopTiming choices, WebGL ThreadPool crashes, and handle leaks. Triggers: UniTask, UniTaskVoid, UniTaskCompletionSource, PlayerLoopTiming, async UniTask, Forget, WhenAll, WhenAny, UniTask.Yield, UniTask.Delay, UniTask.NextFrame, WaitForEndOfFrame, WaitForFixedUpdate, WaitUntil, WaitWhile, SwitchToMainThread, SwitchToThreadPool, GetCancellationTokenOnDestroy, CancellationTokenSourceExtensions, UniTaskAsyncEnumerable, AsyncReactiveProperty, ToUniTask, AsyncOperation, UnityWebRequest, UniTaskTracker, AttachExternalCancellation, AsyncTrigger, OnDestroyAsync, 异步任务, 不分配异步, 取消令牌, 任务取消, 玩家循环, 异步流, 零分配, async await unity, unity async, unity cancellation, unity coroutine alternative, zero allocation async."
+platforms: [unity-editor, claude-code]
+task-categories: [async, unitask, design-advisory]
+use-when: |-
+  Load when designing or reviewing source-anchored design rules for cysharp unitask 2. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # UniTask - Design Rules

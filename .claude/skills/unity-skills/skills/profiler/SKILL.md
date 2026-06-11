@@ -1,6 +1,17 @@
 ---
 name: unity-profiler
 description: "Read-only Unity runtime performance snapshots — FPS, frame time, batches, draw calls, triangles, vertices, memory (total/reserved/mono heap), per-asset memory (textures, meshes, materials, audio), object count by type, AssetBundle stats. Triggers: profiler, performance, performance snapshot, FPS, frame rate, frame time, memory usage, memory snapshot, total allocated memory, reserved memory, mono heap, mono used, runtime memory, texture memory, VRAM, mesh memory, material memory, audio memory, audio clip size, object count, loaded objects, asset bundle, batches, draw calls, set pass calls, triangles, vertices, rendering stats, shadow casters, benchmark, hotspot, profiler_get_stats, profiler_get_memory, profiler_get_rendering_stats, 性能, 性能快照, 帧率, FPS, 帧时间, 内存, 内存占用, Mono 堆, 显存, 纹理内存, 网格内存, 材质内存, 音频内存, 对象统计, 加载对象, AssetBundle, 批次, 绘制调用, DrawCall, SetPass, 三角面, 顶点, 渲染统计, 阴影投射."
+platforms: [unity-editor, claude-code]
+task-categories: [profiling, performance, editor-automation]
+use-when: |-
+  Load when the task requires: Read-only Unity runtime performance snapshots — FPS, frame time, batches, draw calls, triangles, vertices, memory (total/reserved/mono heap), per-asset memory (textures, meshes, materials, audio), object count by type, AssetBundle stats. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For scene performance hints → use `perception` module instead. For optimization suggestions → use `optimization` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Profiler Skills

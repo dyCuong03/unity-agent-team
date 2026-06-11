@@ -1,6 +1,17 @@
 ---
 name: unity-postprocess
 description: "Modern SRP post-processing effects on URP / HDRP VolumeProfiles (built on top of the Volume framework). Use when users want to add / remove / inspect or tune Bloom, Depth Of Field, Tonemapping, Vignette, Color Adjustments, or any modern PP effect override on a VolumeProfile. Do NOT use for the legacy PPv2 stack (`com.unity.postprocessing`). Triggers (EN): post-processing, modern post-processing, Bloom, Depth Of Field, DOF, Tonemapping, Vignette, Color Adjustments, color grading, post effect, VolumeProfile effect. Triggers (ZH): 后处理, 现代后处理, 泛光, Bloom, 景深, 色调映射, 暗角, 颜色调整, 调色, Volume 后处理."
+platforms: [unity-editor, claude-code]
+task-categories: [post-processing, rendering, editor-automation]
+use-when: |-
+  Load when the task requires: Modern SRP post-processing effects on URP / HDRP VolumeProfiles (built on top of the Volume framework). Use when users want to add / remove / inspect or tune Bloom, Depth Of Field, Tonemapping, Vignette, Color Adjustments, or any modern PP effect override on a VolumeProfile. Do NOT use for the legacy PPv2 stack (`com.unity.postprocessing`). Triggers (EN): post-processing, modern post-processing, Bloom, Depth Of Field, DOF, Tonemapping, Vignette, Color Adjustments, color grading, post effect, VolumeProfile effect. Triggers (ZH): 后处理, 现代后处理, 泛光, Bloom, 景深, 色调映射, 暗角, 颜色调整, 调色, Volume 后处理. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # PostProcess Skills

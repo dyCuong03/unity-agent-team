@@ -2,6 +2,9 @@
 name: wave7-unity-disable-managed-components-guard
 description: Conditionally compile out all managed IComponentData usage when building for platforms or configurations that prohibit managed components (IL2CPP strict, DOTS Runtime, or custom stripped builds).
 tags: [hybrid, managed]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # UNITY_DISABLE_MANAGED_COMPONENTS Guard

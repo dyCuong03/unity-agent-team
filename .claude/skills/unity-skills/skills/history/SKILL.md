@@ -1,6 +1,17 @@
 ---
 name: unity-history
 description: "Undo/redo history management (Unity Editor native undo stack). Use when users want to undo or redo one or many steps, or get current undo group name. Triggers: history, undo, redo, undo steps, redo steps, undo history, revert, previous state, current undo group, 历史, 撤销, 重做, 多步撤销, 多步重做, 撤销历史, 上一步, 当前撤销组."
+platforms: [unity-editor, claude-code]
+task-categories: [editor-navigation, undo-redo, editor-automation]
+use-when: |-
+  Load when the task requires: Undo/redo history management (Unity Editor native undo stack). Use when users want to undo or redo one or many steps, or get current undo group name. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For persistent task-level undo → use `workflow` module instead. For conversation-level undo → use `workflow` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # History Skills

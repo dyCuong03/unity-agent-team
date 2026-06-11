@@ -2,6 +2,9 @@
 name: isystem-burst-compile
 description: Implement a system as an unmanaged struct with Burst-compiled entry points to eliminate managed dispatch overhead and enable native code generation on the hot update path.
 tags: [core, systems, burst]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ISystem with BurstCompile

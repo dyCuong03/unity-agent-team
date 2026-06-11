@@ -2,6 +2,9 @@
 name: transform-usage-flags
 description: Declare exactly which transform components an entity needs at bake time, preventing spurious LocalTransform/LocalToWorld components on data-only entities and missing transforms on moving entities.
 tags: [baking, transforms]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # TransformUsageFlags

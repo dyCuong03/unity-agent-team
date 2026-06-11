@@ -1,6 +1,9 @@
 ---
 name: entity-query-patterns-systemapi-query
 description: Senior-level guide to `SystemAPI.Query<RefRW<T>, RefRO<U>, ...>()` as the default main-thread per-entity iteration inside `ISystem.OnUpdate`. Covers the RefRO/RefRW intent discipline, when to refine with `.WithAll` / `.WithNone` / `.WithEntityAccess`, the structural-change-in-iteration trap, when to promote to `IJobEntity`, and the silent-no-op of writing through a `RefRO`. Use when iterating entities on the main thread, deciding between SystemAPI.Query and IJobEntity, or debugging "my system runs but nothing changes".
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # SystemAPI.Query Patterns — Senior Patterns

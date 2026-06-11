@@ -1,6 +1,17 @@
 ---
 name: unity-asset
 description: "Unity asset management. Use when users want to import (external file), delete, move/rename, duplicate, find/search, get info, create folders, refresh AssetDatabase, reimport (single or batch), or read/set asset labels. Triggers: asset, import asset, delete asset, move asset, rename asset, duplicate asset, find asset, search asset, asset info, create folder, refresh assets, reimport, asset labels, AssetDatabase filter, t:Texture2D, l:Label, 资源, 资产, 导入资源, 删除资源, 移动资源, 重命名资源, 复制资源, 查找资源, 资源信息, 创建文件夹, 刷新资源, 重新导入, 资源标签."
+platforms: [unity-editor, claude-code]
+task-categories: [asset-management, editor-automation]
+use-when: |-
+  Load when the task requires: Unity asset management. Use when users want to import (external file), delete, move/rename, duplicate, find/search, get info, create folders, refresh AssetDatabase, reimport (single or batch), or read/set asset labels. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For texture/model/audio import settings → use `importer` module instead. For material creation → use `material` module instead. For script creation → use `script` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Asset Skills

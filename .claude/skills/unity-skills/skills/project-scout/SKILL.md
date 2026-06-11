@@ -1,6 +1,17 @@
 ---
 name: unity-project-scout
 description: "Unity project reconnaissance advisor. Load this FIRST in existing projects before proposing architecture changes — inspects Unity version, packages, asmdefs, folders, coding patterns. Triggers: inspect project, scout project, project baseline, analyze project, what does this project use, existing codebase, 项目分析, 项目结构, 看看项目, 分析项目, 现有架构, 项目用了什么."
+platforms: [unity-editor, claude-code]
+task-categories: [project-analysis, diagnostics, editor-automation]
+use-when: |-
+  Load when the task requires: Unity project reconnaissance advisor. Load this FIRST in existing projects before proposing architecture changes — inspects Unity version, packages, asmdefs, folders, coding patterns. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Project Scout

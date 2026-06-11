@@ -2,6 +2,9 @@
 name: wave5-chunk-did-change-incremental-update
 description: Skip processing of unchanged chunks in IJobChunk systems using chunk.DidChange(), enabling incremental updates that recompute only when input data has changed.
 tags: [query, performance]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Chunk.DidChange — Incremental Update

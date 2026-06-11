@@ -1,6 +1,9 @@
 ---
 name: dots-entity-lifecycle
 description: Senior-level entity lifecycle — safe destruction, structural-change-during-iteration rules, ICleanupComponentData two-phase teardown, dangling Entity refs, and subscene load/unload. Use when destroying entities, designing cleanup that needs to run after destruction, or debugging "entity already destroyed" / orphan-reference bugs.
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Entity Lifecycle — Senior Patterns

@@ -1,6 +1,17 @@
 ---
 name: unity-uitoolkit
 description: "UI Toolkit (UITK) for Unity — create/edit USS stylesheets and UXML layouts, configure UIDocument + PanelSettings in scenes, generate EditorWindow / runtime UI scaffolds. This is the UXML/USS/VisualElement system; for Canvas-based UGUI use the `ui` module. Triggers: UI Toolkit, UITK, UXML, USS, UIDocument, PanelSettings, VisualElement, stylesheet, design token, CSS variable, flex, flexbox, flex-direction, runtime UI, EditorWindow UI, ScaleWithScreenSize, ConstantPixelSize, scaleMode, 界面工具包, UI样式, 样式表, 可视化元素, 弹性布局, 编辑器窗口, 设计令牌."
+platforms: [unity-editor, claude-code]
+task-categories: [ui-toolkit, ui, editor-automation]
+use-when: |-
+  Load when the task requires: UI Toolkit (UITK) for Unity — create/edit USS stylesheets and UXML layouts, configure UIDocument + PanelSettings in scenes, generate EditorWindow / runtime UI scaffolds. This is the UXML/USS/VisualElement system; for Canvas-based UGUI use the `ui` module. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity UI Toolkit Skills

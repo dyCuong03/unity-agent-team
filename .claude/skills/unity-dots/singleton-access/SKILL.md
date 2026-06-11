@@ -2,6 +2,9 @@
 name: singleton-access
 description: Access a globally unique configuration or state entity in O(1) time without query overhead, using GetSingleton / GetSingletonRW / GetSingletonEntity.
 tags: [core, singleton]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Singleton Access

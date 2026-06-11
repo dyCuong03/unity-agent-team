@@ -2,6 +2,9 @@
 name: ecb-manual-immediate
 description: Create an ECB inline within a single OnUpdate, play it back immediately, and dispose it — for cases where the structural change must be visible within the same system update without waiting for an ...
 tags: [ecb]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ECB Manual Immediate Playback

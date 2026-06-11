@@ -1,6 +1,17 @@
 ---
 name: skill-creator
 description: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+use-when: |-
+  Load when creating a new skill from scratch, editing or improving an existing skill, running evals to measure skill performance, benchmarking skill quality with variance analysis, or optimizing a skill description for better routing accuracy.
+do-not-use-when: |-
+  Do not load for runtime Unity development tasks or any pipeline agent role (triage, unity-dev, architect, tester, verifier). Skill authoring only.
+platforms: [claude-code]
+task-categories: [meta, authoring, skill-development]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Skill Creator

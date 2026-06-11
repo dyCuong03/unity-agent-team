@@ -1,6 +1,17 @@
 ---
 name: unity-architecture
 description: "Gameplay and system architecture advisor for Unity. Use when users want module boundaries, scene design, SOLID structure, decoupling, or refactoring direction before writing code. Triggers: architecture, system design, how to structure, how to organize, module boundary, decouple, refactor, SOLID, 架构设计, 怎么组织代码, 模块划分, 代码结构, 解耦, 重构方向, 系统设计."
+platforms: [unity-editor, claude-code]
+task-categories: [architecture, design-advisory, patterns]
+use-when: |-
+  Load when designing or reviewing gameplay and system architecture advisor for unity. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Architecture Advisor

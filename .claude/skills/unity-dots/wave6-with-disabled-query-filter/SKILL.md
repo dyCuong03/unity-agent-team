@@ -2,6 +2,9 @@
 name: wave6-with-disabled-query-filter
 description: Query only entities where a specific IEnableableComponent is present but currently disabled using .WithDisabled<T>(), enabling systems to act specifically on inactive populations.
 tags: [enableable, query]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # WithDisabled Query Filter

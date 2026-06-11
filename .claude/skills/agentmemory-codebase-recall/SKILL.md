@@ -4,7 +4,21 @@ description: >
   Structured protocol for using agentmemory as a recall layer during codebase investigation.
   Load when any agent would otherwise start with broad Read/Grep/Glob exploration.
   agentmemory accelerates orientation — it is NOT a substitute for reading current source files.
-user-invocable: false
+use-when: |
+  Load when an agent begins investigation and may benefit from prior session context on
+  the same system. Load for recall of earlier bug fixes, design decisions, or failed
+  approaches in the current project.
+do-not-use-when: |
+  Do not load when the task involves a completely new system with no prior work.
+  Do not use as a substitute for reading current source files — memory is a hint, not ground truth.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+  user-invocable: false
+task-categories: [memory, recall, codebase-navigation]
+
 ---
 
 # agentmemory Codebase Recall

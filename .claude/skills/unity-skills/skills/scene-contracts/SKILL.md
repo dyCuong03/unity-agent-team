@@ -1,6 +1,17 @@
 ---
 name: unity-scene-contracts
 description: "Scene composition contract advisor for Unity. Use when users want to define required scene objects, component dependencies, bootstrap logic, or reference wiring rules. Triggers: scene contract, bootstrap, required references, scene wiring, scene dependencies, what must be in the scene, 场景契约, 场景装配, 场景依赖, 场景里必须有什么, 引用怎么连."
+platforms: [unity-editor, claude-code]
+task-categories: [scene, architecture, design-advisory]
+use-when: |-
+  Load when designing or reviewing scene composition contract advisor for unity. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Scene Contracts

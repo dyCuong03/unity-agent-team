@@ -1,6 +1,17 @@
 ---
 name: unity-decal
 description: "URP Decal Projector creation and configuration plus DecalRendererFeature setup. Use when users want to create, inspect, configure, batch-edit, delete or validate URP DecalProjectors in the scene, or ensure the active URP renderer has DecalRendererFeature attached. HDRP decal APIs are out of scope. Triggers (EN): decal, Decal Projector, DecalProjector, URP decal, DecalRendererFeature, decal renderer feature, decal material, projector. Triggers (ZH): 贴花, 贴花投射器, 投影贴花, URP 贴花, DecalProjector, 贴花渲染器特性."
+platforms: [unity-editor, claude-code]
+task-categories: [rendering, urp, editor-automation]
+use-when: |-
+  Load when the task requires: URP Decal Projector creation and configuration plus DecalRendererFeature setup. Use when users want to create, inspect, configure, batch-edit, delete or validate URP DecalProjectors in the scene, or ensure the active URP renderer has DecalRendererFeature attached. HDRP decal APIs are out of scope. Triggers (EN): decal, Decal Projector, DecalProjector, URP decal, DecalRendererFeature, decal renderer feature, decal material, projector. Triggers (ZH): 贴花, 贴花投射器, 投影贴花, URP 贴花, DecalProjector, 贴花渲染器特性. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Decal Skills

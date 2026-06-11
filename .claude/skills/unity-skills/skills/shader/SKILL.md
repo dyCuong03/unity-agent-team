@@ -1,6 +1,17 @@
 ---
 name: unity-shader
 description: "HLSL / ShaderLab shader file management. Use when users want to create / read / list / find / delete `.shader` files, inspect shader properties or keywords, check compilation errors, count variants, toggle global shader keywords, or create a URP shader from template. Triggers (EN): Unity shader, .shader file, ShaderLab, HLSL, Unlit shader, Standard shader, Transparent shader, URP shader, shader template, shader properties, shader keywords, global shader keyword, shader variants, shader compilation errors. Triggers (ZH): 着色器, Shader 文件, 自定义 Shader, 创建 Shader, Shader 模板, 关键字, 全局关键字, Shader 变体, 编译错误, URP Shader."
+platforms: [unity-editor, claude-code]
+task-categories: [shaders, rendering, editor-automation]
+use-when: |-
+  Load when the task requires: HLSL / ShaderLab shader file management. Use when users want to create / read / list / find / delete `.shader` files, inspect shader properties or keywords, check compilation errors, count variants, toggle global shader keywords, or create a URP shader from template. Triggers (EN): Unity shader, .shader file, ShaderLab, HLSL, Unlit shader, Standard shader, Transparent shader, URP shader, shader template, shader properties, shader keywords, global shader keyword, shader variants, shader compilation errors. Triggers (ZH): 着色器, Shader 文件, 自定义 Shader, 创建 Shader, Shader 模板, 关键字, 全局关键字, Shader 变体, 编译错误, URP Shader. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For material property changes → use `material` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Shader Skills

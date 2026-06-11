@@ -1,6 +1,20 @@
 ---
 name: burst-safety
-description: Burst-safe code rules for DOTS jobs and ISystem. Loaded into unity-dev when triage classifies the task as DOTS or Hybrid. Replaces the burst-validator subagent.
+description: Burst-safe code rules for DOTS jobs and ISystem — managed type exclusions, Mathematics-only math, shared static limitations, and Burst compilation attribute requirements. Prevents Burst compilation errors and unsafe managed access in hot-path DOTS code.
+use-when: |
+  Load for unity-dots-dev when the task involves writing or debugging ISystem, IJobEntity,
+  or IJobChunk code, or when Burst compilation errors appear. Load when any struct marked
+  [BurstCompile] needs to be written or reviewed.
+do-not-use-when: |
+  Do not load for Unity classic (MonoBehaviour) tasks. Do not load for tester, verifier, or
+  qa-tester roles. Not needed for pure authoring/Baker code without Burst.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [ecs, burst, safety, performance, dots]
+metadata:
+  source: https://docs.unity3d.com/Packages/com.unity.burst@1.8
+  version: 1.8.18
+  tier: 1
+
 ---
 
 # Burst Safety

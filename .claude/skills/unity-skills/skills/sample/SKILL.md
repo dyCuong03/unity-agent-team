@@ -1,6 +1,17 @@
 ---
 name: unity-sample
 description: "Sample/demo skills for API connectivity testing and beginner examples — create primitive cubes/spheres, move/rotate/scale by name, delete by name, simple scene info. Use for smoke tests, health checks, and demo flows; not for production work. Triggers: sample, demo, example, hello, ping, smoke test, connectivity, create cube, create sphere, primitive, 示例, 演示, 测试, 烟雾测试, 入门, 连通性, 健康检查, demo skill."
+platforms: [unity-editor, claude-code]
+task-categories: [samples, learning, editor-automation]
+use-when: |-
+  Load when the task requires: Sample/demo skills for API connectivity testing and beginner examples — create primitive cubes/spheres, move/rotate/scale by name, delete by name, simple scene info. Use for smoke tests, health checks, and demo flows; not for production work. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For actual GameObject operations → use `gameobject` module instead. For server health check → use `Python helper's` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Sample Skills

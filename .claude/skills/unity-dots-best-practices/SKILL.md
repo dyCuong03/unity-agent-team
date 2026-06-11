@@ -1,7 +1,21 @@
 ---
 name: unity-dots-best-practices
-description: Unity DOTS, ECS, Jobs, and Burst guidance for scalable runtime systems. Use when designing or implementing components, systems, bakers, blob assets, scheduling, or performance-sensitive simulation.
-user-invocable: false
+description: Unity DOTS, ECS, Jobs, and Burst guidance for scalable runtime systems. Core best-practices covering components, systems, bakers, blob assets, scheduling, structural change costs, and performance-sensitive simulation patterns for Entities 1.3+.
+use-when: |
+  Load for unity-dots-dev on any DOTS or Hybrid domain task. Always included as P1
+  knowledge for architect and unity-dots-dev. Load when writing ISystem, IJobEntity,
+  Baker, blob assets, ECB, or any ECS architecture decisions.
+do-not-use-when: |
+  Do not load for the unity-dev classic lane (MonoBehaviour tasks). Do not load for
+  tester or verifier roles. Not needed for pure editor-tooling with no runtime ECS.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+metadata:
+  source: https://docs.unity3d.com/Packages/com.unity.entities@1.3
+  version: 1.3.8
+  tier: 1
+  user-invocable: false
+task-categories: [ecs, performance, burst, jobs, dots]
+
 ---
 
 # Unity DOTS Best Practices

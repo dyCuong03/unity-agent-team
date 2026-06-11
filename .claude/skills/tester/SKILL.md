@@ -1,6 +1,20 @@
 ---
 name: tester
-description: Tester / QA role brief for the Unity DOTS Agent Team. Validates correctness, scale, determinism, regressions, and performance with evidence-backed sign-off. Loaded by the `tester` agent.
+description: Tester / QA role brief for the Unity DOTS Agent Team. Validates correctness, scale, determinism, regressions, and performance with evidence-backed sign-off. Loaded by the tester agent only — not for implementation or design roles.
+use-when: |
+  Load for the tester agent when a pipeline reaches Phase 3 validation. Load when
+  correctness testing, stress testing, regression coverage, or performance benchmarking
+  is required. Load for large and critical complexity pipelines.
+do-not-use-when: |
+  Do not load for unity-dev, unity-dots-dev, architect, or triage roles.
+  Not needed for tiny/small complexity tasks where verifier handles sign-off.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [testing, qa, verification, regression]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Tester / QA Role — Unity DOTS

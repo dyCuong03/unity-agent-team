@@ -1,6 +1,17 @@
 ---
 name: unity-debug
 description: "Debug, diagnostics and compile state. Read console errors, force recompile, fetch stack traces, list assemblies, manage scripting define symbols, sample memory, and triage editor health. Triggers: debug, diagnostics, triage, error, exception, warning, console error, compilation, recompile, force recompile, refresh, stack trace, assembly, define symbols, scripting defines, memory usage, mono heap, system info, unity version, editor health, unity_diagnose, debug_get_errors, debug_get_logs, debug_check_compilation, debug_force_recompile, debug_get_stack_trace, debug_get_defines, debug_set_defines, debug_get_memory_info, 调试, 诊断, 错误, 异常, 警告, 控制台错误, 编译, 重编译, 强制重编, 堆栈, 调用栈, 程序集, 宏定义, 脚本宏, 平台宏, 内存, 内存占用, Mono 堆, 系统信息, Unity 版本, 域重载, 编辑器健康度."
+platforms: [unity-editor, claude-code]
+task-categories: [debug, diagnostics, editor-automation]
+use-when: |-
+  Load when the task requires: Debug, diagnostics and compile state. Read console errors, force recompile, fetch stack traces, list assemblies, manage scripting define symbols, sample memory, and triage editor health. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For runtime console logs → use `console` module instead. For play mode control → use `editor` module instead. For script compile feedback → use `script` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Debug Skills

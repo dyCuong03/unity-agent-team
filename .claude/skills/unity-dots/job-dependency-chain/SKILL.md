@@ -2,6 +2,9 @@
 name: job-dependency-chain
 description: Wire every scheduled job into the system''s dependency chain via state.Dependency so the ECS scheduler can automatically enforce read/write ordering between systems without explicit sync points.
 tags: [core, jobs, performance]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Job Dependency Chain

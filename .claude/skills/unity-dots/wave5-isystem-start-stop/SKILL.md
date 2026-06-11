@@ -2,6 +2,9 @@
 name: wave5-isystem-start-stop
 description: Implement one-shot ECS initialization and cleanup using ISystemStartStop.OnStartRunning and OnStopRunning, which fire once per enable/disable cycle rather than every frame.
 tags: [systems]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ISystemStartStop — One-Shot Init and Cleanup

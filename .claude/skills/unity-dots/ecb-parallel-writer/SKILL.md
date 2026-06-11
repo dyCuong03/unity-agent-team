@@ -2,6 +2,9 @@
 name: ecb-parallel-writer
 description: Enable structural changes from ScheduleParallel jobs by converting an ECB to a thread-safe parallel writer keyed by chunk index for deterministic command replay.
 tags: [ecb, jobs, spawn]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ECB Parallel Writer

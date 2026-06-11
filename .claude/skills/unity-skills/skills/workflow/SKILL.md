@@ -1,6 +1,17 @@
 ---
 name: unity-workflow
 description: "Persistent operation history, snapshots, task/session undo, bookmarks, and batch planning/retry. Use when users want to record a task, snapshot before modification, undo/redo by task or session (conversation-level), list/delete tasks, manage scene-view bookmarks, generate combined execution plans, query assets pre-batch, or retry failed batch items. Triggers: workflow, task, task start, task end, session, session undo, session-level undo, conversation undo, snapshot, snapshot object, rollback, revert, persistent history, undo task, redo task, bookmark, save bookmark, goto bookmark, list bookmarks, plan skills, batch retry, retry failed, batch query assets, 工作流, 任务, 任务快照, 会话, 会话撤销, 对话级撤销, 快照, 回滚, 还原, 持久历史, 撤销任务, 重做任务, 书签, 保存书签, 跳转书签, 列出书签, 技能计划, 批量重试."
+platforms: [unity-editor, claude-code]
+task-categories: [editor-automation, workflow]
+use-when: |-
+  Load when the task requires: Persistent operation history, snapshots, task/session undo, bookmarks, and batch planning/retry. Use when users want to record a task, snapshot before modification, undo/redo by task or session (conversation-level), list/delete tasks, manage scene-view bookmarks, generate combined execution plans, query assets pre-batch, or retry failed batch items. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Workflow Skills

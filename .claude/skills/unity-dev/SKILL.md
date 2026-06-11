@@ -1,6 +1,19 @@
 ---
 name: unity-dev
-description: Unity Developer role brief for the Unity DOTS Agent Team. Implements ECS components, systems, jobs, bakers, and runtime logic from the Architect's approved design. Loaded by the `unity-dev` agent.
+description: Unity Developer role brief for the Unity DOTS Agent Team. Implements ECS components, systems, jobs, bakers, and runtime logic strictly from the Architect's approved design. Loaded by the unity-dev and unity-dots-dev agents — never for architect, tester, or verifier roles.
+use-when: |
+  Load for unity-dev and unity-dots-dev agents when Phase 2 implementation begins.
+  Requires approved_plan.json to exist for medium+ complexity tasks before loading.
+do-not-use-when: |
+  Do not load for architect, triage, tester, verifier, or data-tool roles.
+  Do not load before triage.json and (where required) approved_plan.json exist.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [implementation, role-brief]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Unity Developer Role — Unity DOTS

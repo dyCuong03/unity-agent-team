@@ -1,6 +1,19 @@
 ---
 name: architect
 description: Architect role brief for the Unity DOTS Agent Team. Designs ECS systems before any coding — component models, system boundaries, update order, baker strategy, performance constraints, acceptance criteria. Loaded by the `architect` agent.
+use-when: |
+  Load for the architect agent on any feature or refactor task that requires ECS system
+  design, component boundary decisions, update order planning, or ownership partitioning.
+do-not-use-when: |
+  Do not load for unity-dev, tester, verifier, or any non-architect role.
+  Do not load for pure bug investigation without design decisions.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [design, architecture, planning, ownership]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Architect Role — Unity DOTS

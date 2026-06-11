@@ -1,6 +1,17 @@
 ---
 name: unity-patterns
 description: "Unity design pattern selector. Use when users want advice on ScriptableObject, events, state machines, object pools, observer, or other patterns. Triggers: design pattern, which pattern, ScriptableObject, event channel, observer, state machine, object pool, singleton, service locator, 设计模式, 用什么模式, 事件系统, 状态机, 对象池, 观察者模式, 该用什么模式."
+platforms: [unity-editor, claude-code]
+task-categories: [design-patterns, design-advisory]
+use-when: |-
+  Load when designing or reviewing unity design pattern selector. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Pattern Selector

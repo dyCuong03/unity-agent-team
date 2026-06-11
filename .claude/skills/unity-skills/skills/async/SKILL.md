@@ -1,6 +1,17 @@
 ---
 name: unity-async
 description: "Unity async and lifecycle strategy advisor. Use when users want to choose between Update, coroutine, UniTask, timers, or handle cleanup/cancellation. Triggers: async, coroutine, UniTask, await, Update vs coroutine, timer, lifecycle, IDisposable, cancellation, 异步, 协程, 生命周期, 用协程还是UniTask, 异步怎么写, 定时器, 取消操作."
+platforms: [unity-editor, claude-code]
+task-categories: [async, coroutines, design-advisory]
+use-when: |-
+  Load when designing or reviewing unity async and lifecycle strategy advisor. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Async Strategy

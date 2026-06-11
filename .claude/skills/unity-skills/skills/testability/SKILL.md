@@ -1,6 +1,17 @@
 ---
 name: unity-testability
 description: "Unity testability advisor. Use when users want to improve testability, isolate logic from MonoBehaviour, or plan EditMode/PlayMode tests. Triggers: testability, unit test, how to test, write tests, editmode test, playmode test, isolate logic, mock, 怎么测试, 写测试, 可测试, 测试性, 单元测试, 逻辑分离."
+platforms: [unity-editor, claude-code]
+task-categories: [testing, testability, design-advisory]
+use-when: |-
+  Load when designing or reviewing unity testability advisor. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Testability Advisor

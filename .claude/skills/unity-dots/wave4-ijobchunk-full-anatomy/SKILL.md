@@ -2,6 +2,9 @@
 name: wave4-ijobchunk-full-anatomy
 description: Low-level parallel chunk iteration with explicit enableable-component mask handling, type handle management, and per-chunk metadata access.
 tags: [jobs, chunks]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # IJobChunk — Full Anatomy with Enableable Mask

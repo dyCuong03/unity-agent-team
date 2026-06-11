@@ -2,6 +2,9 @@
 name: structural-change-cost-model
 description: Choose between value mutation, enableable component toggle, and structural add/remove based on change frequency, providing the canonical decision model for ECS state transitions.
 tags: [structural-change, performance]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Structural Change Cost Model

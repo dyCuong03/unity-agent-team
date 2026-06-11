@@ -2,6 +2,9 @@
 name: cross-entity-lookup
 description: Read component data from entities not in the current iteration — either via a snapshot copy (ToComponentDataArray) for simple read-only cases, or via ComponentLookup for random access by entity ID.
 tags: [core, query]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Cross-Entity Lookup

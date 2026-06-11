@@ -1,6 +1,17 @@
 ---
 name: unity-blueprints
 description: "Mini-game architecture blueprint advisor. Use when users want a starting structure for a small Unity game — platformer, shooter, runner, puzzle, tower defense, clicker, card game. Triggers: blueprint, game template, game structure, prototype, gameplay loop, how to start a game, platformer, tower defense, 游戏模板, 小游戏架构, 做个游戏, 从零开始, 平台跳跃, 塔防, 卡牌, 游戏框架."
+platforms: [unity-editor, claude-code]
+task-categories: [architecture, design-advisory, documentation]
+use-when: |-
+  Load when designing or reviewing mini-game architecture blueprint advisor. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Gameplay Blueprints

@@ -1,6 +1,17 @@
 ---
 name: unity-prefab
 description: "Prefab management. Use when users want to create, instantiate, apply, unpack, find instances, edit prefab assets, or create variants. Triggers: prefab, instantiate prefab, spawn, create prefab, apply prefab, unpack prefab, variant, prefab override, revert override, prefab asset, find instances, set prefab property, 预制体, 实例化, 生成预制体, 创建预制体, 应用预制体, 解包, 变体, 预制体覆盖, 还原覆盖, 查找实例, 修改预制体."
+platforms: [unity-editor, claude-code]
+task-categories: [prefab, editor-automation]
+use-when: |-
+  Load when the task requires: Prefab management. Use when users want to create, instantiate, apply, unpack, find instances, edit prefab assets, or create variants. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Prefab Skills

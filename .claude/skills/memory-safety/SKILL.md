@@ -1,6 +1,20 @@
 ---
 name: memory-safety
-description: Native container lifetime, allocator selection, and GC-avoidance rules. Loaded into unity-dev when triage classifies the task as DOTS or Hybrid. Replaces the memory-checker subagent.
+description: Native container lifetime, allocator selection, and GC-avoidance rules for DOTS runtime code. Covers NativeArray/NativeList/NativeHashMap disposal patterns, Allocator.Temp vs TempJob vs Persistent guidance, and managed-allocation detection. Replaces the memory-checker subagent.
+use-when: |
+  Load for unity-dots-dev when task involves NativeContainers, custom allocators,
+  native memory disposal, GC pressure investigation, or diagnosing AtomicSafetyHandle
+  / InvalidOperationException on containers.
+do-not-use-when: |
+  Do not load for Unity classic MonoBehaviour tasks. Do not load for tester, verifier,
+  or data-tool roles. Not needed if the task touches no native memory or containers.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [ecs, memory, native-containers, performance, dots]
+metadata:
+  source: https://docs.unity3d.com/Packages/com.unity.collections@2.4
+  version: 2.4.4
+  tier: 1
+
 ---
 
 # Memory Safety

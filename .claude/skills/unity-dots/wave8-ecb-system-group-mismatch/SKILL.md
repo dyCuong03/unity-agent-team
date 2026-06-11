@@ -2,6 +2,9 @@
 name: wave8-ecb-system-group-mismatch
 description: Identify and fix bugs caused by using an ECB from the wrong system group, resulting in structural change commands executing at the wrong frame boundary.
 tags: [ecb, antipattern, debug]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ECB System Group Mismatch — Wrong Playback Timing
