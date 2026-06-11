@@ -6,6 +6,93 @@ For agent-facing recent changes, see `workspace/recent-changes.md`.
 
 ---
 
+## 2026-06-11 — SkillHub discoverability; skill system standardization
+
+SkillHub had indexed the repo and discovered only 2 of 186 skills
+(`unity-scene`, `unity-cleaner` — both via its upstream index of
+Besty0728/Unity-Skills, not this repo's metadata). Root cause: discovery
+tags (`task-categories`) lived only in the internal `registry.json`;
+SkillHub scans SKILL.md frontmatter, where zero skills carried them.
+Secondary: `build_skill_registry.py` scanned only direct children of
+`.claude/skills/`, leaving 164 sub-skills invisible.
+
+Executed by a 4-teammate Agent Team (architect, skill-platform-dev,
+qa-security, dots-skill-author) with contract gating and cross-review.
+Full evidence: `docs/skillhub-audit.md`, `docs/skill-architecture.md`,
+`docs/skillhub-validation-report.md`.
+
+### Added
+- `.claude/skills/unity-dots-ecb-lifecycle-debugger/` — new skill (the
+  only one created; all others extended). Generic ECB playback-failure
+  forensics routed on error signatures (`entityExists=False`,
+  `AppendDestroyedEntityRecordError`, invalid deferred entity, …) with
+  3 read-only diagnostic scripts: `find_ecb_producers.py`,
+  `find_destroy_paths.py`, `find_system_ordering.py`. Validated against
+  EntityComponentSystemSamples (851 files). Passed the 8-criteria
+  duplicate-analysis gate (architect + qa-security approval).
+- `.claude/scripts/skills.py` — skills CLI: `list` / `validate` /
+  `doctor` / `unused` (dead-skill check exits nonzero on orphans).
+- `.claude/scripts/skills_validator.py` — frontmatter parse, unique
+  names, description quality/truncation, referenced-file existence,
+  secret / personal-path / unsafe-instruction detection, dead-skill and
+  trigger-collision detection.
+- `.claude/scripts/migrate_tier{1,2,3}_frontmatter.py` — tier-aware
+  SKILL.md migration tooling.
+- `AGENTS.md` — safe external-skill discovery policy: 8-step review
+  workflow, 9-condition block list, `routing-eligible: false` default
+  for external skills until human approval, local-wins collision rule.
+- `tests/` — 494-test suite: 12-case usage corpus, per-skill
+  positive/negative routing fixtures (23 skills), 12-point orphan
+  verification, security checks, malformed-skill fixtures (BOM,
+  truncation, duplicates, secrets, unsafe commands).
+- `.claude/skills/unity-skills/CHANGES.md` — tracks every divergence
+  from the upstream vendor (Besty0728/Unity-Skills v1.9.2).
+- `docs/skillhub-audit.md`, `docs/skill-architecture.md` (schema,
+  capability matrix, reference corpus, trigger priority, orphan
+  policy), `docs/skillhub-validation-report.md`.
+
+### Changed
+- **All 187 SKILL.md files** — standardized frontmatter:
+  `task-categories`, `use-when`, `do-not-use-when`, `platforms`
+  (claude-code / codex / copilot / cursor / windsurf),
+  `metadata.source/version/tier`. Tier 3 (`unity-dots/*`, 96 files)
+  marked `metadata.internal-only: true` — excluded from SkillHub.
+  SkillHub-discoverable skills: 0 repo-native → 91 (Tier 1: 23,
+  Tier 2: 68).
+- `.claude/skills/registry.json` — v1 → v2: `task-categories`,
+  `routing-rule`, positive/negative examples, `routing-eligible` gate,
+  internal-only flags on every entry. `editor-data-tools` reclassified
+  `advisory[data-tool]` to resolve its collision with `data-tool`.
+- `.claude/scripts/route_skills.py` — `routing-eligible` enforced on
+  all tiers (fixes a leak where keyword matches bypassed the gate);
+  `route_with_reasons()` + `--json` for selection observability.
+- `.claude/CLAUDE.md` — skill discovery policy section, skills CLI
+  reference, agentmemory setup pointer.
+- Validators fixed: `quick_validate.py` ALLOWED_PROPERTIES expanded
+  (6 skills with `use-when`/`platforms` no longer fail);
+  `validate_skill_pack.py` BOM handling + vendor prefix exemption;
+  `skills_validator.py` base64 digit-lookahead (no DOTS class-name
+  false positives).
+- `README.md` — highlights, skill-system section, refreshed counts.
+
+### Fixed
+- `.claude/agents/triage.md`, `.claude/agents/verifier.md` — missing
+  `model` field (Claude Code refused to spawn them).
+- `registry.json` `triage` entry self-referenced its own name in
+  `keywords` (reload-loop risk).
+
+### Quality gates (all enforced by CI-runnable commands)
+- 494/494 tests pass; `skills.py validate` → orphans: 0,
+  unreachable: 0, unresolved duplicates: 0.
+- Trigger collisions: 5 advisory warnings, all priority-resolved and
+  documented in registry routing-rule fields.
+
+### Known limits
+- SkillHub re-indexing cannot be triggered or verified from this repo;
+  91 discoverable skills is the prediction until re-index occurs.
+
+---
+
 ## 2026-05-26 — Panel-coordination protocol; Wave 2 rolled back
 
 Enforces a strict anti-collapse rule on the DOTS skill program: 1 role =
