@@ -16,9 +16,12 @@ Hard rules:
     unity-dev never receive DOTS skills.
   - agentmemory-codebase-recall + codebase-understanding are must-keep for
     code-reading roles (never trimmed by the cap).
+  - External skill discovery runs ONLY when tier0+tier1+tier2 yield < 2 skills.
+  - Agent MUST read each skill's SKILL.md before first use (enforced in prompt output).
 
 Pure + importable (orchestrate.py uses it). Also runnable as a dry-run CLI:
     python .claude/scripts/route_skills.py --agent unity-dev --domain Unity --intent bug --task "popup not showing"
+    python .claude/scripts/route_skills.py --agent triage --domain Ambiguous --json
 
 Stdlib only.
 """
@@ -48,7 +51,11 @@ ROLE_PRIMARY: dict[str, list[str]] = {
     "data-tool":         ["data-tool", "editor-data-tools", "codebase-understanding", "agentmemory-codebase-recall"],
     "refactor-agent":    ["codebase-understanding", "ownership-partitioning", "agentmemory-codebase-recall"],
     "system-mapper":     ["codebase-understanding", "agentmemory-codebase-recall"],
+    "triage":            ["triage"],
 }
+
+# Minimum local skills below which we allow external discovery fallback.
+EXTERNAL_DISCOVERY_MIN_LOCAL = 2
 
 # bug-investigation domain extras.
 INVESTIGATION_DOMAIN_EXTRAS: dict[str, list[str]] = {
@@ -59,7 +66,7 @@ INVESTIGATION_DOMAIN_EXTRAS: dict[str, list[str]] = {
 
 # Roles that must NEVER receive DOTS skills (hard guard, defence-in-depth).
 NO_DOTS_ROLES = {"tester", "verifier", "qa-tester", "data-tool", "unity-dev"}
-DOTS_ONLY_SKILLS = {"unity-dots-best-practices", "unity-dots", "ecs-job-patterns", "burst-safety", "memory-safety"}
+DOTS_ONLY_SKILLS = {"unity-dots-best-practices", "unity-dots", "ecs-job-patterns", "burst-safety", "memory-safety", "unity-dots-ecb-lifecycle-debugger"}
 
 # Roles that get investigation added on a bug intent.
 BUG_INTENT_INVESTIGATION_ROLES = {"unity-dev", "unity-dots-dev"}
@@ -104,7 +111,12 @@ def route(
 
     def routable(name: str) -> bool:
         e = by_name.get(name)
-        return bool(e) and e.get("mode") != "meta" and e.get("load_by_default", True) is not False
+        return (
+            bool(e)
+            and e.get("mode") != "meta"
+            and e.get("load_by_default", True) is not False
+            and e.get("routing-eligible", True) is not False
+        )
 
     # tier 0: role primaries
     tier0 = [s for s in ROLE_PRIMARY.get(agent, []) if routable(s)]
@@ -125,9 +137,17 @@ def route(
     for e in reg.get("skills", []):
         if e.get("mode") == "meta" or e.get("load_by_default") is False:
             continue
+        if not e.get("routing-eligible", True):
+            continue
         if agent not in e.get("roles", []):
             continue
-        if any(kw.lower() in tl for kw in e.get("keywords", [])):
+        # Honour intent restriction when the registry entry declares intents.
+        skill_intents = e.get("intents")
+        if skill_intents and intent not in skill_intents:
+            continue
+        # Match against both keywords and error-keywords (exact substring match).
+        all_triggers = e.get("keywords", []) + e.get("error-keywords", [])
+        if any(kw.lower() in tl for kw in all_triggers):
             tier2.append(e["name"])
 
     # tier 3: agentmemory hints (role-appropriate only)
@@ -135,17 +155,21 @@ def route(
 
     # Assemble with tier bonus; higher = kept first.
     TIER_BONUS = {0: 1000, 1: 500, 2: 0, 3: -200}
+    TIER_LABELS = {0: "role-primary", 1: "domain/intent", 2: "keyword-match", 3: "memory-hint"}
     scored: dict[str, float] = {}
+    reasons: dict[str, str] = {}  # skill_name -> human-readable selection reason
     for tier, names in ((0, tier0), (1, tier1), (2, tier2), (3, tier3)):
         for n in names:
             score = TIER_BONUS[tier] + prio(n)
             if n not in scored or score > scored[n]:
                 scored[n] = score
+                reasons[n] = TIER_LABELS[tier]
 
     # Hard DOTS guard for no-DOTS roles.
     if agent in NO_DOTS_ROLES:
         for d in DOTS_ONLY_SKILLS:
             scored.pop(d, None)
+            reasons.pop(d, None)
 
     ordered = sorted(scored, key=lambda n: (-scored[n], n))
 
@@ -161,15 +185,83 @@ def route(
     keep_set = set(ALWAYS_KEEP) | required_extra
     must_keep = [s for s in ordered if s in keep_set and s in (tier0 + tier1)]
     if len(ordered) <= cap:
-        return ordered
-    kept = list(must_keep)
-    for n in ordered:
-        if len(kept) >= cap:
-            break
-        if n not in kept:
-            kept.append(n)
-    # Re-sort kept to preserve priority order.
-    return sorted(kept, key=lambda n: (-scored[n], n))
+        result = ordered
+    else:
+        kept = list(must_keep)
+        for n in ordered:
+            if len(kept) >= cap:
+                break
+            if n not in kept:
+                kept.append(n)
+        # Re-sort kept to preserve priority order.
+        result = sorted(kept, key=lambda n: (-scored[n], n))
+
+    # Attach ordered reasons (parallel list) to the returned list via a side-channel
+    # dict stored on the list object so callers that just want names work unchanged.
+    result_list = list(result)
+    # Store reasons as module-level side-channel for route_with_reasons().
+    # route() itself stays backward-compatible (returns plain list).
+    _last_reasons[agent] = {n: reasons.get(n, "unknown") for n in result_list}
+    _last_external_needed[agent] = len(result_list) < EXTERNAL_DISCOVERY_MIN_LOCAL
+    return result_list
+
+
+# Module-level side-channel for reason introspection without changing route() signature.
+_last_reasons: dict[str, dict[str, str]] = {}
+_last_external_needed: dict[str, bool] = {}
+
+
+def route_with_reasons(
+    agent: str,
+    domain: str = "Ambiguous",
+    intent: str = "feature",
+    task_text: str = "",
+    parallel_allowed: bool = False,
+    memory_hints: list[str] | None = None,
+    max_total: int | None = None,
+) -> dict:
+    """Like route() but returns a structured dict with skills, reasons, and read instructions.
+
+    Return format:
+    {
+        "agent": str,
+        "domain": str,
+        "intent": str,
+        "skills": [str, ...],
+        "reasons": {skill_name: reason_str, ...},
+        "read_skill_md": "Before using each skill, read its SKILL.md: ...",
+        "external_discovery_allowed": bool,
+        "external_discovery_note": str | None
+    }
+    """
+    skills = route(agent, domain, intent, task_text, parallel_allowed, memory_hints, max_total)
+    reg = load_registry()
+    skills_root = Path(__file__).resolve().parents[2] / ".claude" / "skills"
+    reasons = _last_reasons.get(agent, {})
+    external_needed = _last_external_needed.get(agent, False)
+
+    read_instructions = []
+    for s in skills:
+        skill_md = skills_root / s / "SKILL.md"
+        read_instructions.append(f"  - {s}: {skill_md}")
+
+    return {
+        "agent": agent,
+        "domain": domain,
+        "intent": intent,
+        "skills": skills,
+        "reasons": reasons,
+        "read_skill_md": (
+            "BEFORE using any skill, read its SKILL.md:\n"
+            + "\n".join(read_instructions)
+        ),
+        "external_discovery_allowed": external_needed,
+        "external_discovery_note": (
+            "No local skills matched beyond role-primaries. "
+            "External discovery permitted per AGENTS.md workflow."
+            if external_needed else None
+        ),
+    }
 
 
 def main() -> int:
@@ -180,13 +272,19 @@ def main() -> int:
     ap.add_argument("--task", default="")
     ap.add_argument("--parallel", action="store_true")
     ap.add_argument("--memory-hints", nargs="*", default=[])
-    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--json", action="store_true", help="Output structured JSON including reasons and read instructions")
     args = ap.parse_args()
-    skills = route(args.agent, args.domain, args.intent, args.task, args.parallel, args.memory_hints)
     if args.json:
-        print(json.dumps({"agent": args.agent, "domain": args.domain, "intent": args.intent, "skills": skills}, indent=2))
+        result = route_with_reasons(args.agent, args.domain, args.intent, args.task, args.parallel, args.memory_hints)
+        print(json.dumps(result, indent=2))
     else:
-        print(f"{args.agent} [{args.domain}/{args.intent}] -> {skills}")
+        skills = route(args.agent, args.domain, args.intent, args.task, args.parallel, args.memory_hints)
+        reasons = _last_reasons.get(args.agent, {})
+        print(f"{args.agent} [{args.domain}/{args.intent}]")
+        for s in skills:
+            print(f"  {s}  ({reasons.get(s, '?')})")
+        if _last_external_needed.get(args.agent):
+            print("  [external discovery permitted — no local skill match]")
     return 0
 
 

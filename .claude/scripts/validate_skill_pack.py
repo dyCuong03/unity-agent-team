@@ -28,6 +28,9 @@ KEY_RE = re.compile(r"^([A-Za-z0-9_-]+)\s*:\s*(.*)$")
 
 
 def parse_frontmatter(text: str) -> dict[str, str] | None:
+    # Strip UTF-8 BOM if present (common in auto-generated Tier 3 skill files)
+    if text.startswith("﻿"):
+        text = text[1:]
     m = FRONTMATTER_RE.match(text)
     if not m:
         return None
@@ -52,12 +55,18 @@ def check_skill(path: Path) -> list[str]:
         issues.append(f"{path}: frontmatter missing `name`")
     if "description" not in fm:
         issues.append(f"{path}: frontmatter missing `description`")
-    # If this is a SKILL.md, the parent folder name must match `name` (Claude Code spec)
+    # If this is a SKILL.md, the parent folder name must match `name` (Claude Code spec).
+    # Exception: unity-skills sub-modules use "unity-<folder>" naming convention.
     if path.name == "SKILL.md" and fm.get("name"):
         folder = path.parent.name
-        if fm["name"] != folder:
+        fm_name = fm["name"]
+        # Allow "unity-*" names for skills under .claude/skills/unity-skills/
+        # Tier 2 sub-modules use "unity-<folder>" and the index uses "unity-skills-index"
+        is_unity_submodule = ".claude/skills/unity-skills/" in str(path).replace("\\", "/")
+        unity_prefix_ok = is_unity_submodule and fm_name.startswith("unity-")
+        if fm_name != folder and not unity_prefix_ok:
             issues.append(
-                f"{path}: frontmatter `name: {fm['name']}` does not match folder `{folder}`"
+                f"{path}: frontmatter `name: {fm_name}` does not match folder `{folder}`"
             )
     return issues
 
@@ -83,9 +92,26 @@ def main() -> int:
     issues: list[str] = []
     summary: dict[str, int] = {"skills_checked": 0, "agents_checked": 0, "issues": 0}
 
+    # Tier 3 sub-skill dirs (unity-dots/*) now have minimal frontmatter (name + description +
+    # metadata.internal-only + metadata.tier) after Phase 3 migration. Check them normally.
+    TIER3_DIRS = {
+        str((ROOT / ".claude" / "skills" / "unity-dots").resolve()),
+    }
+    tier3_checked = 0
+
     for skill in (ROOT / ".claude" / "skills").rglob("SKILL.md"):
+        skill_str = str(skill.parent.resolve())
+        is_tier3_subskill = any(
+            skill.parent.resolve() != Path(t3) and skill.parent.resolve().is_relative_to(Path(t3))
+            for t3 in TIER3_DIRS
+        )
         summary["skills_checked"] += 1
         issues.extend(check_skill(skill))
+        if is_tier3_subskill:
+            tier3_checked += 1
+
+    if tier3_checked:
+        summary["tier3_checked"] = tier3_checked
 
     agents_dir = ROOT / ".claude" / "agents"
     if agents_dir.exists():
@@ -104,6 +130,8 @@ def main() -> int:
         return 1 if issues else 0
 
     print(f"Skills checked: {summary['skills_checked']}")
+    if summary.get("tier3_checked"):
+        print(f"  (tier3 sub-skills checked: {summary['tier3_checked']})")
     print(f"Agents checked: {summary['agents_checked']}")
     if not issues:
         print("OK — no issues")
