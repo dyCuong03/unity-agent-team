@@ -1,6 +1,17 @@
 ---
 name: unity-material
 description: "Unity material asset & shader property editing (Built-in / URP / HDRP). Use when users want to create / duplicate / assign materials, set color or emission, set textures (and tiling/offset), change shader, set float/int/vector properties, toggle shader keywords, set render queue, or change GI flags. Triggers (EN): material, .mat, shader, set color, set texture, emission, albedo, base color, metallic, smoothness, glossiness, normal map, render queue, shader keyword, tiling, offset, HDR color, bloom emission, PBR. Triggers (ZH): 材质, 材质球, 材质属性, Shader, 着色器, 颜色, 纹理, 贴图, 法线贴图, 发光, 自发光, 金属度, 光滑度, Render Queue, 渲染队列, 关键字, 平铺, 偏移."
+platforms: [unity-editor, claude-code]
+task-categories: [materials, rendering, editor-automation]
+use-when: |-
+  Load when the task requires: Unity material asset & shader property editing (Built-in / URP / HDRP). Use when users want to create / duplicate / assign materials, set color or emission, set textures (and tiling/offset), change shader, set float/int/vector properties, toggle shader keywords, set render queue, or change GI flags. Triggers (EN): material, .mat, shader, set color, set texture, emission, albedo, base color, metallic, smoothness, glossiness, normal map, render queue, shader keyword, tiling, offset, HDR color, bloom emission, PBR. Triggers (ZH): 材质, 材质球, 材质属性, Shader, 着色器, 颜色, 纹理, 贴图, 法线贴图, 发光, 自发光, 金属度, 光滑度, Render Queue, 渲染队列, 关键字, 平铺, 偏移. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Material Skills

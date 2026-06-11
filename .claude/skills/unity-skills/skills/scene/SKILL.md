@@ -1,6 +1,17 @@
 ---
 name: unity-scene
 description: "Unity scene management. Use when users want to create, load (single or additive), save, unload, switch active scene, get scene info or hierarchy, capture screenshot, or search objects in scene. Triggers: scene, new scene, create scene, load scene, save scene, additive scene, unload scene, multi-scene, active scene, scene hierarchy, hierarchy tree, screenshot, game view screenshot, scene find objects, 场景, 新建场景, 创建场景, 加载场景, 保存场景, 加性加载, 卸载场景, 多场景, 活动场景, 场景层级, 层级树, 截图, 截屏, 场景查找对象."
+platforms: [unity-editor, claude-code]
+task-categories: [scene, editor-automation]
+use-when: |-
+  Load when the task requires: Unity scene management. Use when users want to create, load (single or additive), save, unload, switch active scene, get scene info or hierarchy, capture screenshot, or search objects in scene. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For detailed hierarchy tree → use `perception` module instead. For scene statistics → use `perception` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Scene Skills

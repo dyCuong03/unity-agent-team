@@ -1,6 +1,17 @@
 ---
 name: unity-skills
 description: "Unity Editor automation via REST API — create scripts, analyze scenes, manage assets, control editor, orchestrate workflows, run batch jobs, and route by Unity version. Triggers: Unity, Unity Skills, in Unity, automate Unity, Unity editor automation, create Unity script, scene summary, analyze Unity scene, Unity GameObject, Unity prefab, Unity asset, Unity workflow, Unity batch, grant Unity skill, Unity allowlist, Unity skill schema, multi-instance Unity, set Unity version, Unity自动化, Unity编辑器, Unity技能, 操作Unity, 在Unity中, Unity工作流, Unity批处理, Unity授权, Unity白名单, Unity多实例, Unity实例切换, Unity场景分析."
+use-when: |-
+  Load when the task requires Unity Editor automation via the local UnitySkills REST server. Load for scene analysis, script creation, asset management, editor workflow automation, or any call to http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load for pure DOTS/ECS code tasks that have no Editor interaction. Do not load when unity-skills REST server is known unreachable.
+platforms: [claude-code]
+task-categories: [meta, mcp, rest, unity-editor]
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 1
+
 ---
 
 # Unity Skills

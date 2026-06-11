@@ -1,6 +1,17 @@
 ---
 name: unity-probuilder
 description: "ProBuilder editable mesh modeling for blockout and level geometry. Use when users want to create ProBuilder shapes, extrude faces, bevel edges, subdivide meshes, weld/move vertices, paint per-face materials, or run procedural mesh operations. Triggers: ProBuilder, ProBuilderMesh, mesh modeling, blockout, level geometry, shape, face, edge, vertex, extrude, bevel, chamfer, subdivide, weld, merge, bridge, flip normals, conform normals, project UV, 3D 建模, 建模, 拉伸, 挤出, 倒角, 细分, 焊接, 法线, 面, 边, 顶点, 关卡白模. Requires com.unity.probuilder package; missing-package calls return a diagnostic stub."
+platforms: [unity-editor, claude-code]
+task-categories: [mesh-editing, probuilder, editor-automation]
+use-when: |-
+  Load when the task requires: ProBuilder editable mesh modeling for blockout and level geometry. Use when users want to create ProBuilder shapes, extrude faces, bevel edges, subdivide meshes, weld/move vertices, paint per-face materials, or run procedural mesh operations. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity ProBuilder Skills

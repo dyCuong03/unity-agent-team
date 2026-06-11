@@ -1,6 +1,9 @@
 ---
 name: dots-spawning-patterns
 description: Senior-level entity spawning — batched Instantiate from prefab Entity, ECB.Instantiate from jobs, deterministic Random with CreateFromIndex, RequireForUpdate gating, and Allocator.Temp lifecycle. Use when implementing spawners, enemy waves, projectile fire, particle-like ECS entities, or any "create N entities per frame" code.
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Spawning Patterns — Senior Patterns

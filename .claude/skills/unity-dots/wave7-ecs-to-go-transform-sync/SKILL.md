@@ -2,6 +2,9 @@
 name: wave7-ecs-to-go-transform-sync
 description: Synchronize ECS entity world-space position/rotation to a companion GameObject''s Transform each frame for hybrid rendering or audio.
 tags: [hybrid, transforms]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ECS-to-GO Transform Sync

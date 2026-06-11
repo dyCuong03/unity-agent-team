@@ -2,6 +2,9 @@
 name: baking-type-component
 description: Mark a component as existing only in the baking world so it can carry intermediate data from Bakers to baking systems without appearing in the runtime world.
 tags: [baking]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # BakingType Component

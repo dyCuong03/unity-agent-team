@@ -2,6 +2,9 @@
 name: wave4-ijobparallelfor-array-transform
 description: Process large non-entity NativeArrays in parallel by distributing index ranges across worker threads.
 tags: [jobs, performance]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # IJobParallelFor — Array Transform

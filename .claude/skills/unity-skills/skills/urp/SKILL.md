@@ -1,6 +1,17 @@
 ---
 name: unity-urp
 description: "Universal Render Pipeline (URP) asset & renderer feature management. Use when users want to inspect or modify the active URP asset (HDR, MSAA, render scale, shadows, camera depth/opaque texture), list renderer data assets, list / add / remove / toggle built-in renderer features such as SSAO, RenderObjects, Decal, FullScreenPass, ScreenSpaceReflection, SurfaceCacheGI. Triggers (EN): URP, Universal Render Pipeline, URP asset, URPAsset, UniversalRenderPipelineAsset, renderer data, ScriptableRendererData, renderer feature, ScriptableRendererFeature, SSAO, ScreenSpaceAmbientOcclusion, RenderObjects, FullScreenPassRendererFeature, ScreenSpaceReflection, render scale, MSAA, HDR. Triggers (ZH): URP, 通用渲染管线, URP 资源, URP 设置, 渲染器, 渲染器数据, 渲染器特性, 屏幕空间环境光遮蔽, 屏幕空间反射, 全屏 Pass, 渲染缩放."
+platforms: [unity-editor, claude-code]
+task-categories: [urp, rendering, editor-automation]
+use-when: |-
+  Load when the task requires: Universal Render Pipeline (URP) asset & renderer feature management. Use when users want to inspect or modify the active URP asset (HDR, MSAA, render scale, shadows, camera depth/opaque texture), list renderer data assets, list / add / remove / toggle built-in renderer features such as SSAO, RenderObjects, Decal, FullScreenPass, ScreenSpaceReflection, SurfaceCacheGI. Triggers (EN): URP, Universal Render Pipeline, URP asset, URPAsset, UniversalRenderPipelineAsset, renderer data, ScriptableRendererData, renderer feature, ScriptableRendererFeature, SSAO, ScreenSpaceAmbientOcclusion, RenderObjects, FullScreenPassRendererFeature, ScreenSpaceReflection, render scale, MSAA, HDR. Triggers (ZH): URP, 通用渲染管线, URP 资源, URP 设置, 渲染器, 渲染器数据, 渲染器特性, 屏幕空间环境光遮蔽, 屏幕空间反射, 全屏 Pass, 渲染缩放. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # URP Skills

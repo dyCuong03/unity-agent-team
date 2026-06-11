@@ -1,6 +1,17 @@
 ---
 name: unity-terrain
 description: "Unity Terrain operations: create TerrainData, sculpt heights, paint texture layers, smooth/flatten regions, generate Perlin landscapes, add hills. Use when users want to create terrain, set heights, paint textures, smooth or sculpt landscapes. Triggers: terrain, Terrain, TerrainData, heightmap, height map, landscape, sculpt, paint, splat, brush, hill, plateau, Perlin, perlin noise, procedural terrain, smooth, flatten, texture layer, terrain layer, 地形, 高度图, 地图, 山, 山丘, 平原, 高原, 涂刷, 纹理绘制, 程序地形, 柏林噪声, 雕刻."
+platforms: [unity-editor, claude-code]
+task-categories: [terrain, environment, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Terrain operations: create TerrainData, sculpt heights, paint texture layers, smooth/flatten regions, generate Perlin landscapes, add hills. Use when users want to create terrain, set heights, paint textures, smooth or sculpt landscapes. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For terrain material → use `material` module instead. For objects on terrain → use `gameobject` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Terrain Skills

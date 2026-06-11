@@ -1,6 +1,20 @@
 ---
-name: unity-investigation
-description: Investigation skill layer for system-mapper, code-tracer, and bug-investigation agents. Covers REST-based scene reading, log analysis, compilation diagnostics, and performance snapshots. All skills in this layer are read-only unless explicitly noted.
+name: investigation
+description: Investigation skill layer for system-mapper, code-tracer, and bug-investigation agents. Covers REST-based scene reading, log analysis, compilation diagnostics, and performance snapshots. All skills are read-only Phase 1 operations unless explicitly noted otherwise.
+use-when: |
+  Load for bug-investigation, system-mapper, and code-tracer agents at Phase 1.
+  Load when live Unity Editor state (console, scene, profiler) must be read before
+  any hypothesis is formed or file edits begin.
+do-not-use-when: |
+  Do not load for unity-dev, unity-dots-dev in Phase 2 (implementation). Do not load
+  for tester, verifier roles. Not needed for purely code-based tasks with no Editor state.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [debugging, investigation, evidence, diagnostics]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Unity Investigation Skills

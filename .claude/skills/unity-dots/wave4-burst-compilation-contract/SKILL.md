@@ -2,6 +2,9 @@
 name: wave4-burst-compilation-contract
 description: Apply `[BurstCompile]` correctly to ISystem methods and job structs to guarantee native-code compilation of both scheduling and execution paths.
 tags: [jobs, burst, performance]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Burst Compilation Contract

@@ -1,6 +1,17 @@
 ---
 name: unity-scriptdesign
 description: "Script quality advisor for Unity gameplay code. Use when users want code review, reduce coupling, improve maintainability, or refactor scripts. Triggers: code review, coupling, maintainability, refactor, clean code, script quality, review my code, code smell, 代码审查, 代码质量, 重构, 低耦合, 可维护, 看看代码, 代码有问题."
+platforms: [unity-editor, claude-code]
+task-categories: [scripting, design-advisory]
+use-when: |-
+  Load when designing or reviewing script quality advisor for unity gameplay code. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Script Design Review

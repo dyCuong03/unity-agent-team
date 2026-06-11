@@ -1,6 +1,17 @@
 ---
 name: unity-xr
 description: "XR Interaction Toolkit (XRI) skills for VR/AR development. Use when users want to set up XR rigs, add grab/socket/ray interactors, attach grab interactables, configure teleportation, continuous locomotion, snap/smooth turn, XR-aware Canvas/EventSystem, haptics, InteractionLayerMask, or diagnose XR scenes. Triggers: XR, XRI, XR Interaction Toolkit, VR, AR, XR Origin, XR Rig, XRRayInteractor, XRDirectInteractor, XRSocketInteractor, XRGrabInteractable, XRSimpleInteractable, TeleportationProvider, TeleportationArea, TeleportationAnchor, ContinuousMoveProvider, SnapTurnProvider, ContinuousTurnProvider, XRUIInputModule, TrackedPoseDriver, grab, teleport, hand tracking, controller, interactor, interactable, locomotion, haptics, InteractionLayerMask, 抓取, 传送, 手柄, 头盔, 虚拟现实, 增强现实, XR 交互, XR 设置. Requires com.unity.xr.interaction.toolkit; reflection-based bridge supports XRI 2.x (Unity 2022) and XRI 3.x (Unity 6+). Missing-package calls return a diagnostic stub."
+platforms: [unity-editor, claude-code]
+task-categories: [xr, vr-ar, editor-automation]
+use-when: |-
+  Load when the task requires: XR Interaction Toolkit (XRI) skills for VR/AR development. Use when users want to set up XR rigs, add grab/socket/ray interactors, attach grab interactables, configure teleportation, continuous locomotion, snap/smooth turn, XR-aware Canvas/EventSystem, haptics, InteractionLayerMask, or diagnose XR scenes. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity XR Interaction Toolkit Skills

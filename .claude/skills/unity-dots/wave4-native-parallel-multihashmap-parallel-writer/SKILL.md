@@ -2,6 +2,9 @@
 name: wave4-native-parallel-multihashmap-parallel-writer
 description: Enable multiple parallel workers to insert into a shared hash map concurrently without locks, using `AsParallelWriter()` for spatial partitioning, bucketing, or grouping patterns.
 tags: [jobs, native-containers]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # NativeParallelMultiHashMap — Parallel Writer

@@ -1,6 +1,17 @@
 ---
 name: unity-graphics
 description: "Project-wide GraphicsSettings / QualitySettings / Always Included Shaders / shader stripping for SRP-era Unity projects. Use when users want to inspect graphics & quality overview, switch quality level, assign or clear the default / per-quality SRP asset, manage Always Included Shaders, or configure lightmap / fog / instancing shader stripping. Triggers (EN): Unity graphics settings, GraphicsSettings, QualitySettings, quality level, default render pipeline, SRP asset, Always Included Shaders, shader stripping, lightmap stripping, fog stripping, instancing stripping. Triggers (ZH): 图形设置, 渲染管线设置, 质量设置, 质量等级, 默认渲染管线, SRP 资源, 始终包含的着色器, Shader 剥离, 总在包含的着色器."
+platforms: [unity-editor, claude-code]
+task-categories: [rendering, graphics-settings, editor-automation]
+use-when: |-
+  Load when the task requires: Project-wide GraphicsSettings / QualitySettings / Always Included Shaders / shader stripping for SRP-era Unity projects. Use when users want to inspect graphics & quality overview, switch quality level, assign or clear the default / per-quality SRP asset, manage Always Included Shaders, or configure lightmap / fog / instancing shader stripping. Triggers (EN): Unity graphics settings, GraphicsSettings, QualitySettings, quality level, default render pipeline, SRP asset, Always Included Shaders, shader stripping, lightmap stripping, fog stripping, instancing stripping. Triggers (ZH): 图形设置, 渲染管线设置, 质量设置, 质量等级, 默认渲染管线, SRP 资源, 始终包含的着色器, Shader 剥离, 总在包含的着色器. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Graphics Skills

@@ -2,6 +2,9 @@
 name: multi-entity-baker
 description: Create multiple runtime entities from a single authoring GameObject using CreateAdditionalEntity, with BakingOnlyEntity marking staging entities that should not appear in the runtime world.
 tags: [baking]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Multi-Entity Baker

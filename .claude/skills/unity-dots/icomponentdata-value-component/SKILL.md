@@ -2,6 +2,9 @@
 name: icomponentdata-value-component
 description: Store per-entity state as an unmanaged, cache-coherent struct that ECS can lay out contiguously in archetype chunks.
 tags: [core, components, data-layout]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # IComponentData Value Component

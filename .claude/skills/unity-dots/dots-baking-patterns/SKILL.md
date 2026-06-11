@@ -1,6 +1,9 @@
 ---
 name: dots-baking-patterns
 description: Senior-level Unity DOTS baking patterns — TransformUsageFlags, Baker dependency tracking, prefab references, and additional entity creation. Use when writing or reviewing `Baker<T>`, authoring MonoBehaviours, baking systems, or any code that translates GameObject scene state into entity components.
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # DOTS Baking — Senior Patterns

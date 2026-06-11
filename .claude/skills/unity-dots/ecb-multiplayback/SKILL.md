@@ -2,6 +2,9 @@
 name: ecb-multiplayback
 description: Create a reusable ECB with PlaybackPolicy.MultiPlayback that can be played back multiple times — for streaming scenarios where the same entity creation sequence must execute on every subscene load.
 tags: [ecb]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ECB MultiPlayback — Reusable Command Buffers

@@ -1,6 +1,17 @@
 ---
 name: unity-timeline
 description: "Unity Timeline editing: create Timeline assets, add typed tracks (animation/audio/activation/control/signal), add clips, set bindings, play/pause/stop via PlayableDirector. Triggers: timeline, cutscene, sequence, PlayableDirector, Director, track, animation track, audio track, activation track, control track, signal track, clip, playable, binding, wrap mode, editor preview, 时间轴, 过场动画, 序列, 轨道, 动画轨道, 音频轨道, 信号轨道, 剪辑, 绑定."
+platforms: [unity-editor, claude-code]
+task-categories: [timeline, animation, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Timeline editing: create Timeline assets, add typed tracks (animation/audio/activation/control/signal), add clips, set bindings, play/pause/stop via PlayableDirector. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For Animator parameters/states → use `animator` module instead. For runtime animation playback → use `editor_play` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Timeline Skills

@@ -2,6 +2,9 @@
 name: world-system-filter
 description: Scope a system to specific world types (game world, editor world, thin client, server) so it runs exactly where needed and is excluded from worlds where it would be incorrect or harmful.
 tags: [core, systems]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # WorldSystemFilter

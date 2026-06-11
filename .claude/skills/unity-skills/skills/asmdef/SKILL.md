@@ -1,6 +1,17 @@
 ---
 name: unity-asmdef
 description: "Assembly definition advisor for Unity projects. Use when users want module boundaries, faster compilation, cleaner dependencies, or editor/runtime/test separation. Triggers: asmdef, assembly definition, module boundary, compile time, slow compilation, dependency graph, 程序集, 模块边界, 编译慢, 依赖管理, asmdef怎么配."
+platforms: [unity-editor, claude-code]
+task-categories: [assembly, project-structure, editor-automation]
+use-when: |-
+  Load when the task requires: Assembly definition advisor for Unity projects. Use when users want module boundaries, faster compilation, cleaner dependencies, or editor/runtime/test separation. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity asmdef Advisor

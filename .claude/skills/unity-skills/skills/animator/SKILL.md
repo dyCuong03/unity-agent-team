@@ -1,6 +1,17 @@
 ---
 name: unity-animator
 description: "Unity Animator Controller editing and runtime parameter control: create controllers, add states/transitions/parameters, play animation states, drive triggers/floats/bools. Triggers: animation, animator, Animator Controller, controller, state, state machine, transition, layer, parameter, trigger, float, int, bool, blend tree, animation clip, exit time, has exit time, 动画, 动画控制器, 状态机, 状态, 状态转移, 转移, 图层, 参数, 触发器, 混合树, 动画片段."
+platforms: [unity-editor, claude-code]
+task-categories: [animation, mecanim, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Animator Controller editing and runtime parameter control: create controllers, add states/transitions/parameters, play animation states, drive triggers/floats/bools. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For Timeline animation → use `timeline` module instead. For component properties on Animator → use `component` module instead. For animation import settings → use `importer` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Animator Skills

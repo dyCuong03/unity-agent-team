@@ -1,6 +1,17 @@
 ---
 name: unity-performance
 description: "Unity performance red-flag advisor. Use when users want performance review, code runs slow, frame drops, or need optimization guidance for Update, allocations, pooling, physics. Triggers: performance, optimize, slow, lag, frame drop, hot path, Update, allocation, pool, GC, profiler, 性能, 太慢了, 卡顿, 掉帧, 优化性能, 热路径, 内存分配, 对象池."
+platforms: [unity-editor, claude-code]
+task-categories: [performance, profiling, design-advisory]
+use-when: |-
+  Load when designing or reviewing unity performance red-flag advisor. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Performance Red Flags

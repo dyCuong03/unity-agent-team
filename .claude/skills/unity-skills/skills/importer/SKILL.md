@@ -1,6 +1,17 @@
 ---
 name: unity-importer
 description: "Asset import settings — texture, audio, model importers + sprite settings + per-platform overrides + reimport. Use when users want to configure import settings, change texture type/maxSize/compression/filter/mipmap/sRGB/wrap, audio loadType/compressionFormat/quality/forceToMono, model scale/meshCompression/animationType/rig/clip splits, sprite PPU/mode, per-platform overrides, or reimport assets. Triggers: import, importer, import settings, reimport, AssetImporter, TextureImporter, ModelImporter, AudioImporter, FBX, AudioClip, sprite, PPU, pixelsPerUnit, textureType, NormalMap, Sprite, maxSize, filterMode, mipmap, sRGB, compression, loadType, Streaming, DecompressOnLoad, CompressedInMemory, Vorbis, ADPCM, PCM, animationType, Humanoid, Generic, meshCompression, generateSecondaryUV, materialImportMode, platform override, Standalone, iPhone, Android, WebGL, 导入设置, 纹理设置, 模型设置, 音频设置, 重新导入, 重导入, 压缩, 法线贴图, 精灵, 平台覆盖."
+platforms: [unity-editor, claude-code]
+task-categories: [asset-import, textures, editor-automation]
+use-when: |-
+  Load when the task requires: Asset import settings — texture, audio, model importers + sprite settings + per-platform overrides + reimport. Use when users want to configure import settings, change texture type/maxSize/compression/filter/mipmap/sRGB/wrap, audio loadType/compressionFormat/quality/forceToMono, model scale/meshCompression/animationType/rig/clip splits, sprite PPU/mode, per-platform overrides, or reimport assets. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Importer Skills

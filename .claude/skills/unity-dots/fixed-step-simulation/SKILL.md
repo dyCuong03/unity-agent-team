@@ -2,6 +2,9 @@
 name: fixed-step-simulation
 description: Run a subset of systems at a fixed timestep decoupled from the variable render framerate, ensuring deterministic simulation, correct physics integration, and frame-rate-independent gameplay.
 tags: [core, systems, physics]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Fixed-Step Simulation

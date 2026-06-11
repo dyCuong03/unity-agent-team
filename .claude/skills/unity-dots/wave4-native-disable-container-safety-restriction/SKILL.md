@@ -2,6 +2,9 @@
 name: wave4-native-disable-container-safety-restriction
 description: Allow each parallel worker in IJobChunk to hold its own per-thread scratch NativeContainer by opting out of the safety system''s shared-container restriction.
 tags: [jobs, native-containers]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # NativeDisableContainerSafetyRestriction — Per-Thread Scratch

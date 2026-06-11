@@ -1,6 +1,17 @@
 ---
 name: unity-bookmark
 description: "Scene View bookmarks — save the current selection plus Scene View camera pivot/rotation/size under a name, jump back to it later, list, delete. Use when users want to save, recall, or manage scene viewpoints + selections in the editor. Triggers: bookmark, bookmarks, save view, goto view, jump to view, scene view, camera position, viewpoint, viewpoints, named view, selection snapshot, 书签, 视角, 保存视角, 视图书签, 跳转视角, 选中快照, 命名视角."
+platforms: [unity-editor, claude-code]
+task-categories: [editor-navigation, editor-automation]
+use-when: |-
+  Load when the task requires: Scene View bookmarks — save the current selection plus Scene View camera pivot/rotation/size under a name, jump back to it later, list, delete. Use when users want to save, recall, or manage scene viewpoints + selections in the editor. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For workflow snapshots (object state undo) → use `workflow` module instead. For scene save/load → use `scene` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Bookmark Skills

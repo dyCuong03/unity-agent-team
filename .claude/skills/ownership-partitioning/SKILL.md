@@ -1,6 +1,19 @@
 ---
 name: ownership-partitioning
-description: Hard write-partitioning rules for parallel agents. Loaded whenever pipeline.parallel_allowed=true. Enforced by orchestrate.py ownership-check.
+description: Hard write-partitioning rules for parallel agents when pipeline.parallel_allowed=true. Defines glob-based file ownership, conflict detection, and orchestrate.py ownership-check integration. Prevents concurrent agents from writing the same files.
+use-when: |
+  Load for unity-dev and data-tool agents when pipeline.json.parallel_allowed=true.
+  Load whenever the architect has written workspace/ownership.lock.json to partition files.
+do-not-use-when: |
+  Do not load for sequential pipelines (parallel_allowed=false). Do not load for
+  triage, architect, tester, or verifier roles. Unnecessary when only one writer exists.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [architecture, parallel, ownership, refactor]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Ownership Partitioning

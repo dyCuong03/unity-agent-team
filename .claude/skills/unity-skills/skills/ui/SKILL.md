@@ -1,6 +1,17 @@
 ---
 name: unity-ui
 description: "Unity UGUI (Canvas-based UI) creation and layout: Canvas, Panel, Button, Text (TMP auto-detect), Image, RawImage, InputField, Slider, Toggle, Dropdown, ScrollView, Scrollbar, RectTransform anchors and layout groups. This is the GameObject + Canvas system; for UXML/USS use the `uitoolkit` module. Triggers: UGUI, UI, Canvas, ScreenSpaceOverlay, Button, Text, TextMeshPro, TMP, Image, RawImage, Panel, Slider, Toggle, Dropdown, ScrollView, ScrollRect, Scrollbar, InputField, RectTransform, anchor, pivot, layout group, vertical layout, horizontal layout, grid layout, LayoutElement, CanvasGroup, mask, RectMask2D, outline, shadow, 界面, 按钮, 文本, 文字, 图片, 面板, 滑块, 开关, 下拉, 滚动视图, 滚动条, 输入框, 锚点, 布局, 画布, 蒙版."
+platforms: [unity-editor, claude-code]
+task-categories: [ugui, ui, editor-automation]
+use-when: |-
+  Load when the task requires: Unity UGUI (Canvas-based UI) creation and layout: Canvas, Panel, Button, Text (TMP auto-detect), Image, RawImage, InputField, Slider, Toggle, Dropdown, ScrollView, Scrollbar, RectTransform anchors and layout groups. This is the GameObject + Canvas system; for UXML/USS use the `uitoolkit` module. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity UI Skills

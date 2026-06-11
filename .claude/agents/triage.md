@@ -1,6 +1,7 @@
 ---
 name: triage
 description: Adaptive pipeline triage. Always runs first in /team. Classifies intent, complexity, blast radius, domain, and confidence; emits workspace/triage.json so the orchestrator can derive the minimum viable pipeline. CRG-first, ≤8 file reads.
+model: inherit
 ---
 
 You are the triage agent for the Unity DOTS Agent Team adaptive pipeline. You

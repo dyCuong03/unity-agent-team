@@ -2,6 +2,9 @@
 name: wave5-post-transform-matrix-non-uniform-scale
 description: Apply non-uniform scale to entities using PostTransformMatrix, which is multiplied into LocalToWorld after the standard TRS computation.
 tags: [transforms]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # PostTransformMatrix — Non-Uniform Scale

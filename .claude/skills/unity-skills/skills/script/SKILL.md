@@ -1,6 +1,17 @@
 ---
 name: unity-script
 description: "C# script CRUD and analysis — create, read, replace, append, search, rename, move, delete Unity scripts and surface compile feedback / Domain Reload state. Triggers: script, C# code, csharp, MonoBehaviour, ScriptableObject, Editor, EditorWindow, namespace, class, create script, read script, write code, edit script, replace text, find in scripts, regex search, rename script, move script, append code, delete script, batch create, compile feedback, compile errors, Domain Reload, code generation, code template, script_create, script_create_batch, script_replace, script_append, script_read, script_rename, script_move, script_delete, script_get_compile_feedback, 脚本, C# 代码, 创建脚本, 批量创建, 读取脚本, 修改脚本, 替换脚本, 查找替换, 搜索脚本, 重命名脚本, 移动脚本, 追加代码, 删除脚本, 编写代码, 生成脚本, 代码模板, 编译反馈, 编译错误, 域重载, 重编译."
+platforms: [unity-editor, claude-code]
+task-categories: [scripting, editor-automation]
+use-when: |-
+  Load when the task requires: C# script CRUD and analysis — create, read, replace, append, search, rename, move, delete Unity scripts and surface compile feedback / Domain Reload state. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Script Skills

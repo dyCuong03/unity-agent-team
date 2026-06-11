@@ -1,6 +1,17 @@
 ---
 name: unity-optimization
 description: "Project asset and scene optimization — batch texture / mesh / audio compression, analyze scene poly + material count, find large or duplicate assets, set GameObject static flags, configure LOD groups, analyze overdraw on transparents. Triggers: optimize, optimization, compression, compress, crunch compression, texture compression, max texture size, mesh compression, audio compression, vorbis, adpcm, static flags, batching static, occluder, occludee, lightmap static, LOD, level of detail, LOD group, large assets, big files, duplicate materials, overdraw, transparent overdraw, high poly, polygon count, draw calls, optimize_textures, optimize_mesh_compression, optimize_audio_compression, optimize_set_static_flags, optimize_set_lod_group, optimize_analyze_scene, optimize_find_large_assets, optimize_find_duplicate_materials, optimize_analyze_overdraw, 优化, 项目优化, 资源优化, 压缩, 纹理压缩, 网格压缩, 音频压缩, Crunch 压缩, 大资源, 重复材质, LOD, 多级细节, 静态合批, 静态标志, 透明物体, 过度绘制, 三角面数, 渲染优化."
+platforms: [unity-editor, claude-code]
+task-categories: [optimization, performance, design-advisory]
+use-when: |-
+  Load when designing or reviewing project asset and scene optimization — batch texture / mesh / audio compression, analyze scene poly + material count, find large or duplicate assets, set gameobject static flags, configure lod groups, analyze overdraw on transparents. Load for design advisory guidance — does not require Unity Editor running.
+do-not-use-when: |-
+  Do not load as a runtime editor-automation skill — this module provides design advisory guidance only. Do not use for direct Unity Editor mutations. For profiler metrics → use `profiler` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Optimization Skills

@@ -1,6 +1,17 @@
 ---
 name: unity-gameobject
 description: "GameObject creation and manipulation. Use when users want to create, delete, move, rotate, scale, parent, find, or rename GameObjects. Triggers: gameobject, create gameobject, delete gameobject, duplicate, rename, transform, position, rotation, scale, parent, child, hierarchy, layer, tag, active, find, primitive, cube, sphere, instanceId, 游戏对象, 创建游戏对象, 删除游戏对象, 复制, 重命名, 变换, 位置, 旋转, 缩放, 父子, 层级, 查找游戏对象, 标签, 图层, 激活, 立方体, 球体."
+platforms: [unity-editor, claude-code]
+task-categories: [gameobject, scene, editor-automation]
+use-when: |-
+  Load when the task requires: GameObject creation and manipulation. Use when users want to create, delete, move, rotate, scale, parent, find, or rename GameObjects. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity GameObject Skills

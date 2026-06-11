@@ -2,6 +2,9 @@
 name: baking-type-cleanup-component
 description: Track entity lifecycle (creation, re-parenting, destruction) within the incremental baking pipeline using ICleanupComponentData that survives entity destruction but is still stripped from the runti...
 tags: [baking, structural-change]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # BakingType Cleanup Component — Entity Lifecycle Tracking

@@ -1,6 +1,17 @@
 ---
 name: unity-event
 description: "UnityEvent persistent-listener wiring at editor time: inspect, add, remove, batch-add, copy, clear, set call-state, list events on a component (e.g. Button.onClick, Slider.onValueChanged). For runtime invocation only. Triggers: UnityEvent, event, persistent listener, persistent call, onClick, onValueChanged, listener, callback, wire, hook up, EditorAndRuntime, RuntimeOnly, button click, 事件, 持久监听器, 监听器, 接线, 回调, 按钮点击, 持久化."
+platforms: [unity-editor, claude-code]
+task-categories: [events, messaging, editor-automation]
+use-when: |-
+  Load when the task requires: UnityEvent persistent-listener wiring at editor time: inspect, add, remove, batch-add, copy, clear, set call-state, list events on a component (e.g. Button.onClick, Slider.onValueChanged). For runtime invocation only. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For XR interaction events → use `xr` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Event Skills

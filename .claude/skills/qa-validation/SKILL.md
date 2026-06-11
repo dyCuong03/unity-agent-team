@@ -1,7 +1,21 @@
 ---
 name: qa-validation
-description: Validation rules for Unity DOTS features. Use when creating tests, stress scenarios, regression coverage, reproduction steps, or release-readiness checks.
-user-invocable: false
+description: Validation rules for Unity DOTS features — correctness, scale, determinism, regression coverage, and release-readiness checklists. Use when creating test matrices, stress scenarios, reproduction steps, or performance regression anchors.
+use-when: |
+  Load for tester agent for any task requiring test design, regression validation,
+  performance sign-off, or release-readiness verification. Also load for data-tool
+  agent when building validation pipelines or authoring content validators.
+do-not-use-when: |
+  Do not load for unity-dev or unity-dots-dev during Phase 2 implementation.
+  Do not load for architect or triage roles. Not needed before implementation is complete.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+  user-invocable: false
+task-categories: [testing, qa, validation, evidence, playmode]
+
 ---
 
 # QA Validation — Unity DOTS

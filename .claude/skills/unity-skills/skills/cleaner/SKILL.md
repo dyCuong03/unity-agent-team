@@ -1,6 +1,17 @@
 ---
 name: unity-cleaner
 description: "Project cleanup and audit utilities — find unused assets, content-hash duplicates, missing script/asset references, empty folders, large assets, and dependency trees; delete via a two-step confirm-token flow; fix missing-script components in-place. Use when users want to clean up, audit, or shrink the project. Triggers: cleaner, cleanup, clean up, unused asset, unused assets, duplicate, duplicates, dead code, orphan, missing script, missing reference, empty folder, large asset, dependency tree, asset usage, fix missing, 清理, 项目清理, 冗余, 未使用, 重复文件, 丢失脚本, 缺失引用, 空文件夹, 大文件, 依赖, 依赖树, 资产清理, 减包."
+platforms: [unity-editor, claude-code]
+task-categories: [cleanup, refactoring, editor-automation]
+use-when: |-
+  Load when the task requires: Project cleanup and audit utilities — find unused assets, content-hash duplicates, missing script/asset references, empty folders, large assets, and dependency trees; delete via a two-step confirm-token flow; fix missing-script components in-place. Use when users want to clean up, audit, or shrink the project. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For project validation → use `validation` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Cleaner Skills

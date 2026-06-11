@@ -1,6 +1,17 @@
 ---
 name: unity-inspector
 description: "Unity Inspector design advisor. Use when users want better SerializeField usage, Tooltip/Header organization, validation, or cleaner Inspector UX. Triggers: Inspector, SerializeField, Tooltip, Header, Range, OnValidate, RequireComponent, CreateAssetMenu, Inspector design, show in Inspector, 检视面板, Inspector怎么设计, 序列化字段, 编辑器显示, 显示在Inspector."
+platforms: [unity-editor, claude-code]
+task-categories: [editor-tooling, inspector, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Inspector design advisor. Use when users want better SerializeField usage, Tooltip/Header organization, validation, or cleaner Inspector UX. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Inspector Design

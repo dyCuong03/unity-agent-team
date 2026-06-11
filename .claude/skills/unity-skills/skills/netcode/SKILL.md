@@ -1,6 +1,17 @@
 ---
 name: unity-netcode
 description: "Netcode for GameObjects (NGO 2.x) multiplayer automation. Create NetworkManager + UnityTransport, edit NetworkConfig (TickRate / ConnectionApproval / EnableSceneManagement / NetworkTopology / ClientSynchronizationMode), configure direct/Relay transport, attach NetworkObject / NetworkTransform / NetworkRigidbody(2D) / NetworkAnimator, manage NetworkPrefabsList + PlayerPrefab, generate NetworkBehaviour script templates, run Host/Server/Client lifecycle in PlayMode. Triggers: Unity netcode, com.unity.netcode.gameobjects, NGO, NetworkManager, NetworkObject, NetworkBehaviour, NetworkTransform, NetworkRigidbody, NetworkAnimator, NetworkVariable, ServerRpc, ClientRpc, NetworkPrefabsList, PlayerPrefab, UnityTransport, Relay, Spawn, Despawn, host, client, server, ConnectionApproval, NetworkTopology, ClientSynchronizationMode, tick rate, 多人, 联机, 联机同步, 多人游戏, 主机, 客户端, 服务器, 网络同步, 网络对象, 网络组件, 中继, 大厅."
+platforms: [unity-editor, claude-code]
+task-categories: [networking, multiplayer, editor-automation]
+use-when: |-
+  Load when the task requires: Netcode for GameObjects (NGO 2.x) multiplayer automation. Create NetworkManager + UnityTransport, edit NetworkConfig (TickRate / ConnectionApproval / EnableSceneManagement / NetworkTopology / ClientSynchronizationMode), configure direct/Relay transport, attach NetworkObject / NetworkTransform / NetworkRigidbody(2D) / NetworkAnimator, manage NetworkPrefabsList + PlayerPrefab, generate NetworkBehaviour script templates, run Host/Server/Client lifecycle in PlayMode. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Netcode for GameObjects Skills

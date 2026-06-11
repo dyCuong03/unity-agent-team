@@ -1,6 +1,9 @@
 ---
 name: ecs-fundamentals-transformusageflags
 description: Senior-level guide to selecting `TransformUsageFlags` at every `GetEntity()` call in a `Baker<T>`. Covers the four values (None / Renderable / Dynamic / ManualOverride), the silent-failure modes when the choice is wrong, archetype-bloat consequences at scale, and the `[WriteGroup(typeof(LocalToWorld))]` contract that must accompany `ManualOverride` to avoid last-writer-wins corruption with the default `TransformSystemGroup`. Use whenever you write a Baker, audit archetype memory, design a custom transform system, or debug "my entity won't move" / "my static entity is wasting transform components".
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # TransformUsageFlags — Senior Patterns

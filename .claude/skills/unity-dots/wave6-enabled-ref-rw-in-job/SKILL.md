@@ -2,6 +2,9 @@
 name: wave6-enabled-ref-rw-in-job
 description: Read and write the enabled bit of an IEnableableComponent directly inside IJobEntity.Execute() or SystemAPI.Query foreach using EnabledRefRW<T>, avoiding ECB overhead and one-frame delay.
 tags: [enableable, jobs]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # EnabledRefRW in Jobs — Inline Bit Toggle

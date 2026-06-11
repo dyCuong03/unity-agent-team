@@ -2,6 +2,9 @@
 name: wave7-unity-object-ref-blittable-asset
 description: Store a reference to a UnityEngine.Object (Texture2D, AudioClip, Mesh, Sprite, etc.) in a blittable struct IComponentData so it can be stored in ECS chunks and passed through job structs without ma...
 tags: [hybrid, managed]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # UnityObjectRef — Blittable Asset Reference

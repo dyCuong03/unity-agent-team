@@ -1,6 +1,17 @@
 ---
 name: unity-smart
 description: "AI-powered scene operations: SQL-like object queries, spatial queries, automatic spatial layout, alignment, distribution, snap to grid, randomize, replace prefabs, and reference auto-binding. Use when users want to find objects by property/region, arrange objects in grid/circle/line, align to ground, distribute evenly, snap, randomize, replace by prefab, or auto-wire serialized references. Triggers: smart, smart query, spatial query, scene query, layout, grid, circle, arc, linear, align to ground, distribute, snap to grid, randomize transform, replace objects, auto-bind, reference bind, select by component, 智能查询, 场景查询, 空间查询, 自动布局, 网格布局, 圆形布局, 对齐地面, 均匀分布, 网格吸附, 随机变换, 替换对象, 自动绑定, 按组件选择."
+platforms: [unity-editor, claude-code]
+task-categories: [editor-automation, smart-operations]
+use-when: |-
+  Load when the task requires: AI-powered scene operations: SQL-like object queries, spatial queries, automatic spatial layout, alignment, distribution, snap to grid, randomize, replace prefabs, and reference auto-binding. Use when users want to find objects by property/region, arrange objects in grid/circle/line, align to ground, distribute evenly, snap, randomize, replace by prefab, or auto-wire serialized references. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For creating objects → use `gameobject` module instead. For simple object search → use `gameobject_find` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Smart Skills

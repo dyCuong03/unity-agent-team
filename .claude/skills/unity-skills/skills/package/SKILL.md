@@ -1,6 +1,17 @@
 ---
 name: unity-package
 description: "Unity Package Manager (UPM) operations and bundled helpers for Cinemachine / Splines. Use when users want to install, remove, refresh, search, or inspect packages, list dependencies, query versions, or run a one-call Cinemachine/Splines bootstrap. Triggers: package, packages, UPM, Package Manager, manifest, install, add, remove, uninstall, refresh, dependency, dependencies, version, versions, Cinemachine, Splines, TextMeshPro, 包, 包管理, Package Manager, UPM, 安装包, 移除包, 卸载, 依赖, 版本, 包依赖, 包清单."
+platforms: [unity-editor, claude-code]
+task-categories: [packages, project-setup, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Package Manager (UPM) operations and bundled helpers for Cinemachine / Splines. Use when users want to install, remove, refresh, search, or inspect packages, list dependencies, query versions, or run a one-call Cinemachine/Splines bootstrap. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Package Skills

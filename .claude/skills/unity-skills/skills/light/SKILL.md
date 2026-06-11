@@ -1,6 +1,17 @@
 ---
 name: unity-light
 description: "Unity lighting / scene lights / reflection probes / light probe groups. Use when users want to create or configure Unity Directional / Point / Spot / Area lights, batch-toggle scene lights, place reflection probes, place light probe grids, or inspect Lightmap baking settings. Triggers (EN): Unity light, scene light, directional light, point light, spot light, area light, intensity, shadows, light range, light color, reflection probe, light probe group, lightmap, baked GI. Triggers (ZH): 灯光, 光源, 光照, 阴影, 方向光, 点光源, 聚光灯, 面光源, 反射探针, 光照探针, 烘焙, 全局光照, 实时光, GI."
+platforms: [unity-editor, claude-code]
+task-categories: [lighting, editor-automation]
+use-when: |-
+  Load when the task requires: Unity lighting / scene lights / reflection probes / light probe groups. Use when users want to create or configure Unity Directional / Point / Spot / Area lights, batch-toggle scene lights, place reflection probes, place light probe grids, or inspect Lightmap baking settings. Triggers (EN): Unity light, scene light, directional light, point light, spot light, area light, intensity, shadows, light range, light color, reflection probe, light probe group, lightmap, baked GI. Triggers (ZH): 灯光, 光源, 光照, 阴影, 方向光, 点光源, 聚光灯, 面光源, 反射探针, 光照探针, 烘焙, 全局光照, 实时光, GI. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Light Skills

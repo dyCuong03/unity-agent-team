@@ -1,6 +1,17 @@
 ---
 name: unity-component
 description: "GameObject component management. Use when users want to add, remove, list, copy, enable/disable components, or read/set component properties (Rigidbody, Collider, AudioSource, custom scripts). Triggers: component, add component, remove component, list components, set property, get properties, copy component, enable, disable, rigidbody, collider, audio source, script, MeshRenderer, propertyName, componentType, 组件, 添加组件, 移除组件, 列出组件, 设置属性, 读取属性, 复制组件, 启用, 禁用, 刚体, 碰撞体, 音源, 脚本组件."
+platforms: [unity-editor, claude-code]
+task-categories: [component, gameobject, editor-automation]
+use-when: |-
+  Load when the task requires: GameObject component management. Use when users want to add, remove, list, copy, enable/disable components, or read/set component properties (Rigidbody, Collider, AudioSource, custom scripts). Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Unity Component Skills

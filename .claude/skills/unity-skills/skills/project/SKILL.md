@@ -1,6 +1,17 @@
 ---
 name: unity-project
 description: "Project information. Use when users want to read project metadata (Unity version, render pipeline), list shaders/UPM packages, read Layer/Tag definitions, add a custom Tag, read build settings, or read Player Settings. Triggers: project info, project settings, Unity version, render pipeline, list shaders, UPM packages, package manifest, layers, tags, add tag, build settings, player settings, scripting backend, api compatibility, 项目信息, 项目设置, Unity 版本, 渲染管线, 着色器列表, UPM 包列表, 包清单, 图层列表, 标签列表, 添加标签, 构建设置, 玩家设置, 脚本后端."
+platforms: [unity-editor, claude-code]
+task-categories: [project-structure, editor-automation]
+use-when: |-
+  Load when the task requires: Project information. Use when users want to read project metadata (Unity version, render pipeline), list shaders/UPM packages, read Layer/Tag definitions, add a custom Tag, read build settings, or read Player Settings. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For graphics / quality / SRP configuration → use `the` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Project Skills

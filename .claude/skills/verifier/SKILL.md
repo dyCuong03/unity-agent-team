@@ -1,6 +1,19 @@
 ---
 name: verifier
-description: Lightweight verification agent. Runs the deterministic verification bundle from unity-dev's impl_result.json and emits verification_result.json. Replaces always-on tester for small/medium tasks.
+description: Lightweight verification agent for small and medium complexity tasks. Mechanically runs the deterministic verification bundle from impl_result.json and emits verification_result.json. Does not design tests or edit code — replaces always-on tester for tiny/small/medium pipelines.
+use-when: |
+  Load for the verifier agent on tiny, small, and medium complexity pipelines.
+  Load when impl_result.json exists and contains a verification_bundle to execute.
+do-not-use-when: |
+  Do not load for large or critical complexity pipelines — use tester instead.
+  Do not load for unity-dev, architect, or triage roles. Never edits code or designs tests.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [verification, compilation, qa]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Verifier Skill

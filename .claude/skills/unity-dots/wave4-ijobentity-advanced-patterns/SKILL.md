@@ -2,6 +2,9 @@
 name: wave4-ijobentity-advanced-patterns
 description: Extend IJobEntity with query filters, sort key parameters, and implicit-query scheduling for production ECS systems.
 tags: [jobs, query]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # IJobEntity — Advanced Patterns

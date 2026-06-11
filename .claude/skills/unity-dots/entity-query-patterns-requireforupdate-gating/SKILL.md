@@ -1,6 +1,9 @@
 ---
 name: entity-query-patterns-requireforupdate-gating
 description: Senior-level convention that every `ISystem` / `SystemBase` gates `OnUpdate` with `state.RequireForUpdate<T>()` (or the query overload) so the system only runs when its prerequisites — config singletons, feature toggles, baked content — actually exist. Covers the AND semantics of multiple gates, the empty-tag feature-flag pattern (generalizing the sample `ExecuteXxx` tags), the `state.RequireForUpdate(query)` overload for complex prerequisites, and why this strictly beats `if (!HasSingleton<T>()) return;`. Use when authoring any system, designing a feature toggle, or debugging first-frame "Singleton not found" / `NullReferenceException` crashes.
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # RequireForUpdate Gating — Senior Patterns

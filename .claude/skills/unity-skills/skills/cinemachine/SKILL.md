@@ -1,6 +1,17 @@
 ---
 name: unity-cinemachine
 description: "Cinemachine Virtual Camera setup and configuration for cinematic / gameplay cameras: VCam, FreeLook, ClearShot, StateDriven, Sequencer, MixingCamera, Body/Aim/Noise pipeline, Impulse system, target groups, splines, blends, CinemachineBrain. Triggers: cinemachine, virtual camera, vcam, CinemachineBrain, brain, FreeLook, ClearShot, StateDriven, Sequencer, MixingCamera, follow, look at, dolly, spline, target group, Body, Aim, Noise, OrbitalFollow, ThirdPersonFollow, PositionComposer, FramingTransposer, RotationComposer, Composer, PanTilt, POV, blend, impulse, shake, confiner, deoccluder, 虚拟相机, 跟随, 轨道, 镜头, 混合, 抖动, 相机模糊."
+platforms: [unity-editor, claude-code]
+task-categories: [camera, cinemachine, editor-automation]
+use-when: |-
+  Load when the task requires: Cinemachine Virtual Camera setup and configuration for cinematic / gameplay cameras: VCam, FreeLook, ClearShot, StateDriven, Sequencer, MixingCamera, Body/Aim/Noise pipeline, Impulse system, target groups, splines, blends, CinemachineBrain. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For basic Game Camera operations → use `camera` module instead. For Scene View camera → use `camera` module instead. For camera animation sequences → use `timeline` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Cinemachine Skills

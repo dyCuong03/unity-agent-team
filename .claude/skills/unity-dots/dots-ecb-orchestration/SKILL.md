@@ -1,6 +1,9 @@
 ---
 name: dots-ecb-orchestration
 description: Senior-level EntityCommandBuffer orchestration — which ECB system to record into, when playback happens, ParallelWriter rules, deterministic sort keys, and the difference between recording phase and playback phase. Use whenever code defers structural changes from jobs (AddComponent / RemoveComponent / Instantiate / DestroyEntity / SetComponentEnabled inside an `IJobEntity` / `IJobChunk`).
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # ECB Orchestration — Senior Patterns

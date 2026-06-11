@@ -1,6 +1,17 @@
 ---
 name: unity-volume
 description: "SRP Volume framework (VolumeProfile + Volume GameObject + VolumeComponent overrides) for URP / HDRP projects. Use when users want to create / load VolumeProfile assets, create global or local Volume GameObjects, add / remove / inspect VolumeComponent overrides, or set their parameters. For high-level effect helpers (Bloom, DOF, Vignette, Color Adjustments…) prefer the `postprocess` module. Triggers (EN): Volume, VolumeProfile, post-processing profile, VolumeComponent, override, parameter override, global volume, local volume, blend distance. Triggers (ZH): Volume, 后处理配置, 后处理 Profile, 体积, 全局 Volume, 局部 Volume, 覆盖参数, 覆盖, VolumeProfile, VolumeComponent."
+platforms: [unity-editor, claude-code]
+task-categories: [post-processing, volume, editor-automation]
+use-when: |-
+  Load when the task requires: SRP Volume framework (VolumeProfile + Volume GameObject + VolumeComponent overrides) for URP / HDRP projects. Use when users want to create / load VolumeProfile assets, create global or local Volume GameObjects, add / remove / inspect VolumeComponent overrides, or set their parameters. For high-level effect helpers (Bloom, DOF, Vignette, Color Adjustments…) prefer the `postprocess` module. Triggers (EN): Volume, VolumeProfile, post-processing profile, VolumeComponent, override, parameter override, global volume, local volume, blend distance. Triggers (ZH): Volume, 后处理配置, 后处理 Profile, 体积, 全局 Volume, 局部 Volume, 覆盖参数, 覆盖, VolumeProfile, VolumeComponent. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Volume Skills

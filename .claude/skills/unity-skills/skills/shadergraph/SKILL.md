@@ -1,6 +1,17 @@
 ---
 name: unity-shadergraph
 description: "Shader Graph asset creation, structure inspection, constrained blackboard editing, and constrained node-subset editing for `.shadergraph` / `.shadersubgraph`. Use when users want to create graphs, inspect real node/slot structure, edit properties or keywords, or perform safe low-level node operations. Triggers: Shader Graph, shadergraph, sub graph, blackboard property, shader keyword, node editing, slot connect, 着色图, 子图, ShaderGraph 属性, ShaderGraph 节点, ShaderGraph 连线."
+platforms: [unity-editor, claude-code]
+task-categories: [shadergraph, rendering, editor-automation]
+use-when: |-
+  Load when the task requires: Shader Graph asset creation, structure inspection, constrained blackboard editing, and constrained node-subset editing for `.shadergraph` / `.shadersubgraph`. Use when users want to create graphs, inspect real node/slot structure, edit properties or keywords, or perform safe low-level node operations. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # ShaderGraph Skills

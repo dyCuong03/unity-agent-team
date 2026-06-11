@@ -1,6 +1,19 @@
 ---
 name: data-tool
-description: Data Tool Engineer role brief for the Unity DOTS Agent Team. Builds editor tooling, data processors, validators, inspectors, and DOTS debugging utilities. Loaded by the `data-tool` agent.
+description: Data Tool Engineer role brief for the Unity DOTS Agent Team. Builds editor tooling, data processors, validators, inspectors, and DOTS debugging utilities. Loaded by the data-tool agent only — never loads for runtime implementation agents.
+use-when: |
+  Load for the data-tool agent when the task requires building editor tools, custom
+  inspectors, data validation pipelines, authoring utilities, or DOTS debugging helpers.
+do-not-use-when: |
+  Do not load for unity-dev, unity-dots-dev, tester, or architect roles.
+  Do not load when the task is pure runtime ECS implementation with no editor tooling.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+task-categories: [tooling, editor, authoring, diagnostics]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+
 ---
 
 # Data Tool Engineer Role — Unity DOTS

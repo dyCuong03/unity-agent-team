@@ -1,6 +1,17 @@
 ---
 name: unity-camera
 description: "Unity Scene View + Game Camera control. Use when users want to move/rotate the editor view, create or configure scene cameras, change FOV / clip planes / culling mask, switch orthographic vs perspective, or capture a screenshot. Triggers (EN): Unity camera, scene camera, Game Camera, Scene View, viewport, FOV, field of view, near/far clip, culling mask, orthographic, perspective, look at, align view, screenshot, render to file. Triggers (ZH): 相机, 摄像机, 视角, 视野, 场景视图, 游戏相机, 截图, 渲染截图, 正交, 透视, 裁剪面, 剔除遮罩."
+platforms: [unity-editor, claude-code]
+task-categories: [camera, cinemachine, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Scene View + Game Camera control. Use when users want to move/rotate the editor view, create or configure scene cameras, change FOV / clip planes / culling mask, switch orthographic vs perspective, or capture a screenshot. Triggers (EN): Unity camera, scene camera, Game Camera, Scene View, viewport, FOV, field of view, near/far clip, culling mask, orthographic, perspective, look at, align view, screenshot, render to file. Triggers (ZH): 相机, 摄像机, 视角, 视野, 场景视图, 游戏相机, 截图, 渲染截图, 正交, 透视, 裁剪面, 剔除遮罩. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For Cinemachine virtual cameras → use `cinemachine` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Camera Skills

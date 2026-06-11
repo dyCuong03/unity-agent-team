@@ -2,6 +2,9 @@
 name: wave4-systembase-with-inner-ijobentity
 description: Use managed `SystemBase` class when the system itself requires managed resources, while delegating hot-path work to Burst-compiled inner IJobEntity structs.
 tags: [jobs, systems, managed]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # SystemBase with Inner IJobEntity

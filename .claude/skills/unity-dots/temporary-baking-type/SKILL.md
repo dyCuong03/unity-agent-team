@@ -2,6 +2,9 @@
 name: temporary-baking-type
 description: Mark a component as a single-pass baking signal — present during Baker execution and baking system processing within one baking pass, then automatically removed before the next pass.
 tags: [baking]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # TemporaryBakingType

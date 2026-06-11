@@ -2,6 +2,9 @@
 name: baking-world-query-options
 description: Configure entity queries in baking systems to correctly include disabled entities, prefab entities, and only entities that have completed a baking pass, ensuring all entity types are processed corr...
 tags: [baking, query]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Baking World Query Options

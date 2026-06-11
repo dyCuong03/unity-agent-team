@@ -2,6 +2,9 @@
 name: wave7-companion-go-lifecycle
 description: Manage the full creation, synchronization, and destruction lifecycle of a companion GameObject paired with an ECS entity using the four-phase marker/spawn/sync/destroy pattern.
 tags: [hybrid, managed, lifecycle]
+metadata:
+  internal-only: true
+  tier: 3
 ---
 
 # Companion GO Lifecycle — Marker/Spawn/Sync/Destroy

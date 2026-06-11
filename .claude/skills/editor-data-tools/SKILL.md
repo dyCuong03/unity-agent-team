@@ -1,7 +1,20 @@
 ---
 name: editor-data-tools
-description: Guidance for Unity data processing, editor tooling, validators, and DOTS debugging helpers. Use when building authoring workflows, diagnostics, inspectors, or developer utilities.
-user-invocable: false
+description: Guidance for Unity data processing, editor tooling, validators, and DOTS debugging helpers. Use when building authoring workflows, diagnostics, inspectors, or developer utilities. Always isolates editor code from runtime assemblies.
+use-when: |
+  Load for data-tool agent when building editor windows, custom inspectors, batch processors,
+  content validators, authoring pipeline utilities, or DOTS debugging overlays.
+do-not-use-when: |
+  Do not load for runtime ECS implementation. Do not load for tester or verifier roles.
+  Not needed for pure GameObjects-at-runtime tasks with no editor tooling requirement.
+platforms: [claude-code, codex, copilot, cursor, windsurf]
+metadata:
+  source: internal
+  version: 1.0.0
+  tier: 1
+  user-invocable: false
+task-categories: [tooling, editor, pipeline, authoring]
+
 ---
 
 # Editor Data Tools

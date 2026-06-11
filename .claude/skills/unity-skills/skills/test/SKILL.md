@@ -1,6 +1,17 @@
 ---
 name: unity-test
-description: "Unity Test Runner async operations — run / discover / list / cancel tests, poll job results, create EditMode/PlayMode test templates, list categories, run skills smoke regression. All run/discover skills are job-based: they return jobId immediately and you poll with test_get_result / test_discover_get_result. Triggers: test, unit test, automated test, integration test, test runner, NUnit, EditMode, PlayMode, edit mode test, play mode test, run tests, run all tests, run by name, run by category, list tests, discover tests, test categories, test result, test status, async test, poll test result, jobId, job poll, async job, cancel test, abort test, create test template, EditMode template, PlayMode template, smoke test, regression test, skill smoke, test summary, last test result, test_run, test_run_by_name, test_get_result, test_get_last_result, test_list, test_list_categories, test_discover_start, test_discover_get_result, test_cancel, test_create_editmode, test_create_playmode, test_smoke_skills, test_get_summary, 测试, 单元测试, 集成测试, 自动化测试, 测试运行, 测试运行器, 运行测试, 跑测试, 异步测试, 测试发现, 列出测试, 测试分类, 取消测试, 中止测试, 测试结果, 轮询结果, 任务 ID, 编辑模式测试, 运行时测试, 烟雾测试, 回归测试, 创建测试模板, 测试模板, 最近测试结果, 测试汇总."
+description: "Unity Test Runner async operations — run / discover / list / cancel tests, poll job results, create EditMode/PlayMode test templates, list categories, run skills smoke regression. All run/discover skills are job-based: they return jobId immediately and you poll with test_get_result / test_discover_get_result. Triggers: test, unit test, automated test, integration test, test runner, NUnit, EditMode, PlayMode, edit mode test, play mode test, run tests, run all tests, run by name, run by category, list tests, discover tests, test categories, test result, test status, async test, poll test result, jobId, job poll, async job, cancel test, abort test, create test template, EditMode template, PlayMode template, smoke test, regression test, skill smoke, test summary, last test result, test_run, test_run_by_name, test_get_result, test_get_last_result, test_list, test_list_categories, test_discover_start, test_discover_get_result, test_cancel, test_create_editmode, test_create_playmode, test_smoke_skills…"
+platforms: [unity-editor, claude-code]
+task-categories: [testing, edit-mode-tests, editor-automation]
+use-when: |-
+  Load when the task requires: Unity Test Runner async operations — run / discover / list / cancel tests, poll job results, create EditMode/PlayMode test templates, list categories, run skills smoke regression. All run/discover skills are job-based: they return jobId immediately and you poll with test_get_result / test_discover_get_result. Unity Editor must be running with the unity-skills REST server reachable at http://localhost:8090.
+do-not-use-when: |-
+  Do not load when Unity Editor is not running locally. Do not load when unity-skills REST server is unreachable at http://localhost:8090. For compile error checking → use `debug` module instead.
+metadata:
+  source: https://github.com/Besty0728/Unity-Skills
+  version: 1.9.2
+  tier: 2
+
 ---
 
 # Test Skills
