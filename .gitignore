@@ -23,3 +23,10 @@ workspace/investigation.md
 workspace/test-plan.md
 workspace/migration-plan.md
 workspace/skill-cache/
+
+# Session/research debris — never publish (not removed from disk, just ignored)
+workspace/audit/
+workspace/dots-program/
+workspace/full-team/
+workspace/collision-disambiguation-draft.md
+reports/

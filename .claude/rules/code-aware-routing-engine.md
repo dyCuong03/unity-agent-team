@@ -149,7 +149,7 @@ If Ambiguous:
 **Who:** code-tracer / system-mapper (writes); all agents (read before starting work)
 
 **What:** Fill all sections of the domain-analysis.md template.
-See `workspace-domain-analysis.md` for format.
+See the template at `.claude/workspace-templates/domain-analysis.md` for format.
 
 **Hard rule:** unity-dev and architect must read domain-analysis.md before starting.
 They inherit the domain classification — they do not re-derive it.

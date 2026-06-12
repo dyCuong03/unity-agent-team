@@ -158,6 +158,8 @@ Detection is code-evidence only — not inferred from class names alone.
 
 ## Pattern Detection Output Format
 
+Example (illustrative class names — not tied to any specific project):
+
 ```markdown
 ## Architecture Patterns Detected
 - Presenter (confidence: 0.85) — PopupPresenter.cs, InventoryPresenter.cs

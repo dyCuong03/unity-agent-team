@@ -25,7 +25,7 @@ ownership, runtime gameplay (combat, movement, AI, cooldowns, spawning, networki
 **Skill loading:** Layer 1 ECS heavy. Domain skills from DOTS side only unless
 hybrid APIs detected. Unity skills load as secondary, advisory only.
 
-**Examples:**
+**Examples (illustrative class names):**
 - EnemyAISystem.cs, MovementSystem.cs, CombatSystem.cs → DOTS domain
 - "combat race condition" + IJobEntity fingerprint → DOTS domain
 - "cooldown desync" + ComponentLookup → DOTS domain
@@ -54,7 +54,7 @@ inspector design, scene composition, timeline, localization.
 (ui, animator, timeline, shadergraph, addressables-design, etc.). ECS skills load
 as secondary, advisory only.
 
-**Examples:**
+**Examples (illustrative class names):**
 - PopupPresenter.cs, UIManager.cs, AnimationController.cs → Unity domain
 - "popup not appearing" + Canvas/CanvasGroup fingerprint → Unity domain
 - "addressables build failure" → Unity domain
@@ -82,7 +82,7 @@ compound components (Baker + MonoBehaviour authoring), ECS + Addressables loadin
 **Skill loading:** Both DOTS and Unity skills. Domain analysis must define the
 explicit contract: who owns runtime truth, who owns presentation.
 
-**Examples:**
+**Examples (illustrative class names):**
 - HealthBarBinding.cs + HealthComponent + Canvas → Hybrid
 - "HP bar not updating" with both EntityQuery and RectTransform → Hybrid
 - "enemy presentation not syncing" → Hybrid

@@ -19,9 +19,14 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-REGISTRY_PATH = ROOT / ".claude" / "skills" / "registry.json"
-ROUTE_SKILLS_PATH = ROOT / ".claude" / "scripts" / "route_skills.py"
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+ROOT = roots.framework_root()
+REGISTRY_PATH = roots.claude_root() / "skills" / "registry.json"
+ROUTE_SKILLS_PATH = roots.claude_root() / "scripts" / "route_skills.py"
 
 DOTS_ONLY_SKILLS = {
     "unity-dots-best-practices",

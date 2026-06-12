@@ -40,10 +40,32 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE = REPO_ROOT / "workspace"
-TEMPLATES = REPO_ROOT / ".claude" / "workspace-templates"
-SCHEMAS = REPO_ROOT / ".claude" / "schemas"
+# Root resolution is owned by roots.py — the single allowed mechanism.
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+
+def _resolve_project_root() -> Path:
+    try:
+        return roots.project_root()
+    except roots.RootResolutionError:
+        # Legacy behavior: fall back to the framework repo itself.
+        return roots.framework_root()
+
+
+REPO_ROOT = _resolve_project_root()
+try:
+    _CONFIG: dict[str, Any] = roots.load_config(REPO_ROOT)
+except roots.RootResolutionError:
+    _CONFIG = {}
+
+# PROJECT-scoped paths come from roots helpers; FRAMEWORK-scoped paths
+# (schemas, workspace templates) live under the framework's .claude/.
+WORKSPACE = roots.workspace_dir(REPO_ROOT, _CONFIG or {})
+TEMPLATES = roots.claude_root() / "workspace-templates"
+SCHEMAS = roots.claude_root() / "schemas"
 
 SESSION_ARTIFACTS = [
     "triage.json",
@@ -688,10 +710,10 @@ COMMIT_COAUTHOR = "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthrop
 
 
 def _project_root() -> Path:
-    """Repo that holds the code /team edited. Honours the same override as
-    full_team.py so a nested package install still commits the real project."""
-    override = os.environ.get("UNITY_TEAM_PROJECT_ROOT")
-    return Path(override).resolve() if override else REPO_ROOT
+    """Repo that holds the code /team edited. Env overrides
+    (roots.ENV_PROJECT_ROOT and its legacy alias) and project-config.json
+    are all honoured inside roots.py."""
+    return REPO_ROOT
 
 
 def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
@@ -745,6 +767,19 @@ def cmd_commit(args: argparse.Namespace) -> int:
     if not branch or branch == "HEAD":
         print("[commit] BLOCK — detached HEAD; checkout a branch before /team commit",
               file=sys.stderr)
+        return 2
+
+    # 2b. branch policy — allowedBranches from project config. Empty list (the
+    # default) means no restriction, which preserves the legacy behavior of
+    # committing on whatever branch is currently checked out.
+    allowed = (_CONFIG or {}).get("allowedBranches") or []
+    if allowed and branch not in allowed:
+        default = roots.default_branch(root, _CONFIG or {})
+        print(
+            f"[commit] BLOCK — branch {branch!r} not in allowedBranches {allowed} "
+            f"(project default branch: {default}); checkout an allowed branch",
+            file=sys.stderr,
+        )
         return 2
 
     # 3. stage: files unity-dev changed + persistent knowledge files.

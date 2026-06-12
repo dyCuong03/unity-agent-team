@@ -47,13 +47,47 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-# REPO_ROOT = the repo that contains the installed `.claude/` package.
-# For real Unity work the package MUST be installed at the Unity project root so
-# this resolves to the host project and worktrees isolate Assets/**. Override with
-# UNITY_TEAM_PROJECT_ROOT when the package lives in a nested folder.
-_ENV_ROOT = os.environ.get("UNITY_TEAM_PROJECT_ROOT")
-REPO_ROOT = Path(_ENV_ROOT).resolve() if _ENV_ROOT else Path(__file__).resolve().parents[2]
-WORKTREE_BASE = REPO_ROOT.parent / "worktrees"
+# Root resolution is owned by roots.py — the single allowed mechanism.
+# REPO_ROOT = the project repository the team works on. Env overrides
+# (roots.ENV_PROJECT_ROOT and its legacy alias) and project-config.json
+# are all honoured inside roots.py.
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+
+def _resolve_project_root() -> Path:
+    try:
+        return roots.project_root()
+    except roots.RootResolutionError:
+        return roots.framework_root()
+
+
+REPO_ROOT = _resolve_project_root()
+try:
+    CONFIG: dict[str, Any] = roots.load_config(REPO_ROOT)
+except roots.RootResolutionError:
+    CONFIG = {}
+
+# Per-project worktree base (configurable via project-config "worktreeRoot").
+WORKTREE_BASE = roots.worktree_root(REPO_ROOT, CONFIG or {})
+
+# PROJECT-scoped dirs come from roots helpers.
+WORKSPACE_DIR = roots.workspace_dir(REPO_ROOT, CONFIG or {})
+REPORTS_DIR = roots.reports_dir(REPO_ROOT, CONFIG or {})
+
+
+def _rel_to_repo(p: Path) -> str:
+    """Repo-relative posix path for prompt text; absolute string if outside."""
+    try:
+        return p.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return p.as_posix()
+
+
+REPORTS_REL = _rel_to_repo(REPORTS_DIR)
+WORKSPACE_REL = _rel_to_repo(WORKSPACE_DIR)
 
 # Model used for every spawned teammate session. Sonnet by default (fast, cheap,
 # strong enough for role-scoped Unity work). Override with --model on any subcommand.
@@ -63,7 +97,9 @@ DEFAULT_MODEL = "sonnet"
 # Agent role definitions
 # ---------------------------------------------------------------------------
 
-AGENTS = ["architect", "unity-dev", "unity-dots-dev", "qa-tester"]
+# Built-in 4-agent Unity profile — used when project-config.json defines no
+# usable teamProfiles.full. AGENTS itself is resolved after AGENT_ROLES below.
+_DEFAULT_AGENTS = ["architect", "unity-dev", "unity-dots-dev", "qa-tester"]
 
 AGENT_ROLES = {
     "architect": {
@@ -151,6 +187,76 @@ AGENT_ROLES = {
 }
 
 
+def _resolve_agents() -> list[str]:
+    """Team composition: project-config teamProfiles.full when every member maps
+    onto a known AGENT_ROLES role; otherwise the built-in 4-agent profile.
+
+    Only an explicitly written config file counts — roots.load_config() merges
+    generic defaults ("architect", "coder", "tester") that do not match the
+    roles this orchestrator can prompt for.
+    """
+    cfg_path = (CONFIG or {}).get("_config_path")
+    if cfg_path:
+        try:
+            raw = json.loads(Path(cfg_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            raw = {}
+        profile = (raw.get("teamProfiles") or {}).get("full")
+        if profile and all(a in AGENT_ROLES for a in profile):
+            return list(profile)
+        if profile:
+            print(
+                f"[full-team] teamProfiles.full {profile} contains roles without "
+                f"AGENT_ROLES definitions — falling back to {_DEFAULT_AGENTS}",
+                file=sys.stderr,
+            )
+    return list(_DEFAULT_AGENTS)
+
+
+AGENTS = _resolve_agents()
+
+_OWNERSHIP_APPLIED = False
+
+
+def _apply_ownership_defaults() -> None:
+    """Resolve per-agent file ownership globs once, lazily (before prompts).
+
+    Priority:
+      1. project-config "ownershipDefaults" {agent: [globs]} when present
+      2. built-in Unity globs (Assets/** …) — fallback for projectType=="unity"
+      3. neutral ["**/*"] partition for implementation roles on non-unity
+         projects (logged)
+    """
+    global _OWNERSHIP_APPLIED
+    if _OWNERSHIP_APPLIED:
+        return
+    _OWNERSHIP_APPLIED = True
+    cfg = CONFIG or {}
+    overrides = cfg.get("ownershipDefaults") or {}
+    if overrides:
+        for agent, globs in overrides.items():
+            if agent in AGENT_ROLES and globs:
+                AGENT_ROLES[agent]["allowed_files"] = list(globs)
+        return
+    ptype = cfg.get("projectType")
+    if not cfg.get("_config_path"):
+        # No project-config.json written yet — detect, so unconfigured installs
+        # at a Unity project root keep the built-in Unity globs.
+        try:
+            ptype = roots.detect_project_type(REPO_ROOT)
+        except Exception:
+            ptype = "generic"
+    if ptype != "unity":
+        print(
+            f"[full-team] projectType={ptype}: no ownershipDefaults configured — "
+            "using neutral '**/*' ownership for implementation roles"
+        )
+        for agent, role in AGENT_ROLES.items():
+            if agent not in ("architect", "qa-tester"):
+                role["allowed_files"] = ["**/*"]
+                role["forbidden_files"] = []
+
+
 # ---------------------------------------------------------------------------
 # Standby bootstrap prompt (sent to each teammate before real assignment)
 # ---------------------------------------------------------------------------
@@ -229,6 +335,18 @@ def run(cmd: list[str], cwd: Path | None = None, check: bool = True) -> subproce
 def get_current_branch() -> str:
     result = run(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     return result.stdout.strip()
+
+
+def get_base_branch() -> str:
+    """Base branch for agent worktrees.
+
+    Configured project default (roots/project-config "defaultBranch") wins;
+    otherwise the currently checked-out branch (legacy behavior preserved).
+    """
+    configured = (CONFIG or {}).get("defaultBranch")
+    if configured:
+        return str(configured)
+    return get_current_branch()
 
 
 def is_worktree_dirty() -> bool:
@@ -631,10 +749,11 @@ def generate_prompts(
     ownership: dict[str, Any] | None = None,
 ) -> Path:
     """Generate per-agent prompt files. Returns prompt directory."""
-    prompt_dir = REPO_ROOT / "workspace" / "full-team" / task_slug
+    _apply_ownership_defaults()
+    prompt_dir = WORKSPACE_DIR / "full-team" / task_slug
     prompt_dir.mkdir(parents=True, exist_ok=True)
 
-    report_dir = f"reports/team/{task_slug}"
+    report_dir = f"{REPORTS_REL}/team/{task_slug}"
 
     for agent in AGENTS:
         role = AGENT_ROLES[agent]
@@ -732,9 +851,11 @@ def generate_prompts(
                 f"Write your QA report to: `{report_dir}/qa-report.md`",
                 "",
                 "Review ALL agent branches before approving:",
-                f"- `git diff {base_branch}..agent/unity-dev/{task_slug}`",
-                f"- `git diff {base_branch}..agent/unity-dots-dev/{task_slug}`",
-                f"- `git diff {base_branch}..agent/architect/{task_slug}`",
+                *[
+                    f"- `git diff {base_branch}..{branch_name(task_slug, a)}`"
+                    for a in AGENTS
+                    if a != "qa-tester"
+                ],
                 "",
                 "Check for: compile errors, behavior risks, performance risks,",
                 "race conditions, merge conflicts.",
@@ -746,8 +867,8 @@ def generate_prompts(
         sections.extend([
             "",
             "## Communication",
-            f"- If you need input from another agent, write to: `workspace/full-team/{task_slug}/messages/{agent}-outbox.md`",
-            f"- Check for messages at: `workspace/full-team/{task_slug}/messages/{agent}-inbox.md`",
+            f"- If you need input from another agent, write to: `{WORKSPACE_REL}/full-team/{task_slug}/messages/{agent}-outbox.md`",
+            f"- Check for messages at: `{WORKSPACE_REL}/full-team/{task_slug}/messages/{agent}-inbox.md`",
             "",
             "## BEGIN WORK NOW",
             "You have left standby mode. Start working on your assignment immediately.",
@@ -817,7 +938,7 @@ def verify(task_slug: str) -> int:
 
     # Report files
     print("\n## Report Files")
-    report_dir = REPO_ROOT / "reports" / "team" / task_slug
+    report_dir = REPORTS_DIR / "team" / task_slug
     for agent in AGENTS:
         report = report_dir / f"{agent}.md"
         st = "EXISTS" if report.exists() else "pending"
@@ -852,7 +973,7 @@ def status(task_slug: str) -> int:
             print(f"  {agent}: branch not found or no commits")
 
     print("\n## Reports")
-    report_dir = REPO_ROOT / "reports" / "team" / task_slug
+    report_dir = REPORTS_DIR / "team" / task_slug
     all_done = True
     for agent in AGENTS:
         report = report_dir / f"{agent}.md"
@@ -940,7 +1061,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
 
     # Step 2.1: Detect base branch
     print("\nStep 2.1: Detect base branch")
-    base_branch = get_current_branch()
+    base_branch = get_base_branch()
     print(f"  Base branch: {base_branch}")
 
     # Step 2.2: Dirty check
@@ -960,14 +1081,14 @@ def cmd_setup(args: argparse.Namespace) -> int:
 
     # Step 2.4: Create report directories
     print("\nStep 2.4: Create report directories")
-    report_dir = REPO_ROOT / "reports" / "team" / task_slug
+    report_dir = REPORTS_DIR / "team" / task_slug
     report_dir.mkdir(parents=True, exist_ok=True)
     for agent, wt in worktrees.items():
-        (wt / "reports" / "team" / task_slug).mkdir(parents=True, exist_ok=True)
+        (wt / REPORTS_REL / "team" / task_slug).mkdir(parents=True, exist_ok=True)
     print(f"  Report dir: {report_dir}")
 
     # Step 2.5: Create message directories for inter-agent communication
-    msg_dir = REPO_ROOT / "workspace" / "full-team" / task_slug / "messages"
+    msg_dir = WORKSPACE_DIR / "full-team" / task_slug / "messages"
     msg_dir.mkdir(parents=True, exist_ok=True)
 
     # Step 2.6: Generate assignment prompts
@@ -1078,18 +1199,18 @@ def cmd_assign(args: argparse.Namespace) -> int:
         print("\n[ABORT] Teammates not running. Run spawn-teammates first.", file=sys.stderr)
         return 5
 
-    base_branch = get_current_branch()
+    base_branch = get_base_branch()
     worktrees = create_worktrees(task_slug, base_branch)
     if len(worktrees) != len(AGENTS):
         print(f"FAILED: only {len(worktrees)}/{len(AGENTS)} worktrees", file=sys.stderr)
         return 3
 
-    report_dir = REPO_ROOT / "reports" / "team" / task_slug
+    report_dir = REPORTS_DIR / "team" / task_slug
     report_dir.mkdir(parents=True, exist_ok=True)
     for agent, wt in worktrees.items():
-        (wt / "reports" / "team" / task_slug).mkdir(parents=True, exist_ok=True)
+        (wt / REPORTS_REL / "team" / task_slug).mkdir(parents=True, exist_ok=True)
 
-    msg_dir = REPO_ROOT / "workspace" / "full-team" / task_slug / "messages"
+    msg_dir = WORKSPACE_DIR / "full-team" / task_slug / "messages"
     msg_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_dir = generate_prompts(task_slug, task, base_branch, worktrees)
@@ -1103,7 +1224,7 @@ def cmd_assign(args: argparse.Namespace) -> int:
 
 def cmd_worktrees(args: argparse.Namespace) -> int:
     task_slug = slugify(args.task)
-    base_branch = get_current_branch()
+    base_branch = get_base_branch()
     print(f"Creating worktrees for: {task_slug}")
     worktrees = create_worktrees(task_slug, base_branch)
     return 0 if len(worktrees) == len(AGENTS) else 3
@@ -1111,7 +1232,7 @@ def cmd_worktrees(args: argparse.Namespace) -> int:
 
 def cmd_prompts(args: argparse.Namespace) -> int:
     task_slug = slugify(args.task)
-    base_branch = get_current_branch()
+    base_branch = get_base_branch()
     worktrees = {a: worktree_path(task_slug, a) for a in AGENTS}
     generate_prompts(task_slug, args.task, base_branch, worktrees)
     return 0

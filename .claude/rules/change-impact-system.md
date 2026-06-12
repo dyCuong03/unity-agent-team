@@ -68,6 +68,8 @@ AGENT_DEPENDENCIES = {
 
 ## Impact Propagation Example
 
+Example (illustrative class names):
+
 Entry:
 ```
 [2026-05-22] domain:routing impact:high affects:all risk-category:routing

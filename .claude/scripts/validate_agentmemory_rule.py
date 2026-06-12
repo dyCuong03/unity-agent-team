@@ -22,7 +22,12 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+ROOT = roots.framework_root()
 
 SKILL_MD   = ROOT / ".claude" / "skills" / "agentmemory-codebase-recall" / "SKILL.md"
 CLAUDE_MD  = ROOT / ".claude" / "CLAUDE.md"

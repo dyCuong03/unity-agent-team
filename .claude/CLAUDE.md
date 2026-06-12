@@ -24,6 +24,23 @@ violation. Markdown promises are not enforcement.
   spawning.
 - **MCP and memory are pulled when needed.** Not as boot ceremony.
 
+## Project Context Resolution
+
+All roots come from the unified resolver — never from assumptions:
+
+```sh
+python3 .claude/scripts/roots.py --json
+```
+
+- Config lives in `.claude/project-config.json`, created by
+  `python3 .claude/scripts/setup.py`. If `roots.py` errors, run setup first.
+- Never assume project name, default branch, repo layout, or Unity location —
+  use `PROJECT_ROOT`, `projectType`, `UNITY_PROJECT_ROOT`, `defaultBranch`,
+  `workspaceDir`, `reportsDir`, `worktreeRoot`, `teamProfiles` from the output.
+- Knowledge files (`workspace/repo-knowledge.md`, `workspace/recent-changes.md`,
+  `workspace/ecs-registry.md`) are seeded by setup and **optional** — if absent,
+  agents state the gap and continue (see `agent-knowledge-policy.md`).
+
 ## Required MCP Servers
 
 | Server | Purpose |
@@ -63,8 +80,9 @@ Without it, every feature still works.
   - `intent ∈ {bug, feature, refactor, explore}`
   - `depth  ∈ {quick, normal, deep}` (default `normal`)
 - `/team --team <task>` — **Claude Agent Teams** mode: current session = teamlead,
-  spawns exactly 4 Sonnet teammates (`architect`, `unity-dots-dev`, `unity-dev`,
-  `qa-tester`) via `TeamCreate` + `Agent(team_name=…)` with a shared task list.
+  spawns the Sonnet teammates listed in config `teamProfiles.full` (unity default:
+  `architect`, `unity-dots-dev`, `unity-dev`, `qa-tester`) via `TeamCreate` +
+  `Agent(team_name=…)` with a shared task list.
   NOT subagents, NOT simulated, NOT worktrees. Fails fast if Agent Teams is off.
 - `/team --full <task>` — deprecated alias of `--team` (prints a deprecation notice).
 - `/team --worktrees <task>` — advanced opt-in: manual tmux + git-worktree team
@@ -200,7 +218,8 @@ Domain-specific reasoning is loaded via skill packs based on triage's
 
 ## Knowledge System (unchanged)
 
-Persistent across sessions, committed to repo:
+Persistent across sessions, committed to repo (seeded by `setup.py`; **optional**
+— if a file is missing or empty, agents state the gap and continue):
 
 - `workspace/repo-knowledge.md` — stable architecture facts (section-tagged,
   confidence-decayed)

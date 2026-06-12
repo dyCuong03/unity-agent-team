@@ -1,20 +1,33 @@
-# Clone & Setup — use `unity-agent-team` (and `/team --team`) in any Unity project
+# Clone & Setup — external/shared and monorepo installs (+ `/team --team`)
 
-This package is a portable `.claude/` agent system. You drop it into a Unity
-project and get the adaptive `/team` pipeline **and** the real 4-agent
-`/team --team` mode (4 Sonnet CLI sessions in tmux, one git worktree each).
+This package is a portable `.claude/` agent system. This file covers the
+installs where the framework does **not** simply live inside one target repo:
+**external/shared** mode and **monorepo** mode — plus the team modes
+(`/team --team`, `/team --worktrees`) that benefit from them. For the basic
+**embedded** install and the full configuration reference, see
+[`SETUP.md`](./SETUP.md).
 
 ---
 
-## 0. Mental model — where the package must live
+## 0. Mental model — three installation modes
 
-`/team --team` runs `full_team.py`, which creates **git worktrees of the repo
-that contains the installed `.claude/` folder** and lets teammates edit
-`Assets/**`. So the package's `.claude/` **must sit at the Unity project root**
-(the folder that has `Assets/`, `Packages/`, `ProjectSettings/` and is a git repo).
+All path resolution goes through `.claude/scripts/roots.py` (single resolver).
+`PROJECT_ROOT` — the repo agents actually work on — resolves in this order:
+explicit `--project-root` → env `AGENT_TEAM_PROJECT_ROOT` (legacy alias
+`UNITY_TEAM_PROJECT_ROOT` still honored) → `project-config.json
+"projectRoot"` → git toplevel of cwd → walk up for `.claude/` → fail (never
+guess). Check any time: `python3 .claude/scripts/roots.py --json`.
+
+| Mode | Layout | How PROJECT_ROOT is pointed |
+|------|--------|------------------------------|
+| **Embedded** | `.claude/` copied into the target repo root | implicit — config `projectRoot: "."` / git toplevel |
+| **External / shared** | framework checkout lives elsewhere; serves one or more target repos | env `AGENT_TEAM_PROJECT_ROOT` or `projectRoot` in the framework's `project-config.json` |
+| **Monorepo** | one workspace dir holds several projects; agents operate **only on the active project** | `projectRoot` per active project + `workspacePaths` allow-list |
+
+Embedded layout (the common case; details in SETUP.md):
 
 ```
-MyUnityGame/                ← git root  ← REPO_ROOT
+my-unity-game/              ← git root  ← PROJECT_ROOT
 ├── Assets/                 ← teammates edit here
 ├── Packages/
 ├── ProjectSettings/
@@ -23,40 +36,97 @@ MyUnityGame/                ← git root  ← REPO_ROOT
 └── workspace/              ← runtime artifacts (gitignored mostly)
 ```
 
-`full_team.py` resolves `REPO_ROOT` as the folder two levels above
-`.claude/scripts/`. If you cannot install at the root (e.g. the package is a
-nested clone), set an override:
-
-```sh
-export UNITY_TEAM_PROJECT_ROOT=/abs/path/to/MyUnityGame
-```
-
-Then `REPO_ROOT`, worktrees, and `Assets/**` ownership all resolve to the real
-project regardless of where the scripts physically live.
+`/team --team` / `--worktrees` create **git worktrees of PROJECT_ROOT**, so
+whichever mode you use, PROJECT_ROOT must be a git repo. Worktrees land in a
+namespaced sibling dir `<parent>/<projectName>-worktrees` (override:
+`worktreeRoot` in config) — two projects never share a worktree dir.
 
 ---
 
-## 1. Install into a fresh Unity project
+## 1. Install into a fresh Unity project (embedded)
 
 ```sh
-# from the unity-agent-team package repo
+# from the framework package repo
 PKG=/path/to/unity-agent-team
-DEST=/path/to/MyUnityGame          # the Unity project root (git repo)
+DEST=/path/to/my-unity-game        # the Unity project root (git repo)
 
 cp -r "$PKG/.claude"   "$DEST/.claude"
 cp    "$PKG/SETUP.md" "$PKG/README.md" "$PKG/MIGRATION.md" "$PKG/CHANGELOG.md" "$DEST/"
-cp    "$PKG/.mcp.json.template" "$DEST/.mcp.json"     # then fill in real MCP endpoints
+
+cd "$DEST"
+python3 .claude/scripts/setup.py    # detects projectType, writes project-config.json,
+                                    # creates workspace/ + reports/, seeds knowledge files
 ```
 
-If `$DEST` already has a `.claude/` (e.g. an older v1 install), back it up first:
-`mv "$DEST/.claude" "$DEST/.claude.v1.bak"`.
+If `$DEST` already has a `.claude/` (e.g. an older v1 install), back it up
+first: `mv "$DEST/.claude" "$DEST/.claude.v1.bak"`. If it had an older copy of
+*this* framework with hardcoded paths, run
+`python3 .claude/scripts/migrate.py --check` (see MIGRATION.md).
 
-> **This repo (BackpackAdventures) note:** the root `.claude/` is the legacy **v1**
-> command (fixed agents, markdown-promise gates). The v2 package lives in
-> `unity-agent-team/`. To use `/team --team` here, either (a) copy
-> `unity-agent-team/.claude` over the root `.claude`, or (b) run the script
-> directly with the override:
-> `UNITY_TEAM_PROJECT_ROOT=/mnt/e/BuzzleStudio/BackpackAdventures python3 unity-agent-team/.claude/scripts/full_team.py setup "<task>"`
+---
+
+## 1b. External / shared install (framework lives elsewhere)
+
+Keep one framework checkout and point it at a target repo — nothing is copied
+into the target except (optionally) a thin `.claude/` for project-local
+agents/skills.
+
+```sh
+# framework checkout at /opt/agent-team-framework, target at /path/to/my-unity-game
+export AGENT_TEAM_PROJECT_ROOT=/path/to/my-unity-game     # session/profile-wide
+python3 /opt/agent-team-framework/.claude/scripts/setup.py --project-root /path/to/my-unity-game
+python3 /opt/agent-team-framework/.claude/scripts/roots.py    # verify PROJECT_ROOT
+```
+
+Or, instead of the env var, persist the pointer in the **framework's** config
+(`/opt/agent-team-framework/.claude/project-config.json`):
+
+```json
+{ "projectName": "my-unity-game",
+  "projectRoot": "../../path/relative/to/framework/my-unity-game" }
+```
+
+Notes:
+
+- env var beats config — useful for switching targets per shell.
+- `workspace/`, `reports/`, knowledge seeds are created **in the target repo**
+  (paths are relative to PROJECT_ROOT, not the framework).
+- the legacy `UNITY_TEAM_PROJECT_ROOT` name still works but is deprecated.
+
+---
+
+## 1c. Monorepo install (one workspace, multiple projects)
+
+Layout example:
+
+```
+my-workspace/                       ← optional WORKSPACE_ROOT
+├── my-unity-game/                  ← Unity project (git repo or subdir)
+├── my-cloud-code-service/          ← backend project
+└── unity-agent-team/               ← the framework checkout
+```
+
+Configure the framework's `project-config.json` to name the **active**
+project and allow-list the siblings agents may read:
+
+```json
+{
+  "projectName": "my-unity-game",
+  "projectRoot": "../my-unity-game",
+  "workspacePaths": ["../my-cloud-code-service"]
+}
+```
+
+- Agents **operate only on the active project** (`projectRoot`); the
+  `workspacePaths` allow-list is for explicit cross-project reads only.
+- Switch the active project by editing `projectRoot` (and `projectName`), or
+  ad hoc with `AGENT_TEAM_PROJECT_ROOT=/abs/path/my-cloud-code-service`.
+- `AGENT_TEAM_WORKSPACE_ROOT` (or config `workspaceRoot`) can name the parent
+  workspace dir — it is never guessed.
+- Run `setup.py --project-root <active project>` once per project so each gets
+  its own config, workspace seeds, and team profile defaults for its type
+  (a `cloudcode` project gets `architect, backend-dev, tester` — see
+  SETUP.md's team-profile table).
 
 ---
 
@@ -120,7 +190,7 @@ This adds a `PreToolUse` Bash hook to `~/.claude/settings.json`:
 committed `.rtk/filters.toml` is untrusted on first use — RTK prints
 `untrusted project filters … Filters NOT applied. Run rtk trust` until you run:
 ```sh
-cd /path/to/MyUnityGame
+cd /path/to/my-unity-game
 rtk trust            # review + enable the project-local .rtk/filters.toml
 ```
 
@@ -133,7 +203,7 @@ rtk trust            # review + enable the project-local .rtk/filters.toml
 ## 3. Verify the install
 
 ```sh
-cd /path/to/MyUnityGame
+cd /path/to/my-unity-game
 python3 .claude/scripts/orchestrate.py preflight
 python3 .claude/scripts/orchestrate.py validate .claude/workspace-templates/triage.json triage
 python3 .claude/scripts/full_team.py prompts "verify install"   # dry: writes prompt files, no tmux

@@ -30,6 +30,8 @@ risk: <one line — what breaks or behaves differently>
 
 ## Example Entries
 
+Example (illustrative class names):
+
 ```
 [2026-05-22] domain:routing impact:medium affects:all
 change: hybrid domain threshold changed 0.65 → 0.50

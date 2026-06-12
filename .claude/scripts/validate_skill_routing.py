@@ -28,9 +28,14 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+ROOT = roots.framework_root()
 ORCH_PATH = Path(__file__).resolve().parent / "orchestrate.py"
-TEAM_MD = ROOT / ".claude" / "commands" / "team.md"
+TEAM_MD = roots.claude_root() / "commands" / "team.md"
 
 DOTS_SKILLS = {"unity-dots-best-practices", "ecs-job-patterns", "burst-safety", "memory-safety"}
 DOTS_EXTRAS = ["ecs-job-patterns", "burst-safety", "memory-safety"]

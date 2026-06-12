@@ -213,3 +213,66 @@ migration needed for these files.
 
 For anything else: read the script source. `orchestrate.py` is ~400 lines of
 stdlib Python; it is meant to be read.
+
+---
+
+# v2 → portable (2026-06)
+
+The framework no longer assumes it lives at the root of one specific Unity
+repo. All path resolution goes through a single resolver, configuration is a
+JSON file, and the same `.claude/` works embedded, shared across repos, or
+inside a monorepo.
+
+## What changed
+
+| Area | Before | After |
+|------|--------|-------|
+| Path resolution | each script computed paths itself (parents[2] of `__file__`, cwd guesses) | **`roots.py`** — single resolver every script imports. Resolution order for `PROJECT_ROOT`: explicit `--project-root` → env → `project-config.json` → `git rev-parse --show-toplevel` → walk up for `.claude/` → fail with `RootResolutionError` (never guess) |
+| Configuration | hardcoded assumptions (repo name, Unity root, branch) | **`.claude/project-config.json`** — projectName/Type, unityProjectRoot, defaultBranch, workspaceDir, worktreeRoot, teamProfiles, agentMemoryEnabled, … |
+| Setup | manual copy + hope | **`setup.py`** — idempotent init: detects project type, creates dirs, writes config (never overwrites user values without `--force`), seeds knowledge files |
+| Worktree dir | `<parent>/worktrees` (shared by every project — collision-prone) | `<parent>/<projectName>-worktrees` (namespaced; override via `worktreeRoot`) |
+| Team composition | fixed agent names baked into scripts/docs | **team profiles** per `projectType` in config (`teamProfiles.default` / `.full` / `.dots`, see `setup.py TEAM_PROFILE_DEFAULTS`) |
+| Env override | `UNITY_TEAM_PROJECT_ROOT` | **`AGENT_TEAM_PROJECT_ROOT`** (legacy name still honored as an alias) |
+| Install modes | embedded only | embedded · external/shared · monorepo (see `CLONE-SETUP.md`) |
+
+## How to migrate an existing install
+
+```sh
+python3 .claude/scripts/migrate.py --check    # report what's old-style; changes nothing
+python3 .claude/scripts/migrate.py            # apply: runs setup.py --yes, writes report
+```
+
+What `migrate.py` detects: missing `project-config.json`, the legacy
+`UNITY_TEAM_PROJECT_ROOT` env var, absolute paths baked into `.claude/**/*.md`
+or `.mcp.json`, and an old un-namespaced `<parent>/worktrees` dir.
+
+What apply does — and does not do:
+
+- Runs `setup.py --yes` (idempotent; existing config values are **never**
+  overwritten — same semantics as setup.py itself).
+- Writes `workspace/migration-report.md` listing findings and changes.
+- Does **not** auto-edit your markdown/`.mcp.json` (absolute paths are
+  reported file:line for manual fixing) and does **not** delete the old
+  worktrees dir.
+- Refuses to apply if `.claude/` has uncommitted git changes
+  (override: `--allow-dirty`).
+
+Rename the env var in your shell profile if you used the old name:
+
+```sh
+# before:  export UNITY_TEAM_PROJECT_ROOT=/path/to/my-unity-game
+export AGENT_TEAM_PROJECT_ROOT=/path/to/my-unity-game
+```
+
+## How to revert
+
+Migration is additive only. To undo:
+
+```sh
+git checkout -- .claude/                 # restore any framework files
+rm .claude/project-config.json           # remove generated config (if unwanted)
+# knowledge seeds (workspace/repo-knowledge.md etc.) are only created when
+# absent — delete them if you don't want them
+```
+
+If you committed the migration and want it gone: `git revert <commit>`.

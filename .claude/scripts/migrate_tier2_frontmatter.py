@@ -33,9 +33,14 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-ROOT = Path(__file__).resolve().parents[2]
-SKILLS_DIR = ROOT / ".claude" / "skills" / "unity-skills" / "skills"
-CHANGES_MD = ROOT / ".claude" / "skills" / "unity-skills" / "CHANGES.md"
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+ROOT = roots.framework_root()
+SKILLS_DIR = roots.claude_root() / "skills" / "unity-skills" / "skills"
+CHANGES_MD = roots.claude_root() / "skills" / "unity-skills" / "CHANGES.md"
 
 MAX_DESC_LEN = 1024  # Architect requirement: truncate descriptions to ≤1024 chars
 

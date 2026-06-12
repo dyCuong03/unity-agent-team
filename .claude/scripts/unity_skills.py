@@ -24,8 +24,27 @@ from urllib.parse import urlencode
 
 __version__ = "1.9.2"
 
-UNITY_URL = "http://localhost:8090"
-DEFAULT_PORT = 8090
+def _resolve_unity_url():
+    """REST endpoint resolution: env UNITY_SKILLS_URL > project-config
+    'unitySkillsUrl' (via roots.load_config) > default http://localhost:8090."""
+    env_url = os.environ.get("UNITY_SKILLS_URL")
+    if env_url:
+        return env_url.rstrip("/")
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import roots
+        cfg = roots.load_config()
+        val = cfg.get("unitySkillsUrl")
+        if val:
+            return str(val).rstrip("/")
+    except Exception:
+        pass
+    return "http://localhost:8090"
+
+
+UNITY_URL = _resolve_unity_url()
+_port_match = re.search(r":(\d+)$", UNITY_URL)
+DEFAULT_PORT = int(_port_match.group(1)) if _port_match else 8090
 PORT_RANGE_START = 8090
 PORT_RANGE_END = 8100
 
@@ -155,6 +174,10 @@ class UnitySkills:
                     self.url = f"http://localhost:{found_port}"
                 else:
                     raise ValueError(f"Could not find Unity instance matching version '{version}'.")
+            elif UNITY_URL != "http://localhost:8090":
+                # Explicit override via UNITY_SKILLS_URL env or project-config
+                # "unitySkillsUrl" — use it instead of scanning localhost.
+                self.url = UNITY_URL
             else:
                 # Auto-discover: scan 8090-8100 for first responding instance
                 found_port = self._find_first_available()

@@ -77,7 +77,7 @@ DO NOT read:
   - workspace/ecs-registry.md (unless testing an ECS component)
 
 After completing work:
-  - If sign-off: save regression anchor to workspace/repo-knowledge.md (via learning-loop.md)
+  - If sign-off: save regression anchor to workspace/repo-knowledge.md (via repo-learning-loop.md)
   - If performance regression found: append to workspace/recent-changes.md
 ```
 

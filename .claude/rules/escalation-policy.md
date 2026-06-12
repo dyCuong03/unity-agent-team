@@ -255,7 +255,7 @@ Escalation triggered
 
 ## Writing Escalation Signals
 
-Agents write escalation signals to the relevant workspace file:
+Agents write escalation signals to the relevant workspace file. The blocks below are examples — class and system names are illustrative:
 
 ```markdown
 <!-- In workspace/design.md, investigation.md, or migration-plan.md: -->

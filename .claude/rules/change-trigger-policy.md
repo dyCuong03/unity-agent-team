@@ -8,6 +8,8 @@ Do NOT write for trivial changes, formatting, or non-architectural edits.
 
 ## Triggers — ALWAYS write recent-changes.md entry
 
+The Example column uses illustrative class names — not tied to any specific project.
+
 | Trigger | Domain tag | Example |
 |---------|-----------|---------|
 | New agent added or removed | `general` | code-tracer added; codebase-reader removed |

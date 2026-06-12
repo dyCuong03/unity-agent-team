@@ -16,7 +16,12 @@ import re
 import sys
 from pathlib import Path
 
-TIER3_ROOT = Path(".claude/skills/unity-dots")
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+TIER3_ROOT = roots.claude_root() / "skills" / "unity-dots"
 APPLY = "--apply" in sys.argv
 
 METADATA_BLOCK = """\

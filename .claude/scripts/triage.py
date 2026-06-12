@@ -38,8 +38,20 @@ import json
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE = REPO_ROOT / "workspace"
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+# PROJECT-scoped: workspace belongs to the project being worked on.
+try:
+    REPO_ROOT = roots.project_root()
+except roots.RootResolutionError:
+    REPO_ROOT = roots.framework_root()
+try:
+    WORKSPACE = roots.workspace_dir(REPO_ROOT, roots.load_config(REPO_ROOT))
+except roots.RootResolutionError:
+    WORKSPACE = REPO_ROOT / "workspace"
 
 
 def parse_ownership(pairs: list[str]) -> dict[str, list[str]]:

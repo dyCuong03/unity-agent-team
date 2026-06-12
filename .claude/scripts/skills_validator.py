@@ -25,10 +25,16 @@ from typing import Any
 # Config
 # ---------------------------------------------------------------------------
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+# FRAMEWORK-scoped: skills/registry/scripts live in the framework's .claude/.
+REPO_ROOT = roots.framework_root()
+SKILLS_DIR = roots.claude_root() / "skills"
 REGISTRY_PATH = SKILLS_DIR / "registry.json"
-SCRIPTS_DIR = REPO_ROOT / ".claude" / "scripts"
+SCRIPTS_DIR = roots.claude_root() / "scripts"
 
 # Minimum description length (chars)
 MIN_DESC_LEN = 50

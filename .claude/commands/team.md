@@ -1,5 +1,5 @@
 ---
-description: Adaptive Unity DOTS agent pipeline. Triage classifies the task; orchestrate.py derives the minimum viable agent composition; each phase is artifact-gated by Python, not by markdown promises. Use --team (deprecated alias --full) for a real 4-agent team on Sonnet with tmux + git worktrees.
+description: Adaptive agent pipeline (project context resolved via roots.py). Triage classifies the task; orchestrate.py derives the minimum viable agent composition; each phase is artifact-gated by Python, not by markdown promises. Use --team (deprecated alias --full) for a real Agent Teams team (roster from config teamProfiles.full) on Sonnet.
 argument-hint: "[--team] <intent: bug | feature | refactor | explore> [depth: quick | normal | deep] <task description>"
 ---
 
@@ -18,8 +18,37 @@ Two modes:
 | Mode | Command | Behavior |
 |------|---------|----------|
 | **Adaptive** (default) | `/team <intent> [depth] <task>` | Triage → minimum agents → artifact-gated (in-process subagents) |
-| **Team** | `/team --team <task>` (deprecated alias `--full`) | **Claude Agent Teams** — current session is teamlead; exactly 4 persistent teammates on **Sonnet** (NOT subagents, NOT simulated, NOT tmux/worktree) |
+| **Team** | `/team --team <task>` (deprecated alias `--full`) | **Claude Agent Teams** — current session is teamlead; persistent teammates from config `teamProfiles.full` on **Sonnet** (NOT subagents, NOT simulated, NOT tmux/worktree) |
 | **Worktrees** | `/team --worktrees <task>` | Advanced opt-in: manual tmux + git-worktree team via `full_team.py` |
+
+## STEP -1 — Resolve project context (ALL modes, before anything else)
+
+Run the unified resolver **once** at the start of every `/team` invocation:
+
+```sh
+python3 .claude/scripts/roots.py --json
+```
+
+All subsequent paths come from this output — never from assumptions about cwd,
+repo name, or layout:
+
+- `workspaceDir` → every `workspace/...` path mentioned in this command
+- `reportsDir` → every `reports/...` path
+- `worktreeRoot` → worktree locations (`--worktrees` mode)
+- `defaultBranch` → base branch for worktree branches and merges
+- `PROJECT_ROOT`, `projectType`, `UNITY_PROJECT_ROOT`, `projectName`,
+  `teamProfiles` → injected into every agent/teammate prompt
+
+If `roots.py` errors, **STOP** and tell the user to run
+`python3 .claude/scripts/setup.py`, then re-run `/team`.
+
+`roots.py` exits 0 with built-in defaults when no `project-config.json`
+exists — so ALSO check the output: if `configPath` is `null`, the project has
+not been set up. **STOP** and instruct the user to run
+`python3 .claude/scripts/setup.py` (defaults like `teamProfiles` and
+`projectType=generic` are placeholders, not a configured project).
+
+---
 
 The adaptive path **always** runs `triage` first, **always** calls
 `orchestrate.py plan` to derive the pipeline, and **never** spawns agents that
@@ -28,20 +57,27 @@ exits non-zero, you halt — no exceptions, no markdown promises.
 
 **Exception:** `/team --team` (deprecated alias `/team --full`) bypasses adaptive
 triage and runs a **Claude Agent Teams** team — the current session is the
-teamlead and spawns exactly 4 Agent Teams teammates (architect, unity-dots-dev,
-unity-dev, qa-tester) on Sonnet via `TeamCreate` + `Agent(team_name=…)`, with a
-shared task list. See the `--team` section below.
+teamlead and spawns the teammates listed in the config's `teamProfiles.full`
+(from the STEP -1 `roots.py --json` output) on Sonnet via `TeamCreate` +
+`Agent(team_name=…)`, with a shared task list. See the `--team` section below.
 
 ## Flags
 
 ### `--team`
 
 Use Claude Agent Teams mode. The current Claude Code session is the teamlead and
-creates exactly 4 Agent Teams teammates on Sonnet:
+creates the Agent Teams teammates on Sonnet. **The teammate roster comes from
+config: `teamProfiles.full` in the `roots.py --json` output — never a hardcoded
+list.** The documented default profile for `projectType=unity` is:
 - `architect`
 - `unity-dots-dev`
 - `unity-dev`
 - `qa-tester`
+
+Non-unity project types use their configured profile (e.g. `cloudcode` →
+`architect`, `backend-dev`, `qa-tester`). If a profile names a role with no
+`.claude/agents/<role>.md` definition, spawn it as a generic `claude` teammate
+with the role described in the prompt.
 
 Real Agent Teams teammates with shared task coordination and teammate-to-teammate
 messaging. This mode does **not** use normal subagents, **not** simulated markdown
@@ -81,7 +117,8 @@ Before STEP 0, scan the arguments:
 - If they contain **`--team`** → **Claude Agent Teams mode**. Do NOT run
   triage/plan/gates. Do NOT run `full_team.py`. Jump to the **`/team --team`**
   section below: run the Step 0 availability check, then `TeamCreate` + spawn the
-  4 Sonnet teammates via `Agent(team_name=…)`. Strip the flag from `<task>`.
+  Sonnet teammates from `teamProfiles.full` via `Agent(team_name=…)`. Strip the
+  flag from `<task>`.
 - If they contain **`--full`** → same as `--team`, but FIRST print:
   `[DEPRECATED] /team --full is an alias for /team --team. Prefer /team --team.`
 - If they contain **`--worktrees`** → the separate manual tmux/worktree mode
@@ -146,7 +183,7 @@ Spawn one `triage` agent. Wait for its artifact. No exceptions.
 Agent({
   subagent_type: "triage",
   description: "Adaptive pipeline triage",
-  prompt: "@.claude/agents/triage.md @.claude/skills/triage/SKILL.md @.claude/rules/GRAPH_FIRST.md @.claude/rules/api-fingerprinting-system.md @.claude/rules/domain-scoring-engine.md\n\nIntent: <INTENT>\nDepth: <DEPTH>\nTask: <TASK>\n\nProduce workspace/triage.json via .claude/scripts/triage.py and validate it. Return only the rationale paragraph and the artifact path."
+  prompt: "@.claude/skills/triage/SKILL.md @.claude/rules/GRAPH_FIRST.md @.claude/rules/api-fingerprinting-system.md @.claude/rules/domain-scoring-engine.md\n\nIntent: <INTENT>\nDepth: <DEPTH>\nTask: <TASK>\n\nProduce workspace/triage.json via .claude/scripts/triage.py and validate it. Return only the rationale paragraph and the artifact path."
 })
 ```
 
@@ -343,8 +380,9 @@ Rules enforced by the script (do not reimplement them by hand):
 - If no remote is configured or `push` is rejected, the commit is retained
   locally and the gate still exits `0` (push failure is non-fatal, surfaced as
   a WARN). Use `--no-push` to commit without pushing.
-- The repo committed is `UNITY_TEAM_PROJECT_ROOT` if set, else the package root
-  (same resolution as `full_team.py`).
+- The repo committed is the resolved `PROJECT_ROOT` from STEP -1
+  (`roots.py` resolution order: explicit arg → `AGENT_TEAM_PROJECT_ROOT` env →
+  `project-config.json` → git toplevel — same resolution as `full_team.py`).
 
 Print the `[commit]` output verbatim. Do **not** run a manual `git commit` /
 `git push` — always go through this gate so the PASS-only and branch-safety
@@ -387,7 +425,7 @@ literally and follow it — it is the behavior of the command:
 ```
 Use Claude Agent Teams backend.
 The current Claude Code session is the teamlead.
-Create exactly 4 teammates using Agent Teams.
+Create one teammate per role in config teamProfiles.full (from roots.py --json).
 Do not use normal subagents.
 Do not simulate roles.
 Use Sonnet for all teammates.
@@ -433,7 +471,13 @@ If the invocation was `/team --full …`, first print:
 
 then proceed identically to `--team`.
 
-### The 4 teammates (exactly these, always, all Sonnet)
+### The teammates (from config `teamProfiles.full`, all Sonnet)
+
+The roster is read from `teamProfiles.full` in the STEP -1 `roots.py --json`
+output. Spawn exactly the roles it lists — no more, no fewer.
+
+**Default profile for `projectType=unity`** (documented reference, still read
+from config at runtime):
 
 | Teammate | Model | Responsibility |
 |----------|-------|----------------|
@@ -442,8 +486,14 @@ then proceed identically to `--team`.
 | `unity-dev` | Sonnet | Unity UI, MonoBehaviour, gameplay, VContainer, Addressables, pooling, DOTween |
 | `qa-tester` | Sonnet | testing, regression, reproduction, root-cause validation, final approval |
 
-Canonical names only: `architect`, `unity-dots-dev`, `unity-dev`, `qa-tester`.
-Do not use `architech`, `unity-dot-dev`, `QA`, or bare `tester`.
+Other project types use their configured profile (e.g. `architect`,
+`backend-dev`, `qa-tester`). For any role with no `.claude/agents/<role>.md`
+definition: spawn `subagent_type: "claude"` (generic) and describe the role's
+responsibility in the prompt.
+
+Use the exact role names from the profile — no typos, no aliases
+(e.g. never `architech`, `unity-dot-dev`, `QA`, or bare `tester` when the
+profile says `qa-tester`).
 
 ### Execution protocol (teamlead = current session)
 
@@ -452,21 +502,39 @@ Do not use `architech`, `unity-dot-dev`, `QA`, or bare `tester`.
    ```
    TeamCreate({ team_name: "team-<slug>", description: "<task>", agent_type: "orchestrator" })
    ```
-3. **Create the shared task list** with real dependencies so QA cannot approve
-   before architect + both devs finish. Capture the returned task IDs:
+3. **Create the shared task list** — one task per role in `teamProfiles.full`,
+   with real dependencies so QA cannot approve before the architect + all dev
+   roles finish. Capture the returned task IDs. Example for the unity default
+   profile (`architect`, `unity-dots-dev`, `unity-dev`, `qa-tester`):
    ```
    tA  = TaskCreate({ subject: "architect: analysis + ownership + plan" })
    tD  = TaskCreate({ subject: "unity-dots-dev: DOTS/ECS analysis + impl notes" })
    tU  = TaskCreate({ subject: "unity-dev: Unity classic (UI/Mono) analysis + impl plan" })
    tQ  = TaskCreate({ subject: "qa-tester: test matrix + regression + APPROVE/BLOCK verdict" })
-   # devs blocked by architect; QA blocked by architect AND both devs:
+   # devs blocked by architect; QA blocked by architect AND all devs:
    TaskUpdate({ taskId: tD, addBlockedBy: [tA] })
    TaskUpdate({ taskId: tU, addBlockedBy: [tA] })
    TaskUpdate({ taskId: tQ, addBlockedBy: [tA, tD, tU] })
    ```
-4. **Spawn exactly 4 teammates** with the Agent tool — `team_name`, `name`,
-   `model: "sonnet"`, the matching `subagent_type`, and a `prompt` that loads the
-   role's skills.
+   For other profiles, apply the same shape: architect first, dev roles blocked
+   by architect, QA blocked by everything else.
+4. **Spawn one teammate per profile role** with the Agent tool — `team_name`,
+   `name`, `model: "sonnet"`, the matching `subagent_type` (or `"claude"` if no
+   agent definition exists for the role), and a `prompt` that loads the role's
+   skills.
+
+   **Project context injection (mandatory).** Every teammate prompt MUST embed
+   the resolved context from STEP -1, verbatim values, e.g.:
+   ```
+   PROJECT CONTEXT (resolved — do not re-derive):
+   - project: <projectName>  (projectType: <projectType>)
+   - PROJECT_ROOT: <PROJECT_ROOT>
+   - UNITY_PROJECT_ROOT: <UNITY_PROJECT_ROOT or "none">
+   - current branch: <git branch>   default branch: <defaultBranch>
+   - workspace dir: <workspaceDir>   reports dir: <reportsDir>
+   - your ownership scope / allowed write paths: <from architect's ownership map,
+     or the role's default lane>
+   ```
 
    **Skill loading — same registry/router as adaptive mode, Read-first.**
    Per-role skill files come from the skill router so `--team` and adaptive `/team`
@@ -504,7 +572,9 @@ Do not use `architech`, `unity-dot-dev`, `QA`, or bare `tester`.
    ```
 
    These are persistent Agent Teams teammates (addressable via `SendMessage`), NOT
-   one-shot subagents. Each prompt = `<@-imports>\n\n<STEP 0 block>\n\n<role prompt>`:
+   one-shot subagents. Each prompt = `<@-imports>\n\n<STEP 0 block>\n\n<PROJECT
+   CONTEXT block>\n\n<role prompt>`. Spawn examples below show the **unity
+   default profile** — substitute the actual roles from `teamProfiles.full`:
    ```
    Agent({ team_name: "team-<slug>", name: "architect",      subagent_type: "architect",      model: "sonnet",
            prompt: "@.claude/skills/architect/SKILL.md @.claude/skills/unity-foundation/SKILL.md @.claude/skills/codebase-understanding/SKILL.md @.claude/skills/agentmemory-codebase-recall/SKILL.md\n\nSTEP 0 — Required skill loading: Read those skill files with the Read tool before any work. Then report loaded skill names, 3 concrete rules from each, and any missing skill as [BLOCKED: MISSING SKILL].\n\n<architect role prompt>" })
@@ -517,7 +587,7 @@ Do not use `architech`, `unity-dot-dev`, `QA`, or bare `tester`.
    ```
 5. **architect analyzes first** → publishes ownership map + execution plan +
    acceptance criteria to the shared task / via `SendMessage` to the team.
-6. **unity-dev and unity-dots-dev work according to the architect's ownership.**
+6. **Dev roles work according to the architect's ownership.**
    Teammate-to-teammate `SendMessage` is allowed (e.g. dev ↔ dev boundary, dev → qa).
 7. **qa-tester reviews** outputs + validation evidence and posts `APPROVE` or `BLOCK`.
 8. **Teamlead synthesizes** the final result from teammate outputs.
@@ -536,6 +606,15 @@ own tmux pane. The teamlead should surface, when the runtime provides them:
 
 Messages from teammates are delivered to the teamlead automatically as new turns —
 do not poll an inbox; coordinate with `SendMessage` + `TaskUpdate`.
+
+### Role prompts (unity default profile)
+
+The four role prompts below belong to the documented `projectType=unity`
+default profile. For other profiles, reuse the `architect` and `qa-tester`
+prompts as-is and write an analogous prompt for each dev role (e.g.
+`backend-dev`, `web-dev`, `coder`) describing its lane; roles without a
+`.claude/agents/<role>.md` are spawned as generic `claude` teammates with the
+role described in the prompt.
 
 ### Role prompt — architect
 
@@ -670,20 +749,27 @@ consistent naming/style; add only necessary logic; document assumptions.
 ## `/team --worktrees` — Manual tmux + git-worktree team (advanced, opt-in)
 
 Separate, explicit mode for isolated parallel branches. NOT `--team`, NOT `--full`.
-Uses `full_team.py` to create 4 real `claude` CLI sessions (Sonnet) in tmux windows,
-each in its own git worktree+branch, with QA-gated merge. Use only when you
-explicitly want branch isolation.
+Uses `full_team.py` to create one real `claude` CLI session (Sonnet) per profile
+role in tmux windows, each in its own git worktree+branch, with QA-gated merge.
+Use only when you explicitly want branch isolation.
+
+Paths and branches come from the STEP -1 resolution:
+- Worktrees are created under `roots.worktree_root()` (the `worktreeRoot` field
+  of `roots.py --json`) — never a hardcoded sibling path.
+- The base branch for every worktree branch and the merge target is the config
+  `defaultBranch` — never an assumed branch name.
 
 ```sh
 python3 .claude/scripts/full_team.py setup "<task>"      # teammates(standby) → validate → worktrees → assign
-tmux attach -t unity-agent-team-<slug>
+# attach to the tmux session name printed by `setup` (derived from projectName)
 python3 .claude/scripts/full_team.py status "<task>"
-# merge only after reports/team/<slug>/qa-report.md = APPROVE, then:
+# merge only after <reportsDir>/team/<slug>/qa-report.md = APPROVE, then:
 python3 .claude/scripts/full_team.py teardown "<task>"
 ```
 
 Prerequisites (hard, fail-fast): `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `tmux`,
-`git` worktree support, `claude` CLI. Same 4 roles and quality bars as `--team`.
+`git` worktree support, `claude` CLI. Same roles (from `teamProfiles.full`) and
+quality bars as `--team`.
 
 ---
 

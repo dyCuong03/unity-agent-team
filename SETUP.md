@@ -9,16 +9,123 @@
 
 ---
 
-## Install
+## Prerequisites
 
-1. Copy the `.claude/` folder into your Unity project root (or root of any
-   repo you want to use it from).
+- **Python 3.8+** on PATH (`python3`). All scripts are stdlib-only — no pip.
+- **git** on PATH (branch resolution, worktrees, migrate safety checks).
+- **Claude Code** opened at the project (or framework) root.
+- Optional: `tmux` (only for `--worktrees` / pane-per-agent UI), MCP servers
+  (see "Required runtime" below).
+
+## Install (embedded mode)
+
+Embedded = the `.claude/` folder is copied into the target repo. This is the
+default and simplest mode. (For **external/shared** and **monorepo** modes,
+see [`CLONE-SETUP.md`](./CLONE-SETUP.md).)
+
+1. Copy the `.claude/` folder into your project root (e.g. `my-unity-game/`,
+   the folder that is a git repo — for Unity, the one containing `Assets/`).
 2. Copy `SETUP.md`, `README.md`, `CHANGELOG.md`, `MIGRATION.md`, and `LICENSE`
    alongside (optional but recommended).
-3. Open Claude Code in the project. The `/team` slash command is now
+3. Initialize:
+
+   ```sh
+   cd /path/to/my-unity-game
+   python3 .claude/scripts/setup.py
+   ```
+
+4. Open Claude Code in the project. The `/team` slash command is now
    available.
 
-That is the whole install. There is no global config to enable.
+`setup.py` detects the project type, writes `.claude/project-config.json`,
+creates `workspace/` + `reports/` + devlog dirs, and seeds the knowledge
+files (`repo-knowledge.md`, `recent-changes.md`, plus `ecs-registry.md` for
+Unity projects). It is **idempotent** — safe to run any number of times —
+and **never overwrites existing config values** without `--force`.
+
+Migrating an existing pre-portable install? Run
+`python3 .claude/scripts/migrate.py --check` first — see
+[`MIGRATION.md`](./MIGRATION.md) § "v2 → portable".
+
+### setup.py command reference
+
+```sh
+python3 .claude/scripts/setup.py                  # init with safe defaults
+python3 .claude/scripts/setup.py --check          # dry run; exit 1 if work needed, 0 if clean
+python3 .claude/scripts/setup.py --yes            # non-interactive (automation)
+python3 .claude/scripts/setup.py --force          # regenerate config, OVERWRITES existing values
+python3 .claude/scripts/setup.py --project-root /path/to/target
+```
+
+---
+
+## Configuration reference — `.claude/project-config.json`
+
+All fields are optional; absent fields use these defaults
+(see `roots.py _default_config` + `setup.py build_config`):
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `projectName` | directory name | display name; also namespaces the default worktree dir |
+| `projectRoot` | `"."` | target repo, **relative to the framework root** — set this in external/shared installs |
+| `projectType` | auto-detected | `unity` \| `cloudcode` \| `web` \| `backend` \| `cocos` \| `generic` |
+| `unityProjectRoot` | auto-scan (root + 2 child levels) | dir containing `Assets/`, `Packages/manifest.json`, `ProjectSettings/ProjectVersion.txt`; `null` for non-Unity |
+| `defaultBranch` | `null` → `origin/HEAD` → current branch → `main` | branch the commit gate targets |
+| `allowedBranches` | `[]` (no restriction) | restrict which branches agents may commit to |
+| `devlogPaths` | `[".claude/devlogs"]` | devlog dirs (missing dirs are fine, never an error) |
+| `workspaceDir` | `"workspace"` | session + knowledge artifacts dir |
+| `reportsDir` | `"reports"` | report output dir |
+| `worktreeRoot` | `null` → `<parent>/<projectName>-worktrees` | base dir for `--worktrees` mode |
+| `agentMemoryEnabled` | `false` | enable agentmemory; setup configures `.mcp.json` from `.mcp.json.template` |
+| `agentMemoryIndexPath` | `".agentmemory"` | agentmemory index dir |
+| `teamProfiles` | per `projectType` (see `setup.py TEAM_PROFILE_DEFAULTS`) | named agent line-ups for `/team --team` (`default`, `full`, plus e.g. `dots` for Unity) |
+| `ownershipDefaults` | `{}` | default glob ownership partitions per agent |
+| `workspacePaths` | `[]` | **monorepo** cross-project allow-list (see CLONE-SETUP.md) |
+| `workspaceRoot` | unset (or env `AGENT_TEAM_WORKSPACE_ROOT`) | optional parent dir holding multiple repositories — never guessed |
+
+Default team profiles by project type (override via `teamProfiles`):
+
+| projectType | `default` | `full` |
+|-------------|-----------|--------|
+| `unity` | architect, unity-dev, tester (+ `dots`: architect, unity-dots-dev, tester) | architect, unity-dots-dev, unity-dev, qa-tester |
+| `cloudcode` / `backend` | architect, backend-dev, tester | architect, backend-dev, qa-tester |
+| `web` | architect, web-dev, tester | architect, web-dev, qa-tester |
+| `cocos` / `generic` | architect, coder, tester | architect, coder, qa-tester |
+
+---
+
+## Root resolution order
+
+`roots.py` is the **single source of truth** for path resolution. Every
+framework script imports it. Inspect what it resolves at any time:
+
+```sh
+python3 .claude/scripts/roots.py --json
+```
+
+Root concepts (from the `roots.py` docstring):
+
+```
+FRAMEWORK_ROOT     dir containing the installed framework's .claude/
+CLAUDE_ROOT        the active .claude/ configuration directory
+PROJECT_ROOT       the repository being worked on (may differ from
+                   FRAMEWORK_ROOT in external/shared and monorepo modes)
+UNITY_PROJECT_ROOT dir containing Assets/, Packages/manifest.json and
+                   ProjectSettings/ProjectVersion.txt — None for non-Unity
+WORKSPACE_ROOT     optional parent dir holding multiple repositories;
+                   never guessed, only explicit config/env
+```
+
+Resolution order for `PROJECT_ROOT`:
+
+```
+1. explicit argument (CLI --project-root passed through by callers)
+2. env AGENT_TEAM_PROJECT_ROOT (legacy alias: UNITY_TEAM_PROJECT_ROOT)
+3. project-config.json "projectRoot" (relative to CLAUDE_ROOT's parent)
+4. `git rev-parse --show-toplevel` from the current working directory
+5. walk up from cwd looking for a `.claude/` directory (max 8 levels)
+6. fail with RootResolutionError — never guess
+```
 
 > **Recommended companion: RTK (token-optimized commands).** The package ships
 > `.rtk/filters.toml` + RTK usage rules in `CLAUDE.md`. To make Claude route
@@ -31,9 +138,9 @@ That is the whole install. There is no global config to enable.
 ### Use `/team` in another project (cross-project)
 
 `/team` is **self-contained in `.claude/`**. To use it in any other repo, copy that
-folder into the target repo root — nothing else is global, and it works for Unity
-classic, Unity DOTS/ECS, and plain C# / non-Unity repos alike (irrelevant skills
-just score low and never load).
+folder into the target repo root and run setup — nothing else is global, and it
+works for Unity classic, Unity DOTS/ECS, and plain C# / non-Unity repos alike
+(irrelevant skills just score low and never load).
 
 ```sh
 # from this package repo into a target project:
@@ -41,10 +148,15 @@ cp -R .claude /path/to/other-project/.claude
 cp SETUP.md README.md CHANGELOG.md MIGRATION.md LICENSE /path/to/other-project/   # optional but recommended
 
 cd /path/to/other-project
+python3 .claude/scripts/setup.py                         # init config + dirs + seeds
 python3 .claude/scripts/orchestrate.py preflight         # env / MCP / tmux sanity
-python3 .claude/scripts/build_skill_registry.py check    # registry intact (22/22 skills)
-python3 .claude/scripts/validate_skill_routing.py        # routing lanes correct (4/4)
+python3 .claude/scripts/build_skill_registry.py check    # registry intact
+python3 .claude/scripts/validate_skill_routing.py        # routing lanes correct
 ```
+
+To use the framework **without copying it** (external/shared mode — one
+framework checkout serving several target repos) or inside a **monorepo**
+(one workspace, several projects), see [`CLONE-SETUP.md`](./CLONE-SETUP.md).
 
 Then open Claude Code in that project and run `/team <intent> [depth] <task>`.
 
@@ -234,8 +346,15 @@ when the project is opened (once `.mcp.json` is configured).
 
 ### 2. Connect to Claude Code via `.mcp.json`
 
-Add an `agentmemory` entry to your project's `.mcp.json` alongside the other servers.
-The typical stdio shape (verify against https://github.com/rohitg00/agentmemory):
+**Easiest path:** set `"agentMemoryEnabled": true` in
+`.claude/project-config.json` and re-run `python3 .claude/scripts/setup.py` —
+when no `.mcp.json` exists yet, setup generates one from the framework's
+`.mcp.json.template` with the repo path filled in. The index dir defaults to
+`.agentmemory/` (`agentMemoryIndexPath`).
+
+Or manually: add an `agentmemory` entry to your project's `.mcp.json` alongside
+the other servers. The typical stdio shape (verify against
+https://github.com/rohitg00/agentmemory):
 
 ```json
 {
@@ -347,6 +466,53 @@ workspace/                          — runtime artifacts (mostly session-scoped
 
 ---
 
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `RootResolutionError: Cannot resolve PROJECT_ROOT` | no env var, no config, not inside a git repo, no `.claude/` found walking up | set `AGENT_TEAM_PROJECT_ROOT=/path/to/target`, or add `"projectRoot"` to `.claude/project-config.json`, or run from inside the target repo; then `python3 .claude/scripts/setup.py` |
+| `RootResolutionError: … projectRoot=… does not exist` | stale `projectRoot` in config after a move/rename | fix or remove the `projectRoot` value; re-run `setup.py --check` |
+| **Wrong project detected** (commands operate on the framework repo instead of your game, or on a sibling project) | env var or `projectRoot` pointing elsewhere; or cwd in a different git repo | run `python3 .claude/scripts/roots.py` and read `PROJECT_ROOT`; resolution order is env → config → git toplevel → walk-up. Unset/repoint the higher-priority source |
+| **Non-Unity project**: `UNITY_PROJECT_ROOT=None`, ECS skills absent | the repo has no `Assets/` + `Packages/manifest.json` + `ProjectSettings/ProjectVersion.txt` | this is correct behavior — `/team` still works; Unity-specific skills score low and never load. If it *is* Unity but nested deeper than 2 levels, set `"unityProjectRoot"` explicitly |
+| `Cannot parse …project-config.json` | hand-edited JSON is invalid | fix the JSON or delete the file and re-run `setup.py` |
+| Legacy `UNITY_TEAM_PROJECT_ROOT` warnings | old env var name | rename to `AGENT_TEAM_PROJECT_ROOT` (alias still honored); `migrate.py --check` flags it |
+
+---
+
+## Extending
+
+### Add a new project type
+
+1. In `.claude/scripts/setup.py`, add an entry to `TEAM_PROFILE_DEFAULTS`
+   (the `default` and `full` agent line-ups for that type).
+2. In `.claude/scripts/roots.py`, extend `detect_project_type()` with a
+   detection heuristic (marker files / dependencies) and add the type name to
+   `PROJECT_TYPES`.
+3. Re-run `python3 .claude/scripts/setup.py --check` in a repo of that type to
+   confirm detection.
+
+Existing installs are unaffected — `projectType` in an existing config is
+never overwritten without `--force`.
+
+### Add a project-local agent or skill (without touching the shared framework)
+
+Drop the file into the **target repo's** own `.claude/`:
+
+- agent: `<target>/.claude/agents/<name>.md`
+- skill: `<target>/.claude/skills/<name>/SKILL.md`
+
+Precedence: the target project's `.claude/` is the active configuration
+directory in embedded mode, so project-local definitions are picked up
+directly. In external/shared mode, Claude Code loads the `.claude/` of the
+repo you open — keep project-specific agents/skills in the target repo and
+shared ones in the framework repo; on a name collision the project-local file
+wins (local skills always win — see `AGENTS.md`). Register new skills in
+`.claude/skills/registry.json` and run
+`python3 .claude/scripts/skills.py validate` (must report
+`orphans:0, unreachable:0, unresolved_duplicates:0`).
+
+---
+
 ## Updating
 
 The package has no auto-update. To update:
@@ -362,7 +528,21 @@ The package has no auto-update. To update:
 
 ---
 
-## Uninstall
+## Uninstall / rollback
 
-Delete the `.claude/` folder. The `workspace/` folder can stay (it is yours).
-There is no global state to clean up.
+Full uninstall from a target project:
+
+1. Delete the `.claude/` folder (this includes `project-config.json`).
+2. Optionally delete the seeded workspace files
+   (`workspace/repo-knowledge.md`, `recent-changes.md`, `ecs-registry.md`)
+   and `reports/` — they are yours; keep them if the knowledge is valuable.
+3. Remove the `agentmemory` entry from `.mcp.json` (or the whole file if
+   setup generated it) and the `.agentmemory/` index dir if present.
+
+There is no global state to clean up. To roll back a setup/migration that was
+committed to git instead:
+
+```sh
+git checkout -- .claude/        # restore framework files to HEAD
+git revert <setup-commit>       # or revert the whole commit
+```

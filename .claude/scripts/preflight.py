@@ -26,6 +26,18 @@ import shutil
 import sys
 from pathlib import Path
 
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+
+def _resolved_roots() -> dict | None:
+    try:
+        return roots.resolve_all()
+    except Exception:
+        return None
+
 
 def _home() -> Path:
     return Path(os.path.expanduser("~"))
@@ -97,12 +109,23 @@ def main() -> int:
         "mcp:agentmemory": check_mcp("agentmemory"),
     }
 
+    ctx = _resolved_roots()
+
     if args.json:
-        print(json.dumps(
-            {k: {"ok": ok, "detail": detail} for k, (ok, detail) in checks.items()},
-            indent=2,
-        ))
+        out = {k: {"ok": ok, "detail": detail} for k, (ok, detail) in checks.items()}
+        out["roots"] = ctx if ctx else {"error": "unresolved"}
+        print(json.dumps(out, indent=2))
         return 0
+
+    if ctx:
+        print(
+            f"roots: PROJECT_ROOT={ctx['PROJECT_ROOT']} "
+            f"UNITY_PROJECT_ROOT={ctx['UNITY_PROJECT_ROOT']} "
+            f"type={ctx['projectType']} branch={ctx['defaultBranch']} "
+            f"workspace={ctx['workspaceDir']} reports={ctx['reportsDir']}"
+        )
+    else:
+        print("roots: unresolved -- run: python .claude/scripts/setup.py")
 
     for name, (ok, detail) in checks.items():
         marker = "OK " if ok else "-- "

@@ -1,0 +1,26 @@
+{
+  "projectName": "unity-agent-team",
+  "projectRoot": ".",
+  "projectType": "generic",
+  "defaultBranch": "main",
+  "allowedBranches": [],
+  "devlogPaths": [
+    ".claude/devlogs"
+  ],
+  "workspaceDir": "workspace",
+  "reportsDir": "reports",
+  "agentMemoryEnabled": false,
+  "agentMemoryIndexPath": ".agentmemory",
+  "teamProfiles": {
+    "default": [
+      "architect",
+      "coder",
+      "tester"
+    ],
+    "full": [
+      "architect",
+      "coder",
+      "qa-tester"
+    ]
+  }
+}

@@ -42,7 +42,7 @@ Teams) and `/team --worktrees` (tmux + git worktrees) — see [Modes](#modes).
 | Skill packs (registered) | 23 | `.claude/skills/` + `registry.json` |
 | SkillHub-discoverable skills | 91 | Tier 1 (23) + Tier 2 vendor modules (68) |
 | Internal sub-skills (Tier 3) | 96 | `.claude/skills/unity-dots/` |
-| Python scripts (stdlib only) | 17 | `.claude/scripts/` |
+| Python scripts (stdlib only) | 20 | `.claude/scripts/` |
 | Tests | 494 | `tests/` |
 | Artifact JSON-schemas | 6 | `.claude/schemas/` |
 | Operational rule files | 20+ | `.claude/rules/` |
@@ -174,10 +174,13 @@ Notable packs:
 
 ## Scripts
 
-17 stdlib-only Python scripts in `.claude/scripts/`. No pip, no node.
+20 stdlib-only Python scripts in `.claude/scripts/`. No pip, no node.
 
 | Script | What it does |
 |--------|--------------|
+| `roots.py` | **single source of truth for root resolution + project config.** Every script imports it; `python3 .claude/scripts/roots.py --json` prints the resolved context. |
+| `setup.py` | idempotent project init — detects project type, writes `project-config.json` (never overwrites user values), creates dirs, seeds knowledge files. `--check` / `--yes` / `--force`. |
+| `migrate.py` | migrates an old hardcoded install to the portable layout. `--check` reports; apply runs setup and writes `workspace/migration-report.md`. Git-safe (`--allow-dirty` to override). |
 | `orchestrate.py` | **runtime enforcer.** Subcommands: `preflight`, `reset`, `validate`, `plan`, `gate`, `ownership-check`, `finalize`, `commit`. Non-zero exit blocks the next phase. |
 | `triage.py` | packages the triage agent's CRG + fingerprinting decision into a valid `triage.json` (not a classifier itself). |
 | `route_skills.py` | the skill router — selects the per-agent skill subset from the registry. |
@@ -317,20 +320,43 @@ Persistent knowledge (committed): `workspace/repo-knowledge.md`,
 
 ---
 
-## Install
+## Install (quickstart — embedded mode)
 
-```
-1. Copy .claude/ into your Unity project root.
-2. (Optional) copy SETUP.md, README.md, CHANGELOG.md, MIGRATION.md, CLONE-SETUP.md, LICENSE.
-3. Verify: python3 .claude/scripts/orchestrate.py preflight
-4. (Recommended) set up RTK token-optimized commands — CLONE-SETUP.md §2b.
+```sh
+# 1. copy the framework into your project (e.g. a Unity game called my-unity-game)
+cp -R .claude /path/to/my-unity-game/.claude
+
+# 2. initialize — idempotent, never overwrites your config values
+cd /path/to/my-unity-game
+python3 .claude/scripts/setup.py
+
+# 3. verify
+python3 .claude/scripts/roots.py                     # resolved roots + config
+python3 .claude/scripts/orchestrate.py preflight
 ```
 
-Self-contained — drop `.claude/` into any repo's root and `/team` works there
-immediately, for Unity classic, Unity DOTS/ECS, and plain C# / non-Unity repos
-(irrelevant skills score low and never load). Full details in
-[`SETUP.md`](./SETUP.md); cross-project + team modes in
-[`CLONE-SETUP.md`](./CLONE-SETUP.md).
+`setup.py` detects the project type (`unity` / `cloudcode` / `web` / `backend`
+/ `cocos` / `generic`), writes `.claude/project-config.json`, creates
+`workspace/` + `reports/`, and seeds the knowledge files. It is safe to re-run
+any time; `--check` is a dry run.
+
+Three installation modes are supported:
+
+| Mode | What it is | Where documented |
+|------|-----------|------------------|
+| **Embedded** | `.claude/` copied into the target repo root | [`SETUP.md`](./SETUP.md) |
+| **External / shared** | framework lives in its own repo; `AGENT_TEAM_PROJECT_ROOT` or `projectRoot` config points at the target | [`CLONE-SETUP.md`](./CLONE-SETUP.md) |
+| **Monorepo** | one workspace, multiple projects; agents operate only on the active project | [`CLONE-SETUP.md`](./CLONE-SETUP.md) |
+
+All path resolution goes through one resolver —
+`.claude/scripts/roots.py` — and all per-project settings live in
+`.claude/project-config.json` (full field reference in
+[`SETUP.md`](./SETUP.md)). Migrating an older hardcoded install:
+`python3 .claude/scripts/migrate.py --check`, then see
+[`MIGRATION.md`](./MIGRATION.md).
+
+It works for Unity classic, Unity DOTS/ECS, and non-Unity repos alike
+(irrelevant skills score low and never load).
 
 ```sh
 # verify a fresh install
@@ -405,7 +431,7 @@ Flag mapping + full migration guide: [`MIGRATION.md`](./MIGRATION.md).
 ├── commands/team.md                /team command spec
 ├── agents/                         12 subagent definitions
 ├── skills/                         23 skill packs + registry.json (v2) + INDEX.md
-├── scripts/                        17 stdlib scripts (orchestrate, route, skills CLI, validate, …)
+├── scripts/                        stdlib scripts (roots resolver, setup, migrate, orchestrate, route, skills CLI, …)
 ├── schemas/                        6 artifact JSON-schemas
 ├── workspace-templates/            canonical empty artifacts
 ├── rules/                          operational policy (phase gates, ownership, escalation, …)
@@ -424,5 +450,3 @@ MIGRATION.md · CHANGELOG.md         v1→v2 migration · version history
 ## License
 
 See [`LICENSE`](./LICENSE).
-</content>
-</invoke>

@@ -90,7 +90,7 @@ If domain is "Ambiguous" (not yet classified):
 
 ## Output Format
 
-Filtered entries are included in the agent prompt as:
+Filtered entries are included in the agent prompt as (example — illustrative class names):
 
 ```
 ## Relevant Recent Changes (filtered from recent-changes.md)

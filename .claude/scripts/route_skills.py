@@ -33,8 +33,13 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-REGISTRY = ROOT / ".claude" / "skills" / "registry.json"
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+# FRAMEWORK-scoped: registry lives in the framework's .claude/.
+REGISTRY = roots.claude_root() / "skills" / "registry.json"
 
 # Role primary skills (ordered). Folder names = routing keys. From the /team spec.
 ROLE_PRIMARY: dict[str, list[str]] = {
@@ -236,7 +241,7 @@ def route_with_reasons(
     """
     skills = route(agent, domain, intent, task_text, parallel_allowed, memory_hints, max_total)
     reg = load_registry()
-    skills_root = Path(__file__).resolve().parents[2] / ".claude" / "skills"
+    skills_root = roots.claude_root() / "skills"
     reasons = _last_reasons.get(agent, {})
     external_needed = _last_external_needed.get(agent, False)
 

@@ -28,7 +28,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+ROOT = roots.framework_root()
 
 # Skills owned by other agents — never touch their SKILL.md
 SKIP_SKILLS = {"unity-dots-ecb-lifecycle-debugger"}

@@ -26,8 +26,13 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-SKILLS_DIR = ROOT / ".claude" / "skills"
+_SCRIPTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS))
+
+import roots  # noqa: E402
+
+ROOT = roots.framework_root()
+SKILLS_DIR = roots.claude_root() / "skills"
 REGISTRY = SKILLS_DIR / "registry.json"
 
 NAME_RE = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)

@@ -174,9 +174,9 @@ lesson: "In <project>: <symptom> → root cause: <SystemName>.<field/component>.
 tags: ["<system-area>", "<domain>", "<component-name>"]
 ```
 
-Example:
+Example (generic — substitute your project's name and system names):
 ```
-lesson: "In BackpackAdventures: enemies stop moving after area transition → root cause:
+lesson: "In <project>: enemies stop moving after area transition → root cause:
          MovementSystem drops state.Dependency when CombatSystem schedules first.
          Fix: combine handles with JobHandle.CombineDependencies. 
          Detection: profile job overlap in frame after transition."

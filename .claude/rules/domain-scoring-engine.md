@@ -39,6 +39,8 @@ def classify_domain(DOTS_score, Unity_score, Hybrid_score):
 
 ## Worked Examples
 
+All file and class names below are illustrative examples — substitute your project's actual files. Do not change the formulas or thresholds based on the example names.
+
 ### Example 1: EnemyAISystem.cs
 
 APIs found:

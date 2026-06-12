@@ -110,6 +110,8 @@ console_get_logs → binding errors
 
 ### Bridge-Specific Queries
 
+Example (illustrative class names):
+
 ```
 # Find the bridge component
 script_find_in_file(file: "HealthBarBinding.cs", pattern: "ComponentLookup")
@@ -140,6 +142,8 @@ scene_analyze → find Canvas child of entity-linked GameObject
 ---
 
 ## MCP Evidence Override Examples
+
+Examples below use illustrative class names:
 
 **Evidence contradicts DOTS domain score:**
 ```
