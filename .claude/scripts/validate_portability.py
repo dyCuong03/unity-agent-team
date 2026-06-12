@@ -155,24 +155,39 @@ def _read_lines(p: Path) -> List[str]:
 # Check a — banned hardcoded names
 # --------------------------------------------------------------------------
 
-def check_banned_names(root: Path) -> List[Finding]:
+def check_banned_names(root: Path, include_docs: bool = False) -> List[Finding]:
+    """Scan framework-shipped files for banned names.
+
+    Top-level docs (README.md etc.) are scanned only with include_docs=True —
+    in an installed/embedded copy those files belong to the TARGET project and
+    may legitimately contain its own name. Same reason `*.original.md` backups
+    and the `projectName`/`worktreeRoot` values in project-config.json are
+    exempt: they are project data, not framework hardcoding.
+    """
     findings: List[Finding] = []
     targets: List[Path] = []
     claude = root / ".claude"
     if claude.is_dir():
         targets.extend(f for f in claude.rglob("*")
                        if f.is_file() and f.suffix in SCAN_SUFFIXES)
-    for doc in ROOT_DOCS:
-        p = root / doc
-        if p.is_file():
-            targets.append(p)
+    if include_docs:
+        for doc in ROOT_DOCS:
+            p = root / doc
+            if p.is_file():
+                targets.append(p)
 
     for f in sorted(set(targets)):
         if _excluded(root, f):
             continue
+        if f.name.endswith(".original.md"):
+            continue  # pre-compression backup of project-local skill edits
+        is_project_config = f.name == "project-config.json"
         for i, line in enumerate(_read_lines(f), 1):
             if WAIVER_MARK in line:
                 continue
+            if is_project_config and ('"projectName"' in line
+                                      or '"worktreeRoot"' in line):
+                continue  # project data, not framework hardcoding
             hits = [t for t in BANNED_TOKENS if t in line]
             # drop the bare token when a longer banned token covers the hit
             if "UnityBackpackAdventures" in hits and "BackpackAdventures" in hits:
@@ -357,9 +372,9 @@ def check_cwd_dependence(root: Path) -> List[Finding]:
 # Entry
 # --------------------------------------------------------------------------
 
-def run_all(root: Path) -> List[Finding]:
+def run_all(root: Path, include_docs: bool = False) -> List[Finding]:
     findings: List[Finding] = []
-    findings.extend(check_banned_names(root))
+    findings.extend(check_banned_names(root, include_docs=include_docs))
     findings.extend(check_root_resolver(root))
     findings.extend(check_internal_references(root))
     findings.extend(check_project_config(root))
@@ -377,6 +392,9 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--root", default=None,
                     help="directory to validate (default: framework root)")
     ap.add_argument("--json", action="store_true", dest="as_json")
+    ap.add_argument("--include-docs", action="store_true", dest="include_docs",
+                    help="also scan top-level docs (framework repo CI; skip in "
+                         "installed copies where README etc. belong to the target project)")
     args = ap.parse_args(argv)
 
     try:
@@ -390,7 +408,7 @@ def main(argv: List[str]) -> int:
               file=sys.stderr)
         return 2
 
-    findings = run_all(root)
+    findings = run_all(root, include_docs=args.include_docs)
     status = "PASS" if not findings else "FAIL"
 
     if args.as_json:

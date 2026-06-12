@@ -469,7 +469,7 @@ class TestValidatorBehavior:
 
 class TestCurrentRepo:
     def test_validator_passes_on_current_repo(self, other_cwd):
-        proc = run_script(VALIDATOR, "--json", cwd=other_cwd)
+        proc = run_script(VALIDATOR, "--json", "--include-docs", cwd=other_cwd)
         if proc.returncode == 0:
             return  # clean repo — done
         try:
