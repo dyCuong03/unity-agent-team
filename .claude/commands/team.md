@@ -183,7 +183,7 @@ Spawn one `triage` agent. Wait for its artifact. No exceptions.
 Agent({
   subagent_type: "triage",
   description: "Adaptive pipeline triage",
-  prompt: "@.claude/skills/triage/SKILL.md @.claude/rules/GRAPH_FIRST.md @.claude/rules/api-fingerprinting-system.md @.claude/rules/domain-scoring-engine.md\n\nIntent: <INTENT>\nDepth: <DEPTH>\nTask: <TASK>\n\nProduce workspace/triage.json via .claude/scripts/triage.py and validate it. Return only the rationale paragraph and the artifact path."
+  prompt: "@.claude/skills/triage/SKILL.md @.claude/docs/rules/GRAPH_FIRST.md @.claude/docs/rules/api-fingerprinting-system.md @.claude/docs/rules/domain-scoring-engine.md\n\nIntent: <INTENT>\nDepth: <DEPTH>\nTask: <TASK>\n\nProduce workspace/triage.json via .claude/scripts/triage.py and validate it. Return only the rationale paragraph and the artifact path."
 })
 ```
 
@@ -859,7 +859,7 @@ quality bars as `--team`.
 ## Reference
 
 - Skill packs are documented under `.claude/skills/*/SKILL.md`
-- Phase gate rules: `.claude/rules/mcp-phase-gates.md`
-- Ownership enforcement: `.claude/rules/ownership-boundaries.md`
-- Escalation routing: `.claude/rules/escalation-policy.md`
+- Phase gate rules: `.claude/docs/rules/mcp-phase-gates.md`
+- Ownership enforcement: `.claude/docs/rules/ownership-boundaries.md`
+- Escalation routing: `.claude/docs/rules/escalation-policy.md`
 - Migration from v1 fixed-4 flow: `MIGRATION.md`

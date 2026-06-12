@@ -25,10 +25,10 @@ in under 8 file reads, using CRG evidence first.
 
 1. **Read** (Read tool, skip if already in context) `.claude/skills/triage/SKILL.md` — the rubric, allowed values, and
    the helper command.
-2. **Read** (Read tool, skip if already in context) `.claude/rules/GRAPH_FIRST.md` — CRG is required before any file
+2. **Read** (Read tool, skip if already in context) `.claude/docs/rules/GRAPH_FIRST.md` — CRG is required before any file
    read.
-3. **Read** (Read tool, skip if already in context) `.claude/rules/api-fingerprinting-system.md` and
-   `.claude/rules/domain-scoring-engine.md` for domain classification.
+3. **Read** (Read tool, skip if already in context) `.claude/docs/rules/api-fingerprinting-system.md` and
+   `.claude/docs/rules/domain-scoring-engine.md` for domain classification.
 4. **CRG investigation:**
    - `get_architecture_overview` if the task area is unfamiliar
    - `trace_execution_flow` from the keywords in the task

@@ -34,7 +34,7 @@ Prevent prompt bloat. Maximize relevance. Preserve DOTS-first policy.
 
 ## Domain Gating (MANDATORY — applies before keyword routing)
 
-The classifier from `.claude/rules/dual-stack-domain-system.md` runs first.
+The classifier from `.claude/docs/rules/dual-stack-domain-system.md` runs first.
 Its output decides which side of the catalog the router is even allowed to
 draw from:
 

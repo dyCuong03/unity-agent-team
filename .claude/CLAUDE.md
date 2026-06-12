@@ -50,7 +50,7 @@ python3 .claude/scripts/roots.py --json
 | `agentmemory` | Optional. Used by investigators to recall prior sessions. |
 
 If a server is unavailable, agents state the fallback once and keep working.
-See `@.claude/docs/mcp-integration.md`.
+See `.claude/docs/mcp-integration.md` (read on demand).
 
 For `agentmemory` install + `.mcp.json` setup, see **SETUP.md → "Using agentmemory
 with /team"**. Memory is optional; agents fall back to targeted search when absent.
@@ -165,7 +165,7 @@ Exit code 3 → ownership violation. Revert and re-scope.
 - Sync points, main-thread work, and archetype churn are explicit costs.
 
 Domain-specific reasoning is loaded via skill packs based on triage's
-`domain` classification (see `.claude/rules/dual-stack-domain-system.md`).
+`domain` classification (see `.claude/docs/rules/dual-stack-domain-system.md`).
 
 ## Role Boundaries
 
@@ -233,11 +233,11 @@ Session-scoped, gitignored:
   `ownership.lock.json`, `escalation-log.md`
 - `workspace/skill-cache/*.cache.md`
 
-Read the full rules:
-- `@.claude/rules/knowledge-ownership-model.md`
-- `@.claude/rules/knowledge-decay-system.md`
-- `@.claude/rules/knowledge-token-budget.md`
-- `@.claude/rules/agent-knowledge-policy.md`
+Read the full rules (on demand — not auto-loaded):
+- `.claude/docs/rules/knowledge-ownership-model.md`
+- `.claude/docs/rules/knowledge-decay-system.md`
+- `.claude/docs/rules/knowledge-token-budget.md`
+- `.claude/docs/rules/agent-knowledge-policy.md`
 
 ## Codex Review Gate (deep depth only)
 
@@ -305,8 +305,8 @@ python .claude/scripts/skills.py unused        # dead-skill report (fails on orp
 - `.claude/skills/registry.json` — skill registry (single source of truth)
 - `.claude/scripts/route_skills.py` — per-role skill routing
 - `.claude/scripts/skills.py` — skill management CLI
-- `.claude/rules/GRAPH_FIRST.md` — CRG-first investigation rules
-- `.claude/rules/mcp-phase-gates.md` — Phase 1–4 MCP permission gates
-- `.claude/rules/ownership-boundaries.md` — DOTS vs Unity ownership of state
-- `.claude/rules/escalation-policy.md` — escalation signals and routing
-- `.claude/rules/dual-stack-domain-system.md` — DOTS / Unity / Hybrid domains
+- `.claude/docs/rules/GRAPH_FIRST.md` — CRG-first investigation rules
+- `.claude/docs/rules/mcp-phase-gates.md` — Phase 1–4 MCP permission gates
+- `.claude/docs/rules/ownership-boundaries.md` — DOTS vs Unity ownership of state
+- `.claude/docs/rules/escalation-policy.md` — escalation signals and routing
+- `.claude/docs/rules/dual-stack-domain-system.md` — DOTS / Unity / Hybrid domains

@@ -1,7 +1,7 @@
 # Domain Analysis
 <!-- SESSION-SCOPED — written by system-mapper / code-tracer / bug-investigation -->
 <!-- Owner: investigation agents | Readers: architect, unity-dev, tester, data-tool -->
-<!-- See .claude/rules/code-aware-routing-engine.md for the full pipeline -->
+<!-- See .claude/docs/rules/code-aware-routing-engine.md for the full pipeline -->
 
 ## Task
 <!-- Paste the /team task description here -->

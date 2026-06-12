@@ -115,7 +115,7 @@ Risk level rubric:
 
 - Design new test matrices (that is the tester agent's job, spawned only at
   `large`/`critical` complexity)
-- Edit code (Phase 3 forbids writes; see `.claude/rules/mcp-phase-gates.md`)
+- Edit code (Phase 3 forbids writes; see `.claude/docs/rules/mcp-phase-gates.md`)
 - Spawn `bug-investigation` (escalate via `fail_reason` instead)
 - Wait indefinitely for a fix — write `BLOCKED` and return
 

@@ -45,7 +45,7 @@ Teams) and `/team --worktrees` (tmux + git worktrees) — see [Modes](#modes).
 | Python scripts (stdlib only) | 20 | `.claude/scripts/` |
 | Tests | 494 | `tests/` |
 | Artifact JSON-schemas | 6 | `.claude/schemas/` |
-| Operational rule files | 20+ | `.claude/rules/` |
+| Operational rule files | 20+ | `.claude/docs/rules/` |
 | `/team` command spec | 1 | `.claude/commands/team.md` |
 | Discovery policy | 1 | `AGENTS.md` |
 

@@ -177,7 +177,7 @@ the repo:
 - `ecs-registry.md` — ECS component/system ownership
 - `recent-changes.md` — 14-day rolling architectural mutations
 
-The decay/relevance/ownership rules in `.claude/rules/` still apply. No
+The decay/relevance/ownership rules in `.claude/docs/rules/` still apply. No
 migration needed for these files.
 
 ---

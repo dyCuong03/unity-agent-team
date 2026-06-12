@@ -43,9 +43,9 @@ in under 8 file reads.
    - `get_impact_radius` → seed `systems_affected` and `files_touched_estimate`
 
 2. **Fingerprint up to 5 touched files** for API evidence
-   (see `.claude/rules/api-fingerprinting-system.md`).
+   (see `.claude/docs/rules/api-fingerprinting-system.md`).
    - Compute DOTS_score / Unity_score / Hybrid_score
-     (see `.claude/rules/domain-scoring-engine.md`).
+     (see `.claude/docs/rules/domain-scoring-engine.md`).
    - Classify domain. If Ambiguous → `confidence_score ≤ 0.5`.
 
 3. **Classify complexity** using the rubric below.

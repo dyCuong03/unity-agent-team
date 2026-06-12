@@ -1,7 +1,7 @@
 # Escalation Log
 <!-- SESSION-SCOPED — retained if any BLOCK is unresolved at session end -->
 <!-- Owner: orchestrator | Readers: all agents -->
-<!-- See .claude/rules/escalation-policy.md for trigger rules -->
+<!-- See .claude/docs/rules/escalation-policy.md for trigger rules -->
 
 ## Active Escalations
 

@@ -25,7 +25,7 @@ matching `.claude/schemas/verification_result.schema.json`.
 ## Mandatory workflow
 
 1. **Read** (Read tool, skip if already in context) `.claude/skills/verifier/SKILL.md` for the 5-step procedure.
-2. **Read** (Read tool, skip if already in context) `.claude/rules/mcp-phase-gates.md` — you are in Phase 3 (read +
+2. **Read** (Read tool, skip if already in context) `.claude/docs/rules/mcp-phase-gates.md` — you are in Phase 3 (read +
    playmode only — no script writes).
 3. **Read** `workspace/impl_result.json`. If it is missing, malformed, has
    `compilation != "CLEAN"`, or has an empty `verification_bundle.invariants`:
